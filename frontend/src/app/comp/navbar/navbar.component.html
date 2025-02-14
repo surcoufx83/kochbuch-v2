@@ -1,12 +1,15 @@
 <nav class="fixed flex items-center inset-x-0 z-50">
     <!-- brand icon and app name-->
     <div class="flex items-center">
-        <h1 class="mb-0 p-2 lg:p-3" style="line-height: 1;">
+        <h1 class="mb-0 p-2 lg:p-3" style="line-height: 1;" aria-labelledby="brand-label">
             KB
         </h1>
         <h4 class="m-0">
-            Kochbuch
+            {{ Locale.navbar.brand.pageTitle }}
         </h4>
+        <span class="sr-only" id="brand-label">
+            {{ Locale.navbar.brand.iconLabel }}
+        </span>
     </div>
     <!-- brand icon and app name-->
 </nav>

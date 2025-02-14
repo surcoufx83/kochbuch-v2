@@ -3,6 +3,8 @@ import { Title } from '@angular/platform-browser';
 import { SharedDataService } from './svc/shared-data.service';
 import { ApiService } from './svc/api.service';
 import { first } from 'rxjs';
+import { L10nService } from './svc/l10n.service';
+import { L10nLocale } from './svc/locales/types';
 
 @Component({
   selector: 'kb-root',
@@ -13,7 +15,8 @@ import { first } from 'rxjs';
 export class AppComponent {
 
   constructor(
-    apiService: ApiService,
+    private apiService: ApiService,
+    private l10nService: L10nService,
     sharedDataService: SharedDataService,
     htmlTitleService: Title
   ) {
@@ -21,6 +24,11 @@ export class AppComponent {
     apiService.get('').pipe(first()).subscribe((r) => {
       console.log(r)
     })
+
+  }
+
+  Locale(): L10nLocale {
+    return this.l10nService.Locale;
   }
 
 }
