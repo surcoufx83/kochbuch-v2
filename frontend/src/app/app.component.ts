@@ -24,6 +24,9 @@ export class AppComponent {
     apiService.get('').pipe(first()).subscribe((r) => {
       console.log(r)
     })
+    apiService.get('recipes').pipe(first()).subscribe((r) => {
+      console.log(r)
+    })
 
   }
 
