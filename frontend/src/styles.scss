@@ -1,1 +1,107 @@
-/* You can add global styles to this file, and also import other style files */
+@use "tailwindcss";
+@use "@fontsource/source-sans-pro";
+@use "@fontsource/cinzel";
+
+@media (prefers-color-scheme: dark) {
+
+    :root {
+        // palette: https://coolors.co/282a28-f5eae1-fee440-00bbf9-00f5d4
+        --kb-bg-back-color: #282a28 !important;
+        --kb-bg-navbar-back-color: #002448 !important;
+        --kb-text-color: #f5eae1 !important;
+        --kb-navbar-text-color: #f5eae1 !important;
+    }
+}
+
+:root {
+    // palette: https://coolors.co/f5eae1-141514-fee440-00bbf9-00f5d4
+    --kb-font-default: "Source Sans Pro";
+    --kb-font-heading: "Cinzel";
+    --kb-font-size-default: 1.05rem;
+    --kb-m0: 0 !important;
+    --kb-m1: .25rem !important;
+    --kb-m2: .5rem !important;
+    --kb-m3: 1rem !important;
+    --kb-m4: 1.5rem !important;
+    --kb-m5: 3rem !important;
+    --kb-bg-back-color: #f5eae1;
+    --kb-bg-navbar-back-color: #002448;
+    --kb-text-color: #141514;
+    --kb-navbar-text-color: #f5eae1 !important;
+}
+
+body {
+    background-color: var(--kb-bg-back-color);
+    color: var(--kb-text-color);
+    font-family: var(--kb-font-default);
+    font-size: var(--kb-font-size-default);
+    height: 100%;
+}
+
+.fw-bold {
+    font-weight: 700;
+}
+
+h1,
+.h1,
+h2,
+.h2,
+h3,
+.h3 {
+    font-family: var(--kb-font-heading);
+    margin-top: 0;
+    line-height: 1.2;
+
+    &:not(.mb-0) {
+        margin-bottom: .5rem;
+    }
+}
+
+h1 {
+    font-size: calc(1.375rem + 1.5vw);
+}
+
+h2 {
+    font-size: calc(1.325rem + .9vw);
+}
+
+h3 {
+    font-size: calc(1.3rem + .6vw);
+}
+
+h4 {
+    font-size: calc(1.275rem + .3vw);
+}
+
+h5 {
+    font-size: 1.25rem;
+}
+
+h6 {
+    font-size: var(--kb-font-size-default);
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 1200px) {
+
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    h2 {
+        font-size: 2rem;
+    }
+
+    h3 {
+        font-size: 1.75rem;
+    }
+
+    h4 {
+        font-size: 1.5rem;
+    }
+}
