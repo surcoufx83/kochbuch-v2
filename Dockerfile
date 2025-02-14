@@ -13,8 +13,9 @@ WORKDIR /app
 COPY frontend/ .
 RUN npm install && npm run build -- --output-path=/dist
 
-# Serve with nginx
+# Serve frontend and proxy backend
 FROM nginx:alpine
-COPY --from=frontend-builder /dist/ /usr/share/nginx/html
+COPY --from=frontend-builder /dist/browser/ /usr/share/nginx/kochbuch/html
 COPY --from=backend-builder /app/target/x86_64-unknown-linux-musl/release/kochbuch /usr/local/bin/kochbuch
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 CMD ["sh", "-c", "/usr/local/bin/kochbuch & nginx -g 'daemon off;'"]
