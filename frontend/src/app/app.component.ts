@@ -28,6 +28,9 @@ export class AppComponent {
     apiService.get('categories', catetag).pipe(first()).subscribe((r) => {
       console.log(r)
     })
+    apiService.get('units', catetag).pipe(first()).subscribe((r) => {
+      console.log(r)
+    })
     apiService.get('recipes').pipe(first()).subscribe((r) => {
       console.log(r)
     })

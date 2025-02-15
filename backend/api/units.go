@@ -7,16 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetCategories handles the /categories endpoint
-func GetCategories(c *gin.Context) {
+// GetUnits handles the /units endpoint
+func GetUnits(c *gin.Context) {
 
-	// Get categories from cache
-	categories, etag := services.GetCategories()
+	// Get units from cache
+	units, etag := services.GetUnits()
 
 	// Get Etag from request
 	requestEtag := c.Request.Header.Get("If-None-Match")
 
-	if requestEtag == etag {
+	if requestEtag != "" && requestEtag == etag {
 		// Etag matches, return 304 Not Modified
 		c.Status(http.StatusNotModified)
 	} else {
@@ -24,7 +24,7 @@ func GetCategories(c *gin.Context) {
 		c.Header("Etag", etag)
 
 		c.JSON(http.StatusOK, gin.H{
-			"categories": categories,
+			"units": units,
 		})
 	}
 }

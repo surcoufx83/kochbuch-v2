@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"kochbuch-v2-backend/api"
-	"kochbuch-v2-backend/cache"
+	"kochbuch-v2-backend/services"
 	"log"
 	"net/http"
 	"os"
@@ -13,25 +13,23 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-)
-
-var (
-	db *sqlx.DB
 )
 
 func main() {
 
 	// Connect to MySQL database
-	db_connect()
+	services.DbConnect()
 
-	// Load categories into cache at startup
-	cache.LoadCategories(db)
+	// Load entities into cache
+	services.LoadCategories(services.Db)
+	services.LoadUnits(services.Db)
 
 	// Set up Gin router
 	router := gin.Default()
 	router.GET("/", api.GetIndex)
 	router.GET("/categories", api.GetCategories)
+	router.GET("/recipes", api.GetRecipes)
+	router.GET("/units", api.GetUnits)
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -62,36 +60,7 @@ func main() {
 	}
 
 	log.Println("Server stopped gracefully")
-	db.Close()
+	services.Db.Close()
 	log.Println("Database connection closed")
 
-}
-
-func db_connect() {
-	dbuser := os.Getenv("DB_User")
-	dbpassword := os.Getenv("DB_Password")
-	dbhost := os.Getenv("DB_Host")
-	dbport := os.Getenv("DB_Port")
-	dbname := os.Getenv("DB_Name")
-	tz := os.Getenv("TZ")
-
-	if dbhost == "" {
-		dbhost = "localhost"
-	}
-	if dbport == "" {
-		dbport = "3306"
-	}
-	if tz == "" {
-		tz = "UTC"
-	}
-
-	dsn := dbuser + ":" + dbpassword + "@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz
-	var err error
-
-	db, err = sqlx.Connect("mysql", dsn)
-	if err != nil {
-		log.Fatalf("Database connection failed: %v", err)
-	}
-
-	log.Println("Connected to database!")
 }

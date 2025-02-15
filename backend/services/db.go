@@ -1,0 +1,41 @@
+package services
+
+import (
+	"log"
+	"os"
+
+	"github.com/jmoiron/sqlx"
+)
+
+var (
+	Db *sqlx.DB
+)
+
+func DbConnect() {
+	dbuser := os.Getenv("DB_User")
+	dbpassword := os.Getenv("DB_Password")
+	dbhost := os.Getenv("DB_Host")
+	dbport := os.Getenv("DB_Port")
+	dbname := os.Getenv("DB_Name")
+	tz := os.Getenv("TZ")
+
+	if dbhost == "" {
+		dbhost = "localhost"
+	}
+	if dbport == "" {
+		dbport = "3306"
+	}
+	if tz == "" {
+		tz = "UTC"
+	}
+
+	dsn := dbuser + ":" + dbpassword + "@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz
+	var err error
+
+	Db, err = sqlx.Connect("mysql", dsn)
+	if err != nil {
+		log.Fatalf("Database connection failed: %v", err)
+	}
+
+	log.Println("Connected to database!")
+}
