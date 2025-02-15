@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"kochbuch-v2-backend/api"
-	"kochbuch-v2-backend/types"
+	"kochbuch-v2-backend/cache"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -19,12 +18,6 @@ import (
 
 var (
 	db *sqlx.DB
-
-	cacheMutex sync.RWMutex
-
-	categoriesCache   map[uint16]types.Category
-	categoriesEtag    time.Time
-	categoriesEtagStr string
 )
 
 func main() {
@@ -33,11 +26,12 @@ func main() {
 	db_connect()
 
 	// Load categories into cache at startup
-	load_categories()
+	cache.LoadCategories(db)
 
 	// Set up Gin router
 	router := gin.Default()
 	router.GET("/", api.GetIndex)
+	router.GET("/categories", api.GetCategories)
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -100,30 +94,4 @@ func db_connect() {
 	}
 
 	log.Println("Connected to database!")
-}
-
-func load_categories() {
-	query := "SELECT * FROM categoryitemsview"
-	var categories []types.Category
-
-	err := db.Select(&categories, query)
-	if err != nil {
-		log.Fatalf("Failed to load categories: %v", err)
-	}
-
-	// Build cache
-	cacheMutex.Lock()
-	categoriesCache := make(map[uint16]types.Category)
-	for _, category := range categories {
-		categoriesCache[category.ItemId] = category
-		if category.ItemModified.After(categoriesEtag) {
-			categoriesEtag = category.ItemModified
-		} else if category.CatModified.After(categoriesEtag) {
-			categoriesEtag = category.CatModified
-		}
-	}
-	categoriesEtagStr = categoriesEtag.Format(time.RFC3339)
-	cacheMutex.Unlock()
-	log.Printf("Loaded %d categories into cache", len(categories))
-	log.Printf("Categories cache ETag: %v", categoriesEtagStr)
 }

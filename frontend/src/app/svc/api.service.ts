@@ -12,16 +12,14 @@ export class ApiService {
     private http: HttpClient,
   ) { }
 
-  public get(urlfragment: string): Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null> {
+  public get(urlfragment: string, etag?: string): Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null> {
     let reply: Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null> = new Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null>();
-    this.http.get<GenericApiReply>(`/api/${urlfragment}`, { observe: 'response' })
+    this.http.get<GenericApiReply>(`/api/${urlfragment}`, { observe: 'response', headers: etag ? { 'If-None-Match': etag } : undefined })
       .pipe(first()).subscribe({
         next: (res) => {
-          console.log(res);
           reply.next(res)
         },
         error: (err) => {
-          console.log(err);
           reply.next(err)
         }
       });

@@ -20,8 +20,12 @@ export class AppComponent {
     sharedDataService: SharedDataService,
     htmlTitleService: Title
   ) {
+    let catetag: string | undefined = undefined;
     sharedDataService.PageTitle.subscribe((t) => htmlTitleService.setTitle(t));
     apiService.get('').pipe(first()).subscribe((r) => {
+      console.log(r)
+    })
+    apiService.get('categories', catetag).pipe(first()).subscribe((r) => {
       console.log(r)
     })
     apiService.get('recipes').pipe(first()).subscribe((r) => {
