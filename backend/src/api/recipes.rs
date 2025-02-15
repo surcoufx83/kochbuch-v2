@@ -1,8 +1,6 @@
-use crate::logging::log_request;
-use crate::types::{PictureInfo, Recipe, RecipeListResponse};
+use crate::{logging::log_request, types::Recipe};
 use actix_web::{get, web, HttpRequest, HttpResponse, Responder};
 use sqlx::mysql::MySqlPool;
-use sqlx::Row;
 
 #[get("/recipes")]
 pub async fn get_recipes(req: HttpRequest, db_pool: web::Data<MySqlPool>) -> impl Responder {
@@ -10,7 +8,11 @@ pub async fn get_recipes(req: HttpRequest, db_pool: web::Data<MySqlPool>) -> imp
 
     let query = "SELECT * FROM allrecipes_nouser";
 
-    sqlx::query("SELECT * FROM allrecipes_nouser").fetch_one(db_pool.get_ref());
+    let _res = sqlx::query_as!(Recipe, "SELECT * FROM allrecipes_nouser")
+        .fetch_all(db_pool.get_ref())
+        .await;
+
+    println!("{_res:?}");
 
     /* let recipes = sqlx::query_as::<_, Recipe>("SELECT * FROM allrecipes_nouser")
         .fetch_one(db_pool)

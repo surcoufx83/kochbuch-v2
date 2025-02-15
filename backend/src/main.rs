@@ -7,8 +7,6 @@ use api::index::get_index;
 use api::recipes::get_recipes;
 use dotenv::dotenv;
 use sqlx::mysql::MySqlPool;
-use sqlx::Row;
-use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, RwLock};
 use types::CategoryItem;

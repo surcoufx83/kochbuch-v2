@@ -31,6 +31,7 @@ pub struct RecipeListResponse {
     pub cache: bool,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct Recipe {
     pub recipe_id: u32,
@@ -46,8 +47,11 @@ pub struct Recipe {
     pub recipe_eater: u8,
     pub recipe_source_desc: String,
     pub recipe_source_url: String,
-    pub recipe_created: String,
-    pub recipe_modified: String,
+    pub recipe_created: chrono::DateTime<Utc>,
+    pub recipe_edited: Option<chrono::DateTime<Utc>>,
+    pub recipe_modified: chrono::DateTime<Utc>,
+    pub recipe_published: chrono::DateTime<Utc>,
+    pub ingredientsGroupByStep: u8,
     pub stepscount: i32,
     pub preparationtime: i32,
     pub cookingtime: i32,
@@ -115,6 +119,7 @@ pub struct PictureInfo {
     pub picture_height: i32,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub struct PreparationInfo {
     pub ingredients: Vec<String>,
@@ -124,6 +129,7 @@ pub struct PreparationInfo {
     pub timeConsumed: TimeInfo,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub struct TimeInfo {
     pub cooking: i32,
@@ -149,6 +155,7 @@ pub struct SharingInfo {
     pub publication: PublicationInfo,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub struct PublicationInfo {
     pub isPublished: PublishStatus,
