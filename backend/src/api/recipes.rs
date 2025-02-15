@@ -10,6 +10,35 @@ pub async fn get_recipes(req: HttpRequest, db_pool: web::Data<MySqlPool>) -> imp
 
     let query = "SELECT * FROM allrecipes_nouser";
 
+    sqlx::query("SELECT * FROM allrecipes_nouser").fetch_one(db_pool.get_ref());
+
+    /* let recipes = sqlx::query_as::<_, Recipe>("SELECT * FROM allrecipes_nouser")
+        .fetch_one(db_pool)
+        .await
+        .map_err(|e| {
+            eprintln!("Failed to load categories: {:?}", e);
+            std::io::Error::new(std::io::ErrorKind::Other, "Database connection failed")
+        })?;
+
+    println!("Loaded {} recipes", recipes.len()); */
+
+    /* let response = RecipeListResponse {
+        count: 0,
+        limit: 25,
+        list: recipes,
+        cache: true,
+    }; */
+
+    let response = serde_json::json!({
+        "body": "",
+        "etag": null,
+        "success": true
+    });
+
+    HttpResponse::Ok().json(response)
+
+    /* let query = "SELECT * FROM allrecipes_nouser";
+
     let rows = sqlx::query(query).fetch_all(db_pool.get_ref()).await;
 
     match rows {
@@ -71,9 +100,9 @@ pub async fn get_recipes(req: HttpRequest, db_pool: web::Data<MySqlPool>) -> imp
                 });
 
                 recipe.pictures.push(picture);
-            }
+            } */
 
-            let response = RecipeListResponse {
+    /* let response = RecipeListResponse {
                 count: recipes_map.len(),
                 limit: 25,
                 list: recipes_map.into_values().collect(),
@@ -86,5 +115,5 @@ pub async fn get_recipes(req: HttpRequest, db_pool: web::Data<MySqlPool>) -> imp
             eprintln!("Database query failed: {:?}", e);
             HttpResponse::InternalServerError().json("Failed to fetch recipes")
         }
-    }
+    } */
 }
