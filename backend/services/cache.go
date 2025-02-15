@@ -17,6 +17,10 @@ var (
 	categoriesEtag    time.Time
 	categoriesEtagStr string
 
+	publicRecipesCache   map[uint32]types.Recipe
+	publicRecipesEtag    time.Time
+	publicRecipesEtagStr string
+
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time
 	unitsEtagStr string
@@ -31,6 +35,56 @@ type dbCategory struct {
 	CategoryName     string    `db:"catname"`
 	CategoryIcon     string    `db:"caticon"`
 	CategoryModified time.Time `db:"catmodified"`
+}
+
+type DbRecipe struct {
+	Id                     uint32    `db:"recipe_id"`
+	UserId                 uint32    `db:"user_id"`
+	EditUserId             uint32    `db:"edit_user_id"`
+	AiGenerated            bool      `db:"aigenerated"`
+	AiLocalized            bool      `db:"localized"`
+	IsPlaceholder          bool      `db:"placeholder"`
+	SharedInternal         bool      `db:"shared_internal"`
+	SharedPublic           bool      `db:"shared_external"`
+	Locale                 string    `db:"locale"`
+	NameDe                 string    `db:"name_de"`
+	NameEn                 string    `db:"name_en"`
+	NameFr                 string    `db:"name_fr"`
+	DescriptionDe          string    `db:"description_de"`
+	DescriptionEn          string    `db:"description_en"`
+	DescriptionFr          string    `db:"description_fr"`
+	ServingsCount          uint8     `db:"servings_count"`
+	SourceDescriptionDe    string    `db:"source_description_de"`
+	SourceDescriptionEn    string    `db:"source_description_en"`
+	SourceDescriptionFr    string    `db:"source_description_fr"`
+	SourceUrl              string    `db:"source_url"`
+	Created                time.Time `db:"created"`
+	Modified               time.Time `db:"modified"`
+	Published              time.Time `db:"published"`
+	Difficulty             uint8     `db:"difficulty"`
+	IngredientsGroupByStep bool      `db:"ingredientsGroupByStep"`
+	PictureId              uint32    `db:"picture_id"`
+	PictureIndex           uint8     `db:"picture_sortindex"`
+	PictureName            string    `db:"picture_name"`
+	PictureDescription     string    `db:"picture_description"`
+	PictureHash            string    `db:"picture_hash"`
+	PictureFilename        string    `db:"picture_filename"`
+	PictureFullPath        string    `db:"picture_full_path"`
+	PictureUploaded        time.Time `db:"picture_uploaded"`
+	PictureWidth           uint16    `db:"picture_width"`
+	PictureHeight          uint16    `db:"picture_height"`
+	ViewsCount             uint32    `db:"views"`
+	CookedCount            uint32    `db:"cooked"`
+	VotesCount             uint32    `db:"votes"`
+	VotesSum               uint32    `db:"votesum"`
+	VotesAvg               float32   `db:"avgvotes"`
+	RatingsCount           uint32    `db:"ratings"`
+	RatingsSum             uint32    `db:"ratesum"`
+	RatingsAvg             float32   `db:"avgratings"`
+	StepsCount             uint8     `db:"stepscount"`
+	PreparationTime        int16     `db:"preparationtime"`
+	CookingTime            int16     `db:"cookingtime"`
+	ChillTime              int16     `db:"chilltime"`
 }
 
 type dbUnit struct {
@@ -158,4 +212,75 @@ func GetUnits() (map[uint8]types.Unit, string) {
 	defer cacheMutex.RUnlock()
 
 	return unitsCache, unitsEtagStr
+}
+
+func LoadPublicRecipes(db *sqlx.DB) {
+	query := "SELECT * FROM allrecipes_nouser"
+	var recipes []DbRecipe
+
+	err := db.Select(&recipes, query)
+	if err != nil {
+		log.Fatalf("Failed to load recipes: %v", err)
+	}
+
+	// Build cache
+	cacheMutex.Lock()
+	publicRecipesCache = make(map[uint32]types.Recipe)
+	for _, recipe := range recipes {
+
+		publicRecipesCache[recipe.Id] = types.Recipe{
+			Id:               recipe.Id,
+			SimpleStruct:     true,
+			IsFork:           false,
+			OriginalRecipeId: 0,
+			IsPlaceholder:    recipe.IsPlaceholder,
+			SourceUrl:        recipe.SourceUrl,
+			OwnerUserId:      recipe.UserId,
+			LastEditUserId:   recipe.EditUserId,
+			AiGenerated:      recipe.AiGenerated,
+			AiLocalized:      recipe.AiLocalized,
+			UserLocale:       recipe.Locale,
+			Localization: map[string]types.RecipeLocalization{
+				"de": {
+					Title:             recipe.NameDe,
+					Description:       recipe.DescriptionDe,
+					SourceDescription: recipe.SourceDescriptionDe,
+				},
+				"en": {
+					Title:             recipe.NameEn,
+					Description:       recipe.DescriptionEn,
+					SourceDescription: recipe.SourceDescriptionEn,
+				},
+				"fr": {
+					Title:             recipe.NameFr,
+					Description:       recipe.DescriptionFr,
+					SourceDescription: recipe.SourceDescriptionFr,
+				},
+			},
+			Categories:     []uint16{},
+			ServingsCount:  recipe.ServingsCount,
+			Difficulty:     recipe.Difficulty,
+			SharedInternal: recipe.SharedInternal,
+			SharedPublic:   recipe.SharedPublic,
+			CreatedTime:    recipe.Created,
+			ModifiedTime:   recipe.Modified,
+			PublishedTime:  recipe.Published,
+		}
+
+		if recipe.Modified.After(publicRecipesEtag) {
+			publicRecipesEtag = recipe.Modified
+		}
+	}
+
+	publicRecipesEtagStr = hash(publicRecipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
+	cacheMutex.Unlock()
+	log.Printf("Loaded %d recipes into cache", len(recipes))
+	log.Printf("Public recipes cache ETag: %v", publicRecipesEtagStr)
+}
+
+func GetPublicRecipes() (map[uint32]types.Recipe, string) {
+	cacheMutex.RLock()
+	defer cacheMutex.RUnlock()
+
+	return publicRecipesCache, publicRecipesEtagStr
 }

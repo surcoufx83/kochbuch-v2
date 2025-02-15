@@ -25,6 +25,7 @@ func GetCategories(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"categories": categories,
+			"etag":       etag,
 		})
 	}
 }

@@ -14,6 +14,7 @@ export class ApiService {
 
   public get(urlfragment: string, etag?: string): Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null> {
     let reply: Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null> = new Subject<HttpResponse<GenericApiReply> | HttpErrorResponse | null>();
+    console.log(`GET /api/${urlfragment}`, etag);
     this.http.get<GenericApiReply>(`/api/${urlfragment}`, { observe: 'response', headers: etag ? { 'If-None-Match': etag } : undefined })
       .pipe(first()).subscribe({
         next: (res) => {

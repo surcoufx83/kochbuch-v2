@@ -21,19 +21,45 @@ export class AppComponent {
     htmlTitleService: Title
   ) {
     let catetag: string | undefined = undefined;
+    let unitsetag: string | undefined = undefined;
+    let recipesetag: string | undefined = undefined;
     sharedDataService.PageTitle.subscribe((t) => htmlTitleService.setTitle(t));
-    apiService.get('').pipe(first()).subscribe((r) => {
-      console.log(r)
-    })
-    apiService.get('categories', catetag).pipe(first()).subscribe((r) => {
-      console.log(r)
-    })
-    apiService.get('units', catetag).pipe(first()).subscribe((r) => {
-      console.log(r)
-    })
-    apiService.get('recipes').pipe(first()).subscribe((r) => {
-      console.log(r)
-    })
+
+    setInterval(() => {
+      apiService.get('categories', catetag).pipe(first()).subscribe((r) => {
+        if (r?.status === 304) {
+          console.log('304');
+          return;
+        }
+
+        catetag = r?.headers.get('etag') ?? undefined;
+        console.log(r)
+      })
+    }, 5000);
+
+    setInterval(() => {
+      apiService.get('units', unitsetag).pipe(first()).subscribe((r) => {
+        if (r?.status === 304) {
+          console.log('304');
+          return;
+        }
+
+        unitsetag = r?.headers.get('etag') ?? undefined;
+        console.log(r)
+      })
+    }, 7500);
+
+    setInterval(() => {
+      apiService.get('recipes', recipesetag).pipe(first()).subscribe((r) => {
+        if (r?.status === 304) {
+          console.log('304');
+          return;
+        }
+
+        recipesetag = r?.headers.get('etag') ?? undefined;
+        console.log(r)
+      })
+    }, 10500);
 
   }
 

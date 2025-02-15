@@ -4,17 +4,19 @@ import "time"
 
 type Recipe struct {
 	Id               uint32 `json:"id"`
+	SimpleStruct     bool   `json:"simple"`
 	IsFork           bool   `json:"isFork"`
 	OriginalRecipeId uint32 `json:"originalRecipeId"`
 	IsPlaceholder    bool   `json:"isPlaceholder"`
 	SourceUrl        string `json:"sourceUrl"`
 
-	OwnerUserId    uint16 `json:"-"`
-	LastEditUserId uint16 `json:"-"`
+	OwnerUserId    uint32 `json:"-"`
+	LastEditUserId uint32 `json:"-"`
 
 	AiGenerated bool `json:"aiGenerated"`
 	AiLocalized bool `json:"aiLocalized"`
 
+	UserLocale   string                        `json:"userLocale"`
 	Localization map[string]RecipeLocalization `json:"localization"`
 
 	Categories []uint16 `json:"categories"`
@@ -31,9 +33,6 @@ type Recipe struct {
 }
 
 type RecipeLocalization struct {
-	UserGeneratedtime bool   `json:"userGenerated"`
-	Default           bool   `json:"default"`
-	Language          string `json:"language"`
 	Title             string `json:"title"`
 	Description       string `json:"description"`
 	SourceDescription string `json:"sourceDescription"`

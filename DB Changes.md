@@ -72,3 +72,69 @@ DELETE FROM `units` WHERE `unit_id` = 62 AND `sg_name_de` = 'Zehe';
 ```sql
 ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `unitsview` AS select `units`.`unit_id` AS `unit_id`,ifnull(`units`.`supersededby_unitid`,0) AS `supersededby_unitid`,ifnull(`units`.`saveas_unitid`,0) AS `saveas_unitid`,`units`.`saveas_factor` AS `saveas_factor`,`units`.`localized` AS `localized`,`units`.`sg_name_de` AS `sg_name_de`,`units`.`sg_name_en` AS `sg_name_en`,`units`.`sg_name_fr` AS `sg_name_fr`,`units`.`pl_name_de` AS `pl_name_de`,`units`.`pl_name_en` AS `pl_name_en`,`units`.`pl_name_fr` AS `pl_name_fr`,`units`.`decimal_places` AS `decimal_places`,`units`.`fractional` AS `fractional`,`units`.`created` AS `created`,`units`.`updated` AS `updated` from `units`;
 ```
+
+## Updated Recipes
+
+### Modify recipes table
+
+```sql
+UPDATE `recipes` SET `recipe_name_de` = '' WHERE `recipe_name_de` IS NULL;
+UPDATE `recipes` SET `recipe_name_en` = '' WHERE `recipe_name_en` IS NULL;
+UPDATE `recipes` SET `recipe_description_de` = '' WHERE `recipe_description_de` IS NULL;
+UPDATE `recipes` SET `recipe_description_en` = '' WHERE `recipe_description_en` IS NULL;
+
+ALTER TABLE `recipe_pictures`
+    CHANGE COLUMN `picture_uploaded` `picture_uploaded` DATETIME NOT NULL DEFAULT current_timestamp() AFTER `picture_full_path`;
+
+ALTER TABLE `recipes`
+    CHANGE COLUMN `aigenerated` `aigenerated` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `edit_user_id`,
+    CHANGE COLUMN `localized` `localized` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `aigenerated`,
+    CHANGE COLUMN `recipe_placeholder` `placeholder` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `localized`,
+    CHANGE COLUMN `recipe_public_internal` `shared_internal` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `placeholder`,
+    CHANGE COLUMN `recipe_public_external` `shared_external` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `shared_internal`,
+    CHANGE COLUMN `recipe_name` `name_de` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `shared_external`,
+    CHANGE COLUMN `recipe_name_de` `name_en` VARCHAR(256) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci' AFTER `name_de`,
+    CHANGE COLUMN `recipe_name_en` `name_fr` VARCHAR(256) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci' AFTER `name_en`,
+    CHANGE COLUMN `recipe_description` `description_de` VARCHAR(1024) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `name_fr`,
+    CHANGE COLUMN `recipe_description_de` `description_en` VARCHAR(1024) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci' AFTER `description_de`,
+    CHANGE COLUMN `recipe_description_en` `description_fr` VARCHAR(1024) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci' AFTER `description_en`,
+    CHANGE COLUMN `recipe_eater` `servings_count` TINYINT(3) UNSIGNED NOT NULL AFTER `description_fr`,
+    CHANGE COLUMN `recipe_source_desc` `source_description_de` VARCHAR(1024) NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `servings_count`,
+    ADD COLUMN `source_description_en` VARCHAR(1024) NULL DEFAULT '' AFTER `source_description_de`,
+    ADD COLUMN `source_description_fr` VARCHAR(1024) NULL DEFAULT '' AFTER `source_description_en`,
+    CHANGE COLUMN `recipe_source_url` `source_url` VARCHAR(256) NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `source_description_fr`,
+    DROP INDEX `FK_recipes_users`,
+    DROP FOREIGN KEY `FK_recipes_users`;
+
+ALTER TABLE `recipes`
+    CHANGE COLUMN `recipe_created` `created` TIMESTAMP NOT NULL DEFAULT current_timestamp() AFTER `source_url`,
+    CHANGE COLUMN `recipe_edited` `edited` TIMESTAMP NULL DEFAULT NULL AFTER `created`,
+    CHANGE COLUMN `recipe_modified` `modified` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() AFTER `edited`,
+    CHANGE COLUMN `recipe_published` `published` TIMESTAMP NULL DEFAULT NULL AFTER `modified`,
+    CHANGE COLUMN `recipe_difficulty` `difficulty` ENUM('0','1','2','3') NOT NULL DEFAULT '0' COLLATE 'utf8mb4_general_ci' AFTER `published`,
+    ADD CONSTRAINT `FK_recipes_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON UPDATE CASCADE ON DELETE SET NULL,
+    ADD CONSTRAINT `FK_recipes_users_2` FOREIGN KEY (`edit_user_id`) REFERENCES `users` (`user_id`) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE `recipes`
+    CHANGE COLUMN `name_en` `name_en` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `name_de`,
+    CHANGE COLUMN `name_fr` `name_fr` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `name_en`,
+    CHANGE COLUMN `description_en` `description_en` VARCHAR(1024) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `description_de`,
+    CHANGE COLUMN `description_fr` `description_fr` VARCHAR(1024) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `description_en`,
+    CHANGE COLUMN `source_description_de` `source_description_de` VARCHAR(1024) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `servings_count`,
+    CHANGE COLUMN `source_description_en` `source_description_en` VARCHAR(1024) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `source_description_de`,
+    CHANGE COLUMN `source_description_fr` `source_description_fr` VARCHAR(1024) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `source_description_en`,
+    CHANGE COLUMN `source_url` `source_url` VARCHAR(256) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `source_description_fr`;
+
+ALTER TABLE `recipes`
+    CHANGE COLUMN `created` `created` DATETIME NOT NULL DEFAULT current_timestamp() AFTER `source_url`,
+    CHANGE COLUMN `edited` `edited` DATETIME NULL DEFAULT NULL AFTER `created`,
+    CHANGE COLUMN `modified` `modified` DATETIME NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() AFTER `edited`,
+    CHANGE COLUMN `published` `published` DATETIME NULL DEFAULT NULL AFTER `modified`;
+
+ALTER TABLE `recipes`
+    ADD COLUMN `locale` VARCHAR(2) NOT NULL DEFAULT 'de' AFTER `shared_external`;
+
+ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrecipes` AS select `r`.`recipe_id` AS `recipe_id`,ifnull(`r`.`user_id`,0) AS `user_id`,ifnull(`r`.`edit_user_id`,0) AS `edit_user_id`,`r`.`aigenerated` AS `aigenerated`,`r`.`localized` AS `localized`,`r`.`placeholder` AS `placeholder`,`r`.`shared_internal` AS `shared_internal`,`r`.`shared_external` AS `shared_external`,`r`.`locale` AS `locale`,`r`.`name_de` AS `name_de`,`r`.`name_en` AS `name_en`,`r`.`name_fr` AS `name_fr`,`r`.`description_de` AS `description_de`,`r`.`description_en` AS `description_en`,`r`.`description_fr` AS `description_fr`,`r`.`servings_count` AS `servings_count`,`r`.`source_description_de` AS `source_description_de`,`r`.`source_description_en` AS `source_description_en`,`r`.`source_description_fr` AS `source_description_fr`,`r`.`source_url` AS `source_url`,`r`.`created` AS `created`,`r`.`modified` AS `modified`,`r`.`published` AS `published`,`r`.`difficulty` AS `difficulty`,`r`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,ifnull(`p`.`picture_id`,0) AS `picture_id`,ifnull(`p`.`picture_sortindex`,0) AS `picture_sortindex`,ifnull(`p`.`picture_name`,'') AS `picture_name`,ifnull(`p`.`picture_description`,'') AS `picture_description`,ifnull(`p`.`picture_hash`,'') AS `picture_hash`,ifnull(`p`.`picture_filename`,'') AS `picture_filename`,ifnull(`p`.`picture_full_path`,'') AS `picture_full_path`,cast(ifnull(`p`.`picture_uploaded`,'2000-01-01 00:00:00') as datetime) AS `picture_uploaded`,ifnull(`p`.`picture_width`,0) AS `picture_width`,ifnull(`p`.`picture_height`,0) AS `picture_height`,`rv`.`views` AS `views`,`rc`.`cooked` AS `cooked`,`v`.`votesum` AS `votesum`,`v`.`votes` AS `votes`,`v`.`avgvotes` AS `avgvotes`,`rr`.`votesum` AS `ratesum`,`rr`.`votes` AS `ratings`,`rr`.`avgvotes` AS `avgratings`,`s`.`stepscount` AS `stepscount`,ifnull(`s`.`preparationtime`,-1) AS `preparationtime`,ifnull(`s`.`cookingtime`,-1) AS `cookingtime`,ifnull(`s`.`chilltime`,-1) AS `chilltime` from ((((((`recipes` `r` left join `recipe_pictures` `p` on(`p`.`recipe_id` = `r`.`recipe_id` and `p`.`picture_sortindex` = 0)) join `voting_cooked` `rc` on(`rc`.`recipe_id` = `r`.`recipe_id`)) join `voting_views` `rv` on(`rv`.`recipe_id` = `r`.`recipe_id`)) join `voting_hearts` `v` on(`v`.`recipe_id` = `r`.`recipe_id`)) join `voting_difficulty` `rr` on(`rr`.`recipe_id` = `r`.`recipe_id`)) join `allrecipessteps` `s` on(`s`.`recipe_id` = `r`.`recipe_id`)) group by `r`.`recipe_id`,`r`.`user_id`,`r`.`edit_user_id`,`r`.`aigenerated`,`r`.`localized`,`r`.`placeholder`,`r`.`shared_internal`,`r`.`shared_external`,`r`.`locale`,`r`.`name_de`,`r`.`name_en`,`r`.`name_fr`,`r`.`description_de`,`r`.`description_en`,`r`.`description_fr`,`r`.`servings_count`,`r`.`source_description_de`,`r`.`source_description_en`,`r`.`source_description_fr`,`r`.`source_url`,`r`.`created`,`r`.`modified`,`r`.`published`,`r`.`difficulty`,`r`.`ingredientsGroupByStep`,`p`.`picture_id`,`p`.`picture_sortindex`,`p`.`picture_name`,`p`.`picture_description`,`p`.`picture_hash`,`p`.`picture_filename`,`p`.`picture_full_path`,`p`.`picture_uploaded`,`p`.`picture_width`,`p`.`picture_height`,`rv`.`views`,`rc`.`cooked`,`v`.`votesum`,`v`.`votes`,`v`.`avgvotes`,`s`.`stepscount`,`s`.`preparationtime`,`s`.`cookingtime`,`s`.`chilltime`;
+
+ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrecipes_nouser` AS select `allrecipes`.`recipe_id` AS `recipe_id`,`allrecipes`.`user_id` AS `user_id`,`allrecipes`.`edit_user_id` AS `edit_user_id`,`allrecipes`.`aigenerated` AS `aigenerated`,`allrecipes`.`localized` AS `localized`,`allrecipes`.`placeholder` AS `placeholder`,`allrecipes`.`shared_internal` AS `shared_internal`,`allrecipes`.`shared_external` AS `shared_external`,`allrecipes`.`locale` AS `locale`,`allrecipes`.`name_de` AS `name_de`,`allrecipes`.`name_en` AS `name_en`,`allrecipes`.`name_fr` AS `name_fr`,`allrecipes`.`description_de` AS `description_de`,`allrecipes`.`description_en` AS `description_en`,`allrecipes`.`description_fr` AS `description_fr`,`allrecipes`.`servings_count` AS `servings_count`,`allrecipes`.`source_description_de` AS `source_description_de`,`allrecipes`.`source_description_en` AS `source_description_en`,`allrecipes`.`source_description_fr` AS `source_description_fr`,`allrecipes`.`source_url` AS `source_url`,`allrecipes`.`created` AS `created`,`allrecipes`.`modified` AS `modified`,`allrecipes`.`published` AS `published`,`allrecipes`.`difficulty` AS `difficulty`,`allrecipes`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,`allrecipes`.`picture_id` AS `picture_id`,`allrecipes`.`picture_sortindex` AS `picture_sortindex`,`allrecipes`.`picture_name` AS `picture_name`,`allrecipes`.`picture_description` AS `picture_description`,`allrecipes`.`picture_hash` AS `picture_hash`,`allrecipes`.`picture_filename` AS `picture_filename`,`allrecipes`.`picture_full_path` AS `picture_full_path`,`allrecipes`.`picture_uploaded` AS `picture_uploaded`,`allrecipes`.`picture_width` AS `picture_width`,`allrecipes`.`picture_height` AS `picture_height`,`allrecipes`.`views` AS `views`,`allrecipes`.`cooked` AS `cooked`,`allrecipes`.`votesum` AS `votesum`,`allrecipes`.`votes` AS `votes`,`allrecipes`.`avgvotes` AS `avgvotes`,`allrecipes`.`ratesum` AS `ratesum`,`allrecipes`.`ratings` AS `ratings`,`allrecipes`.`avgratings` AS `avgratings`,`allrecipes`.`stepscount` AS `stepscount`,`allrecipes`.`preparationtime` AS `preparationtime`,`allrecipes`.`cookingtime` AS `cookingtime`,`allrecipes`.`chilltime` AS `chilltime` from `allrecipes` where `allrecipes`.`shared_external` = 1;
+```
