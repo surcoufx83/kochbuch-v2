@@ -14,7 +14,7 @@ var (
 func DbConnect() {
 	dbuser := os.Getenv("DB_User")
 	dbpassword := os.Getenv("DB_Password")
-	dbhost := os.Getenv("DB_Host")
+	dbhost := os.Getenv("DB_Server")
 	dbport := os.Getenv("DB_Port")
 	dbname := os.Getenv("DB_Name")
 	tz := os.Getenv("TZ")
@@ -28,6 +28,8 @@ func DbConnect() {
 	if tz == "" {
 		tz = "UTC"
 	}
+
+	log.Println("Connecting to database with " + dbuser + ":........@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz)
 
 	dsn := dbuser + ":" + dbpassword + "@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz
 	var err error
