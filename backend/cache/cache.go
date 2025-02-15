@@ -12,14 +12,25 @@ import (
 var (
 	cacheMutex sync.RWMutex
 
-	categoriesCache   map[uint16]types.Category
+	categoriesCache   map[string]types.Category
 	categoriesEtag    time.Time
 	categoriesEtagStr string
 )
 
+type dbCategory struct {
+	ItemId           uint16    `db:"itemid"`
+	ItemName         string    `db:"itemname"`
+	ItemIcon         string    `db:"itemicon"`
+	ItemModified     time.Time `db:"itemmodified"`
+	CategoryId       uint16    `db:"catid"`
+	CategoryName     string    `db:"catname"`
+	CategoryIcon     string    `db:"caticon"`
+	CategoryModified time.Time `db:"catmodified"`
+}
+
 func LoadCategories(db *sqlx.DB) {
 	query := "SELECT * FROM categoryitemsview"
-	var categories []types.Category
+	var categories []dbCategory
 
 	err := db.Select(&categories, query)
 	if err != nil {
@@ -28,13 +39,33 @@ func LoadCategories(db *sqlx.DB) {
 
 	// Build cache
 	cacheMutex.Lock()
-	categoriesCache = make(map[uint16]types.Category)
+	categoriesCache = make(map[string]types.Category)
 	for _, category := range categories {
-		categoriesCache[category.ItemId] = category
-		if category.ItemModified.After(categoriesEtag) {
+
+		tempcat := categoriesCache[category.CategoryName]
+
+		if _, ok := categoriesCache[category.CategoryName]; !ok {
+			tempcat = types.Category{
+				CategoryId:   category.CategoryId,
+				CategoryName: category.CategoryName,
+				CategoryIcon: category.CategoryIcon,
+				Modified:     category.CategoryModified,
+				Items:        []types.CategoryItem{},
+			}
+		}
+
+		tempcat.Items = append(tempcat.Items, types.CategoryItem{
+			CategoryItemId:   category.ItemId,
+			CategoryItemName: category.ItemName,
+			CategoryItemIcon: category.ItemIcon,
+			Modified:         category.ItemModified,
+		})
+		categoriesCache[category.CategoryName] = tempcat
+
+		if category.CategoryModified.After(categoriesEtag) {
+			categoriesEtag = category.CategoryModified
+		} else if category.ItemModified.After(categoriesEtag) {
 			categoriesEtag = category.ItemModified
-		} else if category.CatModified.After(categoriesEtag) {
-			categoriesEtag = category.CatModified
 		}
 	}
 	categoriesEtagStr = categoriesEtag.Format(time.RFC3339)
@@ -43,7 +74,7 @@ func LoadCategories(db *sqlx.DB) {
 	log.Printf("Categories cache ETag: %v", categoriesEtagStr)
 }
 
-func GetCategories() (map[uint16]types.Category, string) {
+func GetCategories() (map[string]types.Category, string) {
 	cacheMutex.RLock()
 	defer cacheMutex.RUnlock()
 
