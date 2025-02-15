@@ -13,7 +13,7 @@ import (
 var (
 	cacheMutex sync.RWMutex
 
-	categoriesCache   map[string]types.Category
+	categoriesCache   map[uint16]types.Category
 	categoriesEtag    time.Time
 	categoriesEtagStr string
 
@@ -27,14 +27,18 @@ var (
 )
 
 type dbCategory struct {
-	ItemId           uint16    `db:"itemid"`
-	ItemName         string    `db:"itemname"`
-	ItemIcon         string    `db:"itemicon"`
-	ItemModified     time.Time `db:"itemmodified"`
-	CategoryId       uint16    `db:"catid"`
-	CategoryName     string    `db:"catname"`
-	CategoryIcon     string    `db:"caticon"`
-	CategoryModified time.Time `db:"catmodified"`
+	ItemId           uint16    `db:"item_id"`
+	ItemNameDe       string    `db:"item_name_de"`
+	ItemNameEn       string    `db:"item_name_en"`
+	ItemNameFr       string    `db:"item_name_fr"`
+	ItemIcon         string    `db:"item_icon"`
+	ItemModified     time.Time `db:"item_modified"`
+	CategoryId       uint16    `db:"cat_id"`
+	CategoryNameDe   string    `db:"cat_name_de"`
+	CategoryNameEn   string    `db:"cat_name_en"`
+	CategoryNameFr   string    `db:"cat_name_fr"`
+	CategoryIcon     string    `db:"cat_icon"`
+	CategoryModified time.Time `db:"cat_modified"`
 }
 
 type DbRecipe struct {
@@ -116,28 +120,48 @@ func LoadCategories(db *sqlx.DB) {
 
 	// Build cache
 	cacheMutex.Lock()
-	categoriesCache = make(map[string]types.Category)
+	categoriesCache = make(map[uint16]types.Category)
 	for _, category := range categories {
 
-		tempcat := categoriesCache[category.CategoryName]
+		tempcat := categoriesCache[category.CategoryId]
 
-		if _, ok := categoriesCache[category.CategoryName]; !ok {
+		if _, ok := categoriesCache[category.CategoryId]; !ok {
 			tempcat = types.Category{
-				Id:       category.CategoryId,
-				Name:     category.CategoryName,
+				Id: category.CategoryId,
+				Localization: map[string]types.NameLocalization{
+					"de": {
+						Name: category.CategoryNameDe,
+					},
+					"en": {
+						Name: category.CategoryNameEn,
+					},
+					"fr": {
+						Name: category.CategoryNameFr,
+					},
+				},
 				Icon:     category.CategoryIcon,
 				Modified: category.CategoryModified,
-				Items:    []types.CategoryItem{},
+				Items:    make(map[uint16]types.CategoryItem),
 			}
 		}
 
-		tempcat.Items = append(tempcat.Items, types.CategoryItem{
-			Id:       category.ItemId,
-			Name:     category.ItemName,
+		tempcat.Items[category.ItemId] = types.CategoryItem{
+			Id: category.ItemId,
+			Localization: map[string]types.NameLocalization{
+				"de": {
+					Name: category.ItemNameDe,
+				},
+				"en": {
+					Name: category.ItemNameEn,
+				},
+				"fr": {
+					Name: category.ItemNameFr,
+				},
+			},
 			Icon:     category.ItemIcon,
 			Modified: category.ItemModified,
-		})
-		categoriesCache[category.CategoryName] = tempcat
+		}
+		categoriesCache[category.CategoryId] = tempcat
 
 		if category.CategoryModified.After(categoriesEtag) {
 			categoriesEtag = category.CategoryModified
@@ -152,7 +176,7 @@ func LoadCategories(db *sqlx.DB) {
 	log.Printf("Categories cache ETag: %v", categoriesEtagStr)
 }
 
-func GetCategories() (map[string]types.Category, string) {
+func GetCategories() (map[uint16]types.Category, string) {
 	cacheMutex.RLock()
 	defer cacheMutex.RUnlock()
 

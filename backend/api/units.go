@@ -25,7 +25,6 @@ func GetUnits(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"units": units,
-			"etag":  etag,
 		})
 	}
 }

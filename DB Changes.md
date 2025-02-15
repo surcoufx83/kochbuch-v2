@@ -138,3 +138,79 @@ ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrec
 
 ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrecipes_nouser` AS select `allrecipes`.`recipe_id` AS `recipe_id`,`allrecipes`.`user_id` AS `user_id`,`allrecipes`.`edit_user_id` AS `edit_user_id`,`allrecipes`.`aigenerated` AS `aigenerated`,`allrecipes`.`localized` AS `localized`,`allrecipes`.`placeholder` AS `placeholder`,`allrecipes`.`shared_internal` AS `shared_internal`,`allrecipes`.`shared_external` AS `shared_external`,`allrecipes`.`locale` AS `locale`,`allrecipes`.`name_de` AS `name_de`,`allrecipes`.`name_en` AS `name_en`,`allrecipes`.`name_fr` AS `name_fr`,`allrecipes`.`description_de` AS `description_de`,`allrecipes`.`description_en` AS `description_en`,`allrecipes`.`description_fr` AS `description_fr`,`allrecipes`.`servings_count` AS `servings_count`,`allrecipes`.`source_description_de` AS `source_description_de`,`allrecipes`.`source_description_en` AS `source_description_en`,`allrecipes`.`source_description_fr` AS `source_description_fr`,`allrecipes`.`source_url` AS `source_url`,`allrecipes`.`created` AS `created`,`allrecipes`.`modified` AS `modified`,`allrecipes`.`published` AS `published`,`allrecipes`.`difficulty` AS `difficulty`,`allrecipes`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,`allrecipes`.`picture_id` AS `picture_id`,`allrecipes`.`picture_sortindex` AS `picture_sortindex`,`allrecipes`.`picture_name` AS `picture_name`,`allrecipes`.`picture_description` AS `picture_description`,`allrecipes`.`picture_hash` AS `picture_hash`,`allrecipes`.`picture_filename` AS `picture_filename`,`allrecipes`.`picture_full_path` AS `picture_full_path`,`allrecipes`.`picture_uploaded` AS `picture_uploaded`,`allrecipes`.`picture_width` AS `picture_width`,`allrecipes`.`picture_height` AS `picture_height`,`allrecipes`.`views` AS `views`,`allrecipes`.`cooked` AS `cooked`,`allrecipes`.`votesum` AS `votesum`,`allrecipes`.`votes` AS `votes`,`allrecipes`.`avgvotes` AS `avgvotes`,`allrecipes`.`ratesum` AS `ratesum`,`allrecipes`.`ratings` AS `ratings`,`allrecipes`.`avgratings` AS `avgratings`,`allrecipes`.`stepscount` AS `stepscount`,`allrecipes`.`preparationtime` AS `preparationtime`,`allrecipes`.`cookingtime` AS `cookingtime`,`allrecipes`.`chilltime` AS `chilltime` from `allrecipes` where `allrecipes`.`shared_external` = 1;
 ```
+
+## Update Categories
+
+```sql
+ALTER TABLE `categories`
+    CHANGE COLUMN `techname` `name_de` VARCHAR(64) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `catid`,
+    ADD COLUMN `name_en` VARCHAR(64) NOT NULL AFTER `name_de`,
+    ADD COLUMN `name_fr` VARCHAR(64) NOT NULL AFTER `name_en`;
+
+UPDATE `categories` SET `name_de` = 'Regional', `name_en` = 'Regional', `name_fr` = 'Régional' WHERE `catid` = 1;
+UPDATE `categories` SET `name_de` = 'Saisonal', `name_en` = 'Seasonal', `name_fr` = 'Saisonnier' WHERE `catid` = 2;
+UPDATE `categories` SET `name_de` = 'Mahlzeit', `name_en` = 'Meal', `name_fr` = 'Repas' WHERE `catid` = 3;
+UPDATE `categories` SET `name_de` = 'Zubereitung', `name_en` = 'Preparation', `name_fr` = 'Préparation' WHERE `catid` = 4;
+UPDATE `categories` SET `name_de` = 'Anlass', `name_en` = 'Occasion', `name_fr` = 'Occasion' WHERE `catid` = 5;
+UPDATE `categories` SET `name_de` = 'Hauptzutat', `name_en` = 'Key Ingredient', `name_fr` = 'Ingrédient clé' WHERE `catid` = 6;
+UPDATE `categories` SET `name_de` = 'Ernährung', `name_en` = 'Diet', `name_fr` = 'Régime' WHERE `catid` = 7;
+UPDATE `categories` SET `name_de` = 'Geschmack', `name_en` = 'Flavor', `name_fr` = 'Saveur' WHERE `catid` = 8;
+UPDATE `categories` SET `name_de` = 'Dessert', `name_en` = 'Dessert', `name_fr` = 'Dessert' WHERE `catid` = 9;
+
+ALTER TABLE `categoryitems`
+    CHANGE COLUMN `techname` `name_de` VARCHAR(64) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `catid`,
+    ADD COLUMN `name_en` VARCHAR(64) NOT NULL AFTER `name_de`,
+    ADD COLUMN `name_fr` VARCHAR(64) NOT NULL AFTER `name_en`;
+
+UPDATE `categoryitems` SET `name_de` = 'Italienisch', `name_en` = 'Italian', `name_fr` = 'Italien' WHERE `itemid` = 15;
+UPDATE `categoryitems` SET `name_de` = 'Spanisch', `name_en` = 'Spanish', `name_fr` = 'Espagnol' WHERE `itemid` = 16;
+UPDATE `categoryitems` SET `name_de` = 'Französisch', `name_en` = 'French', `name_fr` = 'Français' WHERE `itemid` = 17;
+UPDATE `categoryitems` SET `name_de` = 'Schwäbisch', `name_en` = 'Swabian', `name_fr` = 'Souabe' WHERE `itemid` = 18;
+UPDATE `categoryitems` SET `name_de` = 'Asiatisch', `name_en` = 'Asian', `name_fr` = 'Asiatique' WHERE `itemid` = 37;
+UPDATE `categoryitems` SET `name_de` = 'Mexikanisch', `name_en` = 'Mexican', `name_fr` = 'Mexicain' WHERE `itemid` = 38;
+UPDATE `categoryitems` SET `name_de` = 'Indisch', `name_en` = 'Indian', `name_fr` = 'Indien' WHERE `itemid` = 39;
+UPDATE `categoryitems` SET `name_de` = 'Orientalisch', `name_en` = 'Oriental', `name_fr` = 'Oriental' WHERE `itemid` = 40;
+UPDATE `categoryitems` SET `name_de` = 'Frühling', `name_en` = 'Spring', `name_fr` = 'Printemps' WHERE `itemid` = 46;
+UPDATE `categoryitems` SET `name_de` = 'Sommer', `name_en` = 'Summer', `name_fr` = 'Été' WHERE `itemid` = 47;
+UPDATE `categoryitems` SET `name_de` = 'Herbst', `name_en` = 'Autumn', `name_fr` = 'Automne' WHERE `itemid` = 48;
+UPDATE `categoryitems` SET `name_de` = 'Winter', `name_en` = 'Winter', `name_fr` = 'Hiver' WHERE `itemid` = 49;
+UPDATE `categoryitems` SET `name_de` = 'Spargelsaison', `name_en` = 'Asparagus Season', `name_fr` = 'Saison des asperges' WHERE `itemid` = 50;
+UPDATE `categoryitems` SET `name_de` = 'Brunch', `name_en` = 'Brunch', `name_fr` = 'Brunch' WHERE `itemid` = 1;
+UPDATE `categoryitems` SET `name_de` = 'Frühstück', `name_en` = 'Breakfast', `name_fr` = 'Petit-déjeuner' WHERE `itemid` = 2;
+UPDATE `categoryitems` SET `name_de` = 'Mittagessen', `name_en` = 'Lunch', `name_fr` = 'Déjeuner' WHERE `itemid` = 3;
+UPDATE `categoryitems` SET `name_de` = 'Abendessen', `name_en` = 'Dinner', `name_fr` = 'Dîner' WHERE `itemid` = 4;
+UPDATE `categoryitems` SET `name_de` = 'Kaffee und Kuchen', `name_en` = 'Coffee and Cake', `name_fr` = 'Café et gâteau' WHERE `itemid` = 5;
+UPDATE `categoryitems` SET `name_de` = 'Teatime', `name_en` = 'Tea Time', `name_fr` = 'L\'heure du thé' WHERE `itemid` = 6;
+UPDATE `categoryitems` SET `name_de` = 'Snack', `name_en` = 'Snack', `name_fr` = 'Snack' WHERE `itemid` = 7;
+UPDATE `categoryitems` SET `name_de` = 'Beilage', `name_en` = 'Side Dish', `name_fr` = 'Accompagnement' WHERE `itemid` = 14;
+UPDATE `categoryitems` SET `name_de` = 'Grillen', `name_en` = 'Grill', `name_fr` = 'Griller' WHERE `itemid` = 26;
+UPDATE `categoryitems` SET `name_de` = 'Braten', `name_en` = 'Roast', `name_fr` = 'Rôtir' WHERE `itemid` = 27;
+UPDATE `categoryitems` SET `name_de` = 'Backen', `name_en` = 'Bake', `name_fr` = 'Cuire au four' WHERE `itemid` = 28;
+UPDATE `categoryitems` SET `name_de` = 'Dämpfen', `name_en` = 'Steam', `name_fr` = 'Cuire à la vapeur' WHERE `itemid` = 29;
+UPDATE `categoryitems` SET `name_de` = 'Kochen', `name_en` = 'Boil', `name_fr` = 'Bouillir' WHERE `itemid` = 30;
+UPDATE `categoryitems` SET `name_de` = 'Frittieren', `name_en` = 'Deep Fry', `name_fr` = 'Frire' WHERE `itemid` = 31;
+UPDATE `categoryitems` SET `name_de` = 'Party', `name_en` = 'Party', `name_fr` = 'Fête' WHERE `itemid` = 8;
+UPDATE `categoryitems` SET `name_de` = 'Weihnachten', `name_en` = 'Christmas', `name_fr` = 'Noël' WHERE `itemid` = 32;
+UPDATE `categoryitems` SET `name_de` = 'Geburtstag', `name_en` = 'Birthday', `name_fr` = 'Anniversaire' WHERE `itemid` = 33;
+UPDATE `categoryitems` SET `name_de` = 'Grillen', `name_en` = 'Barbecue', `name_fr` = 'Barbecue' WHERE `itemid` = 34;
+UPDATE `categoryitems` SET `name_de` = 'Picknick', `name_en` = 'Picnic', `name_fr` = 'Pique-nique' WHERE `itemid` = 35;
+UPDATE `categoryitems` SET `name_de` = 'Halloween', `name_en` = 'Halloween', `name_fr` = 'Halloween' WHERE `itemid` = 36;
+UPDATE `categoryitems` SET `name_de` = 'Schwein', `name_en` = 'Pork', `name_fr` = 'Porc' WHERE `itemid` = 19;
+UPDATE `categoryitems` SET `name_de` = 'Rind', `name_en` = 'Beef', `name_fr` = 'Bœuf' WHERE `itemid` = 20;
+UPDATE `categoryitems` SET `name_de` = 'Huhn', `name_en` = 'Chicken', `name_fr` = 'Poulet' WHERE `itemid` = 21;
+UPDATE `categoryitems` SET `name_de` = 'Gemüse', `name_en` = 'Vegetables', `name_fr` = 'Légumes' WHERE `itemid` = 22;
+UPDATE `categoryitems` SET `name_de` = 'Pasta', `name_en` = 'Pasta', `name_fr` = 'Pâtes' WHERE `itemid` = 23;
+UPDATE `categoryitems` SET `name_de` = 'Reis', `name_en` = 'Rice', `name_fr` = 'Riz' WHERE `itemid` = 24;
+UPDATE `categoryitems` SET `name_de` = 'Vegetarisch', `name_en` = 'Vegetarian', `name_fr` = 'Végétarien' WHERE `itemid` = 10;
+UPDATE `categoryitems` SET `name_de` = 'Vegan', `name_en` = 'Vegan', `name_fr` = 'Vegan' WHERE `itemid` = 11;
+UPDATE `categoryitems` SET `name_de` = 'Glutenfrei', `name_en` = 'Gluten-Free', `name_fr` = 'Sans gluten' WHERE `itemid` = 25;
+UPDATE `categoryitems` SET `name_de` = 'Scharf', `name_en` = 'Spicy', `name_fr` = 'Épicé' WHERE `itemid` = 12;
+UPDATE `categoryitems` SET `name_de` = 'Fruchtig', `name_en` = 'Fruity', `name_fr` = 'Fruité' WHERE `itemid` = 13;
+UPDATE `categoryitems` SET `name_de` = 'Kuchen', `name_en` = 'Cake', `name_fr` = 'Gâteau' WHERE `itemid` = 41;
+UPDATE `categoryitems` SET `name_de` = 'Torte', `name_en` = 'Pie', `name_fr` = 'Tarte' WHERE `itemid` = 42;
+UPDATE `categoryitems` SET `name_de` = 'Keks', `name_en` = 'Biscuit', `name_fr` = 'Biscuit' WHERE `itemid` = 43;
+UPDATE `categoryitems` SET `name_de` = 'Eiscreme', `name_en` = 'Ice Cream', `name_fr` = 'Glace' WHERE `itemid` = 44;
+UPDATE `categoryitems` SET `name_de` = 'Pudding', `name_en` = 'Pudding', `name_fr` = 'Pudding' WHERE `itemid` = 45;
+
+ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `categoryitemsview` AS select `c`.`catid` AS `cat_id`,`c`.`name_de` AS `cat_name_de`,`c`.`name_en` AS `cat_name_en`,`c`.`name_fr` AS `cat_name_fr`,`c`.`icon` AS `cat_icon`,`c`.`modified` AS `cat_modified`,`i`.`itemid` AS `item_id`,`i`.`name_de` AS `item_name_de`,`i`.`name_en` AS `item_name_en`,`i`.`name_fr` AS `item_name_fr`,`i`.`icon` AS `item_icon`,`i`.`modified` AS `item_modified` from (`categoryitems` `i` join `categories` `c` on(`c`.`catid` = `i`.`catid`));
+```
