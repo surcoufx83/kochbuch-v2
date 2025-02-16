@@ -16,3 +16,7 @@ export type Category = {
     modified: string;
     items: { [id: number]: CategoryItem };
 };
+
+export type UserSelf = {};
+
+export type User = {};

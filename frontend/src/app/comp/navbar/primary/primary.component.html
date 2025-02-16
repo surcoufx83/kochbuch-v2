@@ -1,0 +1,27 @@
+<!-- main top navigation bar-->
+<div class="nav-primary flex items-center p-2 lg:p-3">
+    <!-- brand icon and app name, search field -->
+    <div class="flex grow items-center">
+        <a [routerLink]="['/']" class="flex items-center">
+            <h1 class="mb-0" style="line-height: 1;" aria-labelledby="brand-label">
+                KB
+            </h1>
+            <h4 class="m-0 ps-2 hidden lg:block">
+                {{ Locale.navbar.brand.pageTitle }}
+            </h4>
+            <span class="sr-only" id="brand-label">
+                {{ Locale.navbar.brand.iconLabel }}
+            </span>
+        </a>
+        <div class="flex grow justify-end items-center">
+            <kb-navbar-search></kb-navbar-search>
+        </div>
+    </div>
+    <!-- brand icon and app name, search field -->
+    <div class="flex items-center">
+        <h4 class="m-0">
+            <fa-icon [icon]="Icons.accountNone"></fa-icon>
+        </h4>
+    </div>
+</div>
+<!-- main top navigation bar-->
