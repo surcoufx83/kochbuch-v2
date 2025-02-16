@@ -38,9 +38,6 @@ importers:
       '@fontsource/source-sans-pro':
         specifier: ^5.1.0
         version: 5.1.0
-      '@fortawesome/fontawesome-free':
-        specifier: ^6.7.2
-        version: 6.7.2
       '@tailwindcss/postcss':
         specifier: ^4.0.6
         version: 4.0.6
@@ -951,10 +948,6 @@ packages:
 
   '@fontsource/source-sans-pro@5.1.0':
     resolution: {integrity: sha512-GJijHmnPKwA1G8MqUVOZzbIW8jLBFsJGugAb5/IikvTHHmLp+pJy+g8EhyWbfR8pI04i/EStzW0AzOv0KQEhzg==}
-
-  '@fortawesome/fontawesome-free@6.7.2':
-    resolution: {integrity: sha512-JUOtgFW6k9u4Y+xeIaEiLr3+cjoUPiAuLXoyKOJSia6Duzb7pq+A76P9ZdPDoAoxHdHzq6gE9/jKBGXlZT8FbA==}
-    engines: {node: '>=6'}
 
   '@inquirer/checkbox@4.1.2':
     resolution: {integrity: sha512-PL9ixC5YsPXzXhAZFUPmkXGxfgjkdfZdPEPPmt4kFwQ4LBMDG9n/nHXYRGGZSKZJs+d1sGKWgS2GiPzVRKUdtQ==}
@@ -5449,8 +5442,6 @@ snapshots:
   '@fontsource/cinzel@5.1.1': {}
 
   '@fontsource/source-sans-pro@5.1.0': {}
-
-  '@fortawesome/fontawesome-free@6.7.2': {}
 
   '@inquirer/checkbox@4.1.2(@types/node@22.13.4)':
     dependencies:
