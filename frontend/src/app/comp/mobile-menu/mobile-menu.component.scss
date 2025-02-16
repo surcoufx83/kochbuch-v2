@@ -1,6 +1,5 @@
-.menu {
-    border-radius: 0 0 var(--spacing) var(--spacing);
-    border: 1px solid var(--kb-text-color);
-    border-top: 0;
-    background-color: var(--kb-bg-navbar2-back-color);
+button {
+    background-color: var(--kb-menu-buttons-bg);
+    border-radius: var(--kb-menu-buttons-border-radius) !important;
+    color: var(--kb-menu-buttons-color);
 }

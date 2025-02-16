@@ -1,5 +1,5 @@
 import { faCircleUser as faRegularCircleUser } from '@fortawesome/free-regular-svg-icons';
-import { faBars, faBarsStaggered, faCircleUser as faSolidCircleUser, faUnlock, faUnlockAlt, faUnlockKeyhole } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faBarsStaggered, faPlus, faSearch, faCircleUser as faSolidCircleUser, faUnlock, faUnlockAlt, faUnlockKeyhole } from '@fortawesome/free-solid-svg-icons';
 
 
 export const IconLib = {
@@ -8,4 +8,6 @@ export const IconLib = {
     login: faUnlockKeyhole,
     menu: faBars,
     menuOpened: faBarsStaggered,
+    recipeNew: faPlus,
+    search: faSearch,
 };

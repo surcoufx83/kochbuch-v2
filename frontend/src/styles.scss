@@ -11,6 +11,9 @@
         --kb-bg-navbar2-back-color: #003366 !important;
         --kb-text-color: #f5eae1 !important;
         --kb-navbar-text-color: #f5eae1 !important;
+        --kb-menu-buttons-bg: #003366;
+        --kb-menu-buttons-color: #f5eae1;
+        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
     }
 
     body {
@@ -35,6 +38,9 @@
     --kb-bg-navbar2-back-color: #003366;
     --kb-text-color: #141514;
     --kb-navbar-text-color: #f5eae1;
+    --kb-menu-buttons-bg: #003366;
+    --kb-menu-buttons-color: #f5eae1;
+    --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
 }
 
 a {
@@ -56,9 +62,6 @@ body {
 
 button {
     cursor: pointer;
-    padding: calc(var(--spacing)* .5) calc(var(--spacing)* 2);
-    margin-left: calc(var(--spacing)* 1);
-    margin-right: calc(var(--spacing)* 1);
     border-radius: var(--spacing);
 
     &.btn {
