@@ -7,13 +7,14 @@
     :root {
         // palette: https://coolors.co/282a28-f5eae1-fee440-00bbf9-00f5d4
         --kb-bg-back-color: #282a28 !important;
+        --kb-border-color: #5a5e5a !important;
         --kb-bg-navbar-back-color: #002448 !important;
         --kb-bg-navbar2-back-color: #003366 !important;
         --kb-text-color: #f5eae1 !important;
         --kb-navbar-text-color: #f5eae1 !important;
-        --kb-menu-buttons-bg: #003366;
-        --kb-menu-buttons-color: #f5eae1;
-        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
+        --kb-menu-buttons-bg: #003366 !important;
+        --kb-menu-buttons-color: #f5eae1 !important;
+        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3) !important;
     }
 
     body {
@@ -27,13 +28,8 @@
     --kb-font-default: "Source Sans Pro";
     --kb-font-heading: "Cinzel";
     --kb-font-size-default: 1.05rem;
-    --kb-m0: 0 !important;
-    --kb-m1: .25rem !important;
-    --kb-m2: .5rem !important;
-    --kb-m3: 1rem !important;
-    --kb-m4: 1.5rem !important;
-    --kb-m5: 3rem !important;
     --kb-bg-back-color: #f5eae1;
+    --kb-border-color: #282a28;
     --kb-bg-navbar-back-color: #002448;
     --kb-bg-navbar2-back-color: #003366;
     --kb-text-color: #141514;
@@ -45,6 +41,10 @@
 
 a {
     cursor: pointer;
+}
+
+.bg-navbar2-back {
+    background-color: var(--kb-bg-navbar2-back-color) !important;
 }
 
 body {
@@ -118,6 +118,15 @@ h5 {
 
 h6 {
     font-size: var(--kb-font-size-default);
+}
+
+input {
+    line-height: 1.5;
+    color: var(--kb-text-color);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    background-color: var(--kb-bg-back-color);
+    border: 1px solid var(--kb-border-color);
+    border-radius: calc(var(--spacing) * 2);
 }
 
 p {

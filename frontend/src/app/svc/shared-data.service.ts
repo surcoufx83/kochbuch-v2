@@ -17,8 +17,14 @@ export class SharedDataService {
   private _categoryItemsMapping = new BehaviorSubject<{ [key: number]: number }>({}); // item_id -> category_id
   public Categories = this._categories.asObservable();
 
-  private _showMenuBar = new BehaviorSubject<boolean>(false);
-  public ShowMenuBar = this._showMenuBar.asObservable();
+  private _searchIsActive = new BehaviorSubject<boolean>(false);
+  public SearchIsActive = this._searchIsActive.asObservable();
+
+  private _searchPhrase = new BehaviorSubject<string>('');
+  public SearchPhrase = this._searchPhrase.asObservable();
+
+  private _searchCategories = new BehaviorSubject<string[]>([]);
+  public SearchCategories = this._searchCategories.asObservable();
 
   constructor(
     private apiService: ApiService,
@@ -78,8 +84,9 @@ export class SharedDataService {
     this._pageTitle.next(title);
   }
 
-  public ToggleMenuBar(): void {
-    this._showMenuBar.next(!this._showMenuBar.value);
+  public SetSearchState(newstate: boolean): void {
+    if (newstate !== this._searchIsActive.value)
+      this._searchIsActive.next(newstate);
   }
 
 }

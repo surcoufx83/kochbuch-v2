@@ -17,7 +17,6 @@ export class PrimaryComponent implements OnInit, OnDestroy {
 
   Icons = IconLib;
   LoggedIn = signal<boolean>(false);
-  ShowMenu = signal<boolean>(false);
   User = signal<UserSelf | false>(false);
 
   private subs: Subscription[] = [];
@@ -44,13 +43,5 @@ export class PrimaryComponent implements OnInit, OnDestroy {
       this.LoggedIn.set(state);
       this.User.set(this.apiService.User ?? false);
     }));
-    this.subs.push(this.sharedDataService.ShowMenuBar.subscribe((state) => {
-      this.ShowMenu.set(state);
-    }));
   }
-
-  toggleMenuBar(): void {
-    this.sharedDataService.ToggleMenuBar();
-  }
-
 }

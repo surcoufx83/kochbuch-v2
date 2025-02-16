@@ -1,17 +1,30 @@
-<div class="flex items-center justify-center p-4">
-    <a [routerLink]="['/search']">
-        <button class="btn mx-3 p-3">
-            <fa-icon [icon]="Icons.search" [fixedWidth]="true" size="lg"></fa-icon>
-        </button>
-    </a>
-    <a [routerLink]="['/me']">
-        <button class="btn mx-3 p-3">
-            <fa-icon [icon]="LoggedIn() ? Icons.account : Icons.accountNone" [fixedWidth]="true" size="lg"></fa-icon>
-        </button>
-    </a>
-    <a [routerLink]="['/create']" [queryParams]="{ ref: 'mobile-menu', source: 'new' }">
-        <button class="btn mx-3 p-3">
-            <fa-icon [icon]="Icons.recipeNew" [fixedWidth]="true" size="lg"></fa-icon>
-        </button>
-    </a>
+<div class="p-4">
+    <div class="flex items-center justify-center">
+        <a [routerLink]="Url() !== '/search' ? ['/search'] : undefined"
+            (click)="!SearchState() ? onStartSearch() : undefined"
+            [ngClass]="{ 'w-full': SearchState(), 'lg:w-lg': SearchState()  }">
+            <button class="btn p-3 flex items-center"
+                [ngClass]="{ 'mx-3': !SearchState(), 'py-2': SearchState(), 'w-full': SearchState() }">
+                <fa-icon [icon]="!SearchState() ? Icons.search : Icons.searchClose" [fixedWidth]="true" size="lg"
+                    (click)="onClickSearchButtonIcon($event)"></fa-icon>
+                <input type="search" name="mobmenu-search" id="mobmenu-search" #search class="mx-2 grow"
+                    [ngClass]="{ hidden: !SearchState() }"
+                    [ngStyle]="{ 'background-color': 'var(--kb-bg-navbar2-back-color)' }">
+                <fa-icon [icon]="Icons.searchStart" [fixedWidth]="true" size="lg"
+                    [ngClass]="{ hidden: !SearchState() }"></fa-icon>
+            </button>
+        </a>
+        <a [routerLink]="['/me']" [ngClass]="{ 'hidden': SearchState(), 'lg:block': SearchState() }">
+            <button class="btn mx-3 p-3">
+                <fa-icon [icon]="LoggedIn() ? Icons.account : Icons.accountNone" [fixedWidth]="true"
+                    size="lg"></fa-icon>
+            </button>
+        </a>
+        <a [routerLink]="['/create']" [queryParams]="{ ref: 'mobile-menu', source: 'new' }"
+            [ngClass]="{ 'hidden': SearchState(), 'lg:block': SearchState() }">
+            <button class="btn mx-3 p-3">
+                <fa-icon [icon]="Icons.recipeNew" [fixedWidth]="true" size="lg"></fa-icon>
+            </button>
+        </a>
+    </div>
 </div>
