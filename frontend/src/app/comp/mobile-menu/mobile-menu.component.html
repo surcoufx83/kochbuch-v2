@@ -1,0 +1,28 @@
+<div class="menu mx-2 p-2">
+    <div class="mb-3">
+        <a [routerLink]="['/login']" class="p-2">
+            Anmelden
+        </a>
+    </div>
+    <div class="flex">
+        <div class="flex flex-col grow">
+            <a [routerLink]="['/new']" class="p-2">
+                Neue Rezepte
+            </a>
+            <a [routerLink]="['/all']" class="p-2">
+                Alle Rezepte
+            </a>
+        </div>
+        <div class="flex flex-col items-end">
+            <a [routerLink]="['/login']" class="p-2">
+                DE
+            </a>
+            <a [routerLink]="['/new']" class="p-2">
+                EN
+            </a>
+            <a [routerLink]="['/all']" class="p-2">
+                FR
+            </a>
+        </div>
+    </div>
+</div>

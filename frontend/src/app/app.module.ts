@@ -13,6 +13,8 @@ import { PrimaryComponent } from './comp/navbar/primary/primary.component';
 import { SecondaryComponent } from './comp/navbar/secondary/secondary.component';
 import { RecipesComponent } from './comp/recipes/recipes.component';
 import { RecipeComponent } from './comp/recipe/recipe.component';
+import { MobileMenuComponent } from './comp/mobile-menu/mobile-menu.component';
+import { VerticalSeparatorComponent } from './comp/vertical-separator/vertical-separator.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +24,9 @@ import { RecipeComponent } from './comp/recipe/recipe.component';
     PrimaryComponent,
     SecondaryComponent,
     RecipesComponent,
-    RecipeComponent
+    RecipeComponent,
+    MobileMenuComponent,
+    VerticalSeparatorComponent
   ],
   imports: [
     BrowserModule,

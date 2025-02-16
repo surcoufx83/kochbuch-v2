@@ -18,9 +18,9 @@
         </div>
     </div>
     <!-- brand icon and app name, search field -->
-    <div class="flex items-center select-none">
-        <h4 class="m-0 cursor-pointer text-center w-[24px]" (click)="onToggleSecondaryNavbar.emit()">
-            <fa-icon [icon]="!isSecondaryNavbarVisible() ? Icons.menu : Icons.menuOpened"></fa-icon>
+    <div class="flex lg:hidden items-center select-none">
+        <h4 class="m-0 cursor-pointer text-center w-[24px]" (click)="toggleMenuBar()">
+            <fa-icon [icon]="!ShowMenu() ? Icons.menu : Icons.menuOpened"></fa-icon>
         </h4>
     </div>
 </div>

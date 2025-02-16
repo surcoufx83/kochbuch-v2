@@ -17,6 +17,9 @@ export class SharedDataService {
   private _categoryItemsMapping = new BehaviorSubject<{ [key: number]: number }>({}); // item_id -> category_id
   public Categories = this._categories.asObservable();
 
+  private _showMenuBar = new BehaviorSubject<boolean>(false);
+  public ShowMenuBar = this._showMenuBar.asObservable();
+
   constructor(
     private apiService: ApiService,
   ) {
@@ -73,6 +76,10 @@ export class SharedDataService {
 
   public SetTitle(title: string): void {
     this._pageTitle.next(title);
+  }
+
+  public ToggleMenuBar(): void {
+    this._showMenuBar.next(!this._showMenuBar.value);
   }
 
 }
