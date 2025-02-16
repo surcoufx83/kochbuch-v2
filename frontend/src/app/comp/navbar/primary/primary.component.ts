@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { IconLib } from '../../../icons';
 import { L10nService } from '../../../svc/l10n.service';
 import { L10nLocale } from '../../../svc/locales/types';
+import { ApiService } from '../../../svc/api.service';
+import { UserSelf } from '../../../types';
 
 @Component({
   selector: 'kb-navbar-primary',
@@ -11,11 +13,22 @@ import { L10nLocale } from '../../../svc/locales/types';
 })
 export class PrimaryComponent {
 
+  @Input({ required: true }) isSecondaryNavbarVisible = signal<boolean>(false);
+  @Output() onToggleSecondaryNavbar = new EventEmitter();
+
   Icons = IconLib;
+  LoggedIn = signal<boolean>(false);
+  User = signal<UserSelf | false>(false);
 
   constructor(
+    apiService: ApiService,
     private l10nService: L10nService,
-  ) { }
+  ) {
+    apiService.isLoggedIn.subscribe((state) => {
+      this.LoggedIn.set(state);
+      this.User.set(apiService.User ?? false);
+    });
+  }
 
   get Locale(): L10nLocale {
     return this.l10nService.Locale;

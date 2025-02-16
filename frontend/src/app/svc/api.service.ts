@@ -32,4 +32,8 @@ export class ApiService {
     return reply;
   }
 
+  public get User(): UserSelf | undefined {
+    return this._user;
+  }
+
 }

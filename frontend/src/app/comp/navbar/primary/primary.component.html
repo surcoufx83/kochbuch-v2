@@ -1,5 +1,5 @@
 <!-- main top navigation bar-->
-<div class="nav-primary flex items-center p-2 lg:p-3">
+<div class="nav-primary flex items-center px-3 py-2 lg:px-5 lg:py-3">
     <!-- brand icon and app name, search field -->
     <div class="flex grow items-center">
         <a [routerLink]="['/']" class="flex items-center">
@@ -13,14 +13,14 @@
                 {{ Locale.navbar.brand.iconLabel }}
             </span>
         </a>
-        <div class="flex grow justify-end items-center">
+        <div class="flex grow justify-end items-center mx-3">
             <kb-navbar-search></kb-navbar-search>
         </div>
     </div>
     <!-- brand icon and app name, search field -->
-    <div class="flex items-center">
-        <h4 class="m-0">
-            <fa-icon [icon]="Icons.accountNone"></fa-icon>
+    <div class="flex items-center select-none">
+        <h4 class="m-0 cursor-pointer text-center w-[24px]" (click)="onToggleSecondaryNavbar.emit()">
+            <fa-icon [icon]="!isSecondaryNavbarVisible() ? Icons.menu : Icons.menuOpened"></fa-icon>
         </h4>
     </div>
 </div>

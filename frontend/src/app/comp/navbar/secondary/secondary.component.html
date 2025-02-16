@@ -1,5 +1,26 @@
 <!-- secondary top navigation bar-->
-<div class="nav-secondary flex items-center px-2 py-1 lg:px-3 lg:py-2">
-    asdasd
+<div class="nav-secondary flex justify-center items-center px-3 py-2 lg:px-5 lg:py-3">
+    <div role="list">
+        <a [routerLink]="['/new']" class="border-right">
+            <button class="no-style" type="button" role="listitem">
+                Neue Rezepte
+            </button>
+        </a>
+        <a [routerLink]="['/cat', 30, 'Kochen']" class="border-right">
+            <button class="no-style" type="button" role="listitem">
+                Kochen
+            </button>
+        </a>
+        <a [routerLink]="['/cat', 28, 'Backen']" class="border-right">
+            <button class="no-style" type="button" role="listitem">
+                Backen
+            </button>
+        </a>
+        <a [routerLink]="['/all']">
+            <button class="no-style" type="button" role="listitem">
+                Alle Rezepte
+            </button>
+        </a>
+    </div>
 </div>
 <!-- secondary top navigation bar-->

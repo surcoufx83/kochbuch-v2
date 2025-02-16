@@ -11,6 +11,8 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { SearchComponent } from './comp/navbar/search/search.component';
 import { PrimaryComponent } from './comp/navbar/primary/primary.component';
 import { SecondaryComponent } from './comp/navbar/secondary/secondary.component';
+import { RecipesComponent } from './comp/recipes/recipes.component';
+import { RecipeComponent } from './comp/recipe/recipe.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +20,9 @@ import { SecondaryComponent } from './comp/navbar/secondary/secondary.component'
     NavbarComponent,
     SearchComponent,
     PrimaryComponent,
-    SecondaryComponent
+    SecondaryComponent,
+    RecipesComponent,
+    RecipeComponent
   ],
   imports: [
     BrowserModule,

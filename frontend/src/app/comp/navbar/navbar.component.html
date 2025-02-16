@@ -1,8 +1,11 @@
 <nav class="fixed inset-x-0 z-50">
     <div class="primary-navbar">
-        <kb-navbar-primary></kb-navbar-primary>
+        <kb-navbar-primary [isSecondaryNavbarVisible]="SecondaryNavbar"
+            (onToggleSecondaryNavbar)="SecondaryNavbar.set(!SecondaryNavbar())"></kb-navbar-primary>
     </div>
+    @if (SecondaryNavbar()) {
     <div class="secondary-navbar">
         <kb-navbar-secondary></kb-navbar-secondary>
     </div>
+    }
 </nav>
