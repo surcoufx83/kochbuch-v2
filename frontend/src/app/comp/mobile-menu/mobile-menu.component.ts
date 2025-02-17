@@ -63,7 +63,7 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
       if (e instanceof NavigationEnd) {
         this.IsSearchUrl.set(e.urlAfterRedirects.startsWith('/search'));
         if (e.urlAfterRedirects.startsWith('/search')) {
-          this.onStartSearch();
+          this.onStartSearch(this.searchField?.nativeElement);
         }
         else {
           this.onCancelSearch();
@@ -87,21 +87,12 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
     }
   }
 
-  private focusInterval?: number;
-  private focusCheck: number = 0;
-  onStartSearch(): void {
+  onStartSearch(searchField?: HTMLInputElement): void {
     if (this.SearchState())
       return;
     this.sharedDataService.SetSearchState(true);
     this.SearchState.set(true);
-    this.focusCheck = 0;
-    this.focusInterval = setInterval(() => {
-      if (this.searchField || this.focusCheck > 10) {
-        clearInterval(this.focusInterval)
-        this.searchField?.nativeElement.focus();
-      }
-      this.focusCheck++;
-    }, 100);
+    searchField?.focus();
   }
 
   onSubmitSearch($event: Event): void {

@@ -3,7 +3,7 @@
         <div class="flex items-center justify-center">
             <!-- multifunctional search button -->
             <a [routerLink]="!IsSearchUrl() ? ['/search'] : undefined"
-                (click)="!SearchState() ? onStartSearch() : undefined"
+                (click)="!SearchState() ? onStartSearch(search) : undefined"
                 [ngClass]="{ 'w-full': SearchState(), 'lg:w-lg': SearchState(), 'w-[75px]': !SearchState() }"
                 class="transition-[width] duration-150 ease-in-out">
 
