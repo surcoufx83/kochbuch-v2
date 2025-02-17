@@ -32,8 +32,35 @@ export class ApiService {
     return reply;
   }
 
+  public post(urlfragment: string, payload: any): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
+    let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null>();
+    console.log(`POST /api/${urlfragment}`, payload);
+    this.http.post<unknown>(`/api/${urlfragment}`, payload, { observe: 'response' })
+      .pipe(first()).subscribe({
+        next: (res) => {
+          reply.next(res)
+        },
+        error: (err) => {
+          reply.next(err)
+        }
+      });
+    return reply;
+  }
+
+  public reportError(report: PageErrorReport): void {
+    this.post('errorreport', report).pipe(first()).subscribe(() => { });
+  }
+
   public get User(): UserSelf | undefined {
     return this._user;
   }
 
 }
+
+export type PageErrorReport = {
+  url: string,
+  errorType: string,
+  errorDescription: string,
+  exception?: Error,
+  additionalData?: any
+};

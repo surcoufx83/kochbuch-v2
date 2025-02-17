@@ -1,9 +1,9 @@
 .primary-navbar {
     background-color: var(--kb-bg-navbar-back-color);
-    color: var(--kb-navbar-text-color);
+    color: var(--kb-navbar-text-color) !important;
 }
 
 .secondary-navbar {
     background-color: var(--kb-bg-navbar2-back-color);
-    color: var(--kb-navbar-text-color);
+    color: var(--kb-navbar-text-color) !important;
 }

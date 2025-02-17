@@ -7,6 +7,9 @@ import { UserSelf } from '../../types';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../svc/api.service';
 import { L10nLocale } from '../../svc/locales/types';
+import { format } from "date-fns";
+import { enGB } from "date-fns/locale";
+import { FormControl, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'kb-mobile-menu',
@@ -20,9 +23,14 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
 
   Icons = IconLib;
   LoggedIn = signal<boolean>(false);
+  SearchPlaceholder = signal<string>('');
   SearchState = signal<boolean>(false);
   User = signal<UserSelf | false>(false);
-  Url = signal<string>('');
+  IsSearchUrl = signal<boolean>(false);
+
+  SearchForm = new FormGroup({
+    phrase: new FormControl<string>('')
+  })
 
   private subs: Subscription[] = [];
 
@@ -31,7 +39,11 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
     private l10nService: L10nService,
     private router: Router,
     private sharedDataService: SharedDataService,
-  ) { }
+  ) {
+    const month = format(Date.now(), 'LLL', { locale: enGB }).toLowerCase();
+    const templocale = this.Locale.floatingMenu.searchButton.searchInput.placeholder as { [key: string]: string };
+    this.SearchPlaceholder.set(templocale[month]);
+  }
 
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
@@ -49,23 +61,23 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
     }));
     this.subs.push(this.router.events.subscribe((e) => {
       if (e instanceof NavigationEnd) {
-        console.log(e.urlAfterRedirects);
-        if (e.urlAfterRedirects === '/search') {
+        this.IsSearchUrl.set(e.urlAfterRedirects.startsWith('/search'));
+        if (e.urlAfterRedirects.startsWith('/search')) {
           this.onStartSearch();
         }
         else {
           this.onCancelSearch();
         }
-        this.Url.set(e.urlAfterRedirects);
       }
-    }));
-    this.subs.push(this.sharedDataService.SearchIsActive.subscribe((state) => {
-      console.log('SearchIsActive', state)
-      this.SearchState.set(state)
     }));
     this.subs.push(this.sharedDataService.SearchCategories.subscribe((cats) => {
       console.log(cats)
     }));
+  }
+
+  onCancelSearch(): void {
+    this.sharedDataService.SetSearchState(false);
+    this.SearchState.set(false);
   }
 
   onClickSearchButtonIcon($event: MouseEvent): void {
@@ -81,6 +93,7 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
     if (this.SearchState())
       return;
     this.sharedDataService.SetSearchState(true);
+    this.SearchState.set(true);
     this.focusCheck = 0;
     this.focusInterval = setInterval(() => {
       if (this.searchField || this.focusCheck > 10) {
@@ -88,12 +101,18 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
         this.searchField?.nativeElement.focus();
       }
       this.focusCheck++;
-      console.log(this.searchField)
     }, 100);
   }
 
-  onCancelSearch(): void {
-    this.sharedDataService.SetSearchState(false);
+  onSubmitSearch($event: Event): void {
+    if (!this.SearchForm.controls.phrase.value)
+      return;
+
+    this.router.navigate(['/search'], {
+      queryParams: {
+        search: this.SearchForm.controls.phrase.value ?? ''
+      }
+    })
   }
 
 }

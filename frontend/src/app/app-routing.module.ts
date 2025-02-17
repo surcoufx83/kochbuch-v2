@@ -5,6 +5,7 @@ import { RecipeComponent } from './comp/recipe/recipe.component';
 import { SearchComponent } from './comp/search/search.component';
 import { MeComponent } from './comp/me/me.component';
 import { EditorComponent } from './comp/editor/editor.component';
+import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
 
 const routes: Routes = [
   { path: 'search', component: SearchComponent },
@@ -16,7 +17,8 @@ const routes: Routes = [
   { path: 'r', component: RecipesComponent, pathMatch: 'full' },
   { path: 'r/:id', component: RecipeComponent, pathMatch: 'full' },
   { path: 'r/:id/edit', component: EditorComponent, pathMatch: 'full' },
-  { path: '**', component: RecipesComponent }
+  { path: '', component: RecipesComponent, pathMatch: 'full' },
+  { path: '**', component: MissingLinkComponent }
 ];
 
 @NgModule({

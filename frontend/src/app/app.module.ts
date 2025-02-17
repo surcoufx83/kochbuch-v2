@@ -16,6 +16,8 @@ import { RecipeComponent } from './comp/recipe/recipe.component';
 import { MobileMenuComponent } from './comp/mobile-menu/mobile-menu.component';
 import { MeComponent } from './comp/me/me.component';
 import { EditorComponent } from './comp/editor/editor.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
 
 @NgModule({
   declarations: [
@@ -29,11 +31,13 @@ import { EditorComponent } from './comp/editor/editor.component';
     MobileMenuComponent,
     MeComponent,
     EditorComponent,
+    MissingLinkComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    FontAwesomeModule
+    FontAwesomeModule,
+    ReactiveFormsModule
   ],
   providers: [
     provideHttpClient(),

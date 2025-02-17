@@ -6,15 +6,17 @@
 
     :root {
         // palette: https://coolors.co/282a28-f5eae1-fee440-00bbf9-00f5d4
-        --kb-bg-back-color: #282a28 !important;
-        --kb-border-color: #5a5e5a !important;
-        --kb-bg-navbar-back-color: #002448 !important;
-        --kb-bg-navbar2-back-color: #003366 !important;
-        --kb-text-color: #f5eae1 !important;
-        --kb-navbar-text-color: #f5eae1 !important;
-        --kb-menu-buttons-bg: #003366 !important;
-        --kb-menu-buttons-color: #f5eae1 !important;
-        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3) !important;
+        --kb-bg-back-color: #282a28;
+        --kb-bg-back-color-rgb: 40, 42, 40;
+        --kb-border-color: #5a5e5a;
+        --kb-bg-navbar-back-color: #002448;
+        --kb-bg-navbar2-back-color: #003366;
+        --kb-text-color: #f5eae1;
+        --kb-navbar-text-color: #f5eae1;
+        --kb-menu-buttons-bg: #003366;
+        --kb-menu-buttons-color: #f5eae1;
+        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
+        --kb-link-color: #375a0c;
     }
 
     body {
@@ -23,28 +25,42 @@
 
 }
 
+@media (prefers-color-scheme: light) {
+
+    :root {
+        // palette: https://coolors.co/f5eae1-141514-fee440-00bbf9-00f5d4
+        --kb-bg-back-color: #f5eae1;
+        --kb-bg-back-color-rgb: 245, 234, 225;
+        --kb-border-color: #282a28;
+        --kb-bg-navbar-back-color: #002448;
+        --kb-bg-navbar2-back-color: #003366;
+        --kb-text-color: #141514;
+        --kb-navbar-text-color: #f5eae1;
+        --kb-menu-buttons-bg: #003366;
+        --kb-menu-buttons-color: #f5eae1;
+        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
+        --kb-link-color: #375a0c;
+    }
+
+}
+
 :root {
-    // palette: https://coolors.co/f5eae1-141514-fee440-00bbf9-00f5d4
     --kb-font-default: "Source Sans Pro";
     --kb-font-heading: "Cinzel";
     --kb-font-size-default: 1.05rem;
-    --kb-bg-back-color: #f5eae1;
-    --kb-border-color: #282a28;
-    --kb-bg-navbar-back-color: #002448;
-    --kb-bg-navbar2-back-color: #003366;
-    --kb-text-color: #141514;
-    --kb-navbar-text-color: #f5eae1;
-    --kb-menu-buttons-bg: #003366;
-    --kb-menu-buttons-color: #f5eae1;
-    --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
 }
 
 a {
     cursor: pointer;
+    color: var(--kb-link-color);
 }
 
 .bg-navbar2-back {
     background-color: var(--kb-bg-navbar2-back-color) !important;
+}
+
+.bg-body-rgba-0\.8 {
+    background-color: rgba(var(--kb-bg-back-color-rgb), .8);
 }
 
 body {
@@ -60,7 +76,8 @@ body {
     border-right: 1px solid var(--kb-text-color);
 }
 
-button {
+button,
+.button-like {
     cursor: pointer;
     border-radius: var(--spacing);
 
@@ -129,9 +146,30 @@ input {
     border-radius: calc(var(--spacing) * 2);
 }
 
+nav a,
+h1,
+h4 {
+    color: var(--kb-navbar-text-color) !important;
+}
+
 p {
     margin-top: 0;
     margin-bottom: 1rem;
+}
+
+.rounded {
+    border-radius: calc(var(--spacing) * 2);
+}
+
+ul.no-bullets {
+    display: flex;
+    flex-direction: column;
+
+    >li {
+        position: relative;
+        display: block;
+        padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+    }
 }
 
 @media (min-width: 1200px) {
