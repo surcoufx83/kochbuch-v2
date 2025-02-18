@@ -59,8 +59,6 @@ export class ApiService {
 
 export type PageErrorReport = {
   url: string,
-  errorType: string,
-  errorDescription: string,
-  exception?: Error,
-  additionalData?: any
+  error: string,
+  severity: 'I' | 'W' | 'E',
 };

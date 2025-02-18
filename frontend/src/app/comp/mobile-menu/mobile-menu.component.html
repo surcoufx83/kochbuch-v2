@@ -34,7 +34,8 @@
             <!-- multifunctional search button -->
 
             <!-- button to navigate to login/profile page -->
-            <a [routerLink]="['/me']" [ngClass]="{ 'w-[75px]': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
+            <a [routerLink]="['/me']" [queryParams]="{ ref: 'mobile-menu', source: 'profile' }"
+                [ngClass]="{ 'w-[75px]': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
                 class="transition-[width] duration-150 ease-in-out self-stretch">
                 <button class="btn mx-3 p-3">
                     <fa-icon [icon]="LoggedIn() ? Icons.account : Icons.accountNone" [fixedWidth]="true"

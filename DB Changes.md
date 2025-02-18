@@ -214,3 +214,31 @@ UPDATE `categoryitems` SET `name_de` = 'Pudding', `name_en` = 'Pudding', `name_f
 
 ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `categoryitemsview` AS select `c`.`catid` AS `cat_id`,`c`.`name_de` AS `cat_name_de`,`c`.`name_en` AS `cat_name_en`,`c`.`name_fr` AS `cat_name_fr`,`c`.`icon` AS `cat_icon`,`c`.`modified` AS `cat_modified`,`i`.`itemid` AS `item_id`,`i`.`name_de` AS `item_name_de`,`i`.`name_en` AS `item_name_en`,`i`.`name_fr` AS `item_name_fr`,`i`.`icon` AS `item_icon`,`i`.`modified` AS `item_modified` from (`categoryitems` `i` join `categories` `c` on(`c`.`catid` = `i`.`catid`));
 ```
+
+## Logging Changes
+
+```sql
+DELETE FROM `apilog`;
+
+ALTER TABLE `apilog`
+    AUTO_INCREMENT=1,
+    ADD COLUMN `reporter` SET('Server','Client') NOT NULL AFTER `severity`,
+    CHANGE COLUMN `host` `host` VARCHAR(128) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `reporter`,
+    ADD COLUMN `agent` VARCHAR(256) NOT NULL DEFAULT '' AFTER `host`,
+    CHANGE COLUMN `request_type` `request_type` VARCHAR(12) NOT NULL DEFAULT '' COMMENT 'GET, POST, etc' COLLATE 'utf8mb4_general_ci' AFTER `agent`,
+    CHANGE COLUMN `request_uri` `request_uri` VARCHAR(256) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `request_type`,
+    CHANGE COLUMN `request_length` `request_length` BIGINT(20) NOT NULL DEFAULT 0 AFTER `request_uri`,
+    CHANGE COLUMN `message` `message` VARCHAR(1024) NOT NULL DEFAULT '' COLLATE 'utf8mb4_general_ci' AFTER `request_length`,
+    DROP COLUMN `phpclass`,
+    DROP COLUMN `phpmethod`,
+    DROP COLUMN `phpline`,
+    DROP COLUMN `payload`,
+    ADD INDEX `host` (`host`),
+    ADD INDEX `agent` (`agent`),
+    ADD INDEX `request_uri` (`request_uri`),
+    ADD INDEX `severity` (`severity`);
+
+ALTER TABLE `apilog`
+    CHANGE COLUMN `severity` `severity` SET('I','W','E') NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `when`;
+
+```

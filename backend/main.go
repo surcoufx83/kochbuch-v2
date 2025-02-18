@@ -31,6 +31,7 @@ func main() {
 	router.GET("/categories", api.GetCategories)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
+	router.POST("/errorreport", api.PostErrorReport)
 
 	// Create HTTP server
 	srv := &http.Server{

@@ -28,8 +28,8 @@ export class MissingLinkComponent implements OnInit {
   ngOnInit(): void {
     this.apiService.reportError({
       url: this.router.url,
-      errorType: 'Not found',
-      errorDescription: 'Route not configured'
+      error: 'Route not configured',
+      severity: 'E'
     });
   }
 
