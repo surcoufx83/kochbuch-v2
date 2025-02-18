@@ -1,1 +1,6 @@
-<p>me works!</p>
+@if (LoggedIn()) {
+
+}
+@else {
+<kb-me-no-user [PageRef]="PageRef()" [PageSrc]="PageSrc()"></kb-me-no-user>
+}

@@ -18,6 +18,7 @@ import { MeComponent } from './comp/me/me.component';
 import { EditorComponent } from './comp/editor/editor.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
+import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
 
 @NgModule({
   declarations: [
@@ -32,6 +33,7 @@ import { MissingLinkComponent } from './comp/missing-link/missing-link.component
     MeComponent,
     EditorComponent,
     MissingLinkComponent,
+    MeNoUserComponent,
   ],
   imports: [
     BrowserModule,
