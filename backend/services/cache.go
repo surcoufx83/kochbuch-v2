@@ -11,16 +11,17 @@ import (
 )
 
 var (
-	cacheMutex sync.RWMutex
-
+	categoriesMutex   sync.RWMutex
 	categoriesCache   map[uint16]types.Category
 	categoriesEtag    time.Time
 	categoriesEtagStr string
 
+	publicRecipesMutex   sync.RWMutex
 	publicRecipesCache   map[uint32]types.Recipe
 	publicRecipesEtag    time.Time
 	publicRecipesEtagStr string
 
+	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time
 	unitsEtagStr string
@@ -119,7 +120,7 @@ func LoadCategories(db *sqlx.DB) {
 	}
 
 	// Build cache
-	cacheMutex.Lock()
+	categoriesMutex.Lock()
 	categoriesCache = make(map[uint16]types.Category)
 	for _, category := range categories {
 
@@ -171,14 +172,14 @@ func LoadCategories(db *sqlx.DB) {
 	}
 
 	categoriesEtagStr = hash(categoriesEtag.Format(time.RFC3339) + strconv.Itoa(len(categories)))
-	cacheMutex.Unlock()
+	categoriesMutex.Unlock()
 	log.Printf("Loaded %d categories into cache", len(categories))
 	log.Printf("Categories cache ETag: %v", categoriesEtagStr)
 }
 
 func GetCategories() (map[uint16]types.Category, string) {
-	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
+	categoriesMutex.RLock()
+	defer categoriesMutex.RUnlock()
 
 	return categoriesCache, categoriesEtagStr
 }
@@ -193,7 +194,7 @@ func LoadUnits(db *sqlx.DB) {
 	}
 
 	// Build cache
-	cacheMutex.Lock()
+	unitsMutex.Lock()
 	unitsCache = make(map[uint8]types.Unit)
 	for _, unit := range units {
 		unitsCache[unit.Id] = types.Unit{
@@ -226,14 +227,14 @@ func LoadUnits(db *sqlx.DB) {
 		}
 	}
 	unitsEtagStr = hash(categoriesEtag.Format(time.RFC3339) + strconv.Itoa(len(units)))
-	cacheMutex.Unlock()
+	unitsMutex.Unlock()
 	log.Printf("Loaded %d units into cache", len(units))
 	log.Printf("Units cache ETag: %v", unitsEtagStr)
 }
 
 func GetUnits() (map[uint8]types.Unit, string) {
-	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
+	unitsMutex.RLock()
+	defer unitsMutex.RUnlock()
 
 	return unitsCache, unitsEtagStr
 }
@@ -248,7 +249,7 @@ func LoadPublicRecipes(db *sqlx.DB) {
 	}
 
 	// Build cache
-	cacheMutex.Lock()
+	publicRecipesMutex.Lock()
 	publicRecipesCache = make(map[uint32]types.Recipe)
 	for _, recipe := range recipes {
 
@@ -297,14 +298,14 @@ func LoadPublicRecipes(db *sqlx.DB) {
 	}
 
 	publicRecipesEtagStr = hash(publicRecipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
-	cacheMutex.Unlock()
+	publicRecipesMutex.Unlock()
 	log.Printf("Loaded %d recipes into cache", len(recipes))
 	log.Printf("Public recipes cache ETag: %v", publicRecipesEtagStr)
 }
 
 func GetPublicRecipes() (map[uint32]types.Recipe, string) {
-	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
+	publicRecipesMutex.RLock()
+	defer publicRecipesMutex.RUnlock()
 
 	return publicRecipesCache, publicRecipesEtagStr
 }

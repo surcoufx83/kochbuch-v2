@@ -20,6 +20,9 @@ func main() {
 	// Connect to MySQL database
 	services.DbConnect()
 
+	// Check connection to Nextcloud API
+	services.NcConnect()
+
 	// Load entities into cache
 	services.LoadCategories(services.Db)
 	services.LoadUnits(services.Db)
@@ -29,9 +32,10 @@ func main() {
 	router := gin.Default()
 	router.GET("/", api.GetIndex)
 	router.GET("/categories", api.GetCategories)
+	router.GET("/login/params", api.GetLoginParams)
+	router.POST("/errorreport", api.PostErrorReport)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
-	router.POST("/errorreport", api.PostErrorReport)
 
 	// Create HTTP server
 	srv := &http.Server{

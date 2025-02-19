@@ -242,3 +242,19 @@ ALTER TABLE `apilog`
     CHANGE COLUMN `severity` `severity` SET('I','W','E') NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `when`;
 
 ```
+
+## Login handling
+
+```sql
+CREATE TABLE `user_login_states` (
+    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `state` VARCHAR(36) NOT NULL COLLATE 'utf8mb4_general_ci',
+    `ipagent` VARCHAR(280) NOT NULL COLLATE 'utf8mb4_general_ci',
+    `created` DATETIME NOT NULL DEFAULT current_timestamp(),
+    `until` DATETIME NOT NULL DEFAULT (current_timestamp() + interval 7 day),
+    PRIMARY KEY (`state`) USING BTREE,
+    UNIQUE INDEX `ipagent` (`ipagent`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB;
+```
