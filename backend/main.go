@@ -30,9 +30,12 @@ func main() {
 
 	// Set up Gin router
 	router := gin.Default()
+	router.Use(api.CheckValidHostnames())
+
+	// Set up routes
 	router.GET("/", api.GetIndex)
 	router.GET("/categories", api.GetCategories)
-	router.GET("/login/params", api.GetLoginParams)
+	router.GET("/params", api.GetApiParams)
 	router.POST("/errorreport", api.PostErrorReport)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)

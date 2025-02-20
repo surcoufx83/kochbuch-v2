@@ -1,3 +1,3 @@
 docker build -t kochbuch .
 docker container rm kochbuch-dev
-docker run -p 80:80 -e DB_Server=172.17.0.2 -e DB_User=kbdev -e DB_Password=foo -e DB_Name=kochbuch -e NC_Host=my.cloud.local -e NC_ClientId=myclient -e NC_ClientSecret=mysecret -e NC_RedirUrl=http://mykochbuch.url/ --name kochbuch-dev kochbuch
+docker run -p 80:80 -e KB_Domains=localhost -e DB_Server=172.17.0.2 -e DB_User=kbdev -e DB_Password=foo -e DB_Name=kochbuch -e NC_Host=my.cloud.local -e NC_ClientId=myclient -e NC_ClientSecret=mysecret -e NC_RedirUrl=http://mykochbuch.url/ --name kochbuch-dev kochbuch

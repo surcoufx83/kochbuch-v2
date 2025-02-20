@@ -248,8 +248,9 @@ ALTER TABLE `apilog`
 ```sql
 CREATE TABLE `user_login_states` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-    `state` VARCHAR(36) NOT NULL COLLATE 'utf8mb4_general_ci',
-    `ipagent` VARCHAR(280) NOT NULL COLLATE 'utf8mb4_general_ci',
+    `state` VARCHAR(36) NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
+    `remoteaddr` VARCHAR(32) NOT NULL COLLATE 'utf8mb4_general_ci',
+    `useragent` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci',
     `created` DATETIME NOT NULL DEFAULT current_timestamp(),
     `until` DATETIME NOT NULL DEFAULT (current_timestamp() + interval 7 day),
     PRIMARY KEY (`state`) USING BTREE,

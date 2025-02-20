@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
+	ValidDomains map[string]bool
+
 	ncRedirectUrl   string
 	ncHost          string
 	ncClientId      string
@@ -19,8 +24,12 @@ var (
 	ncTokenEndpoint string
 
 	statesMutex sync.RWMutex
-	statesCache map[int]dbNextcloudState
+	statesCache map[string]dbNextcloudState
 )
+
+type LoginParams struct {
+	Url string `json:"url"`
+}
 
 type NextcloudStatus struct {
 	Installed       bool   `json:"installed"`
@@ -36,12 +45,24 @@ type NextcloudStatus struct {
 type dbNextcloudState struct {
 	Id      int       `db:"id"`
 	State   string    `db:"state"`
-	Ipagent string    `db:"ipagent"`
+	Ip      string    `db:"remoteaddr"`
+	Ua      string    `db:"useragent"`
 	Created time.Time `db:"created"`
 	Until   time.Time `db:"until"`
 }
 
 func NcConnect() {
+	domains := os.Getenv("KB_Domains")
+	if domains == "" {
+		log.Fatal("Missing ENV variable KB_Domains")
+	}
+
+	ValidDomains = make(map[string]bool)
+	for _, domain := range strings.Split(domains, ",") {
+		ValidDomains[domain] = true
+	}
+	log.Printf("Registered valid domains %v", ValidDomains)
+
 	ncRedirectUrl = os.Getenv("NC_RedirUrl")
 	ncHost = os.Getenv("NC_Host")
 	ncClientId = os.Getenv("NC_ClientId")
@@ -52,7 +73,7 @@ func NcConnect() {
 	if ncRedirectUrl == "" {
 		log.Fatal("Missing ENV variable NC_RedirUrl")
 	}
-	ncRedirectUrl = ncRedirectUrl + "/login/oauth2"
+	ncRedirectUrl = strings.TrimSuffix(ncRedirectUrl, "/") + "/login/oauth2"
 
 	if ncHost == "" {
 		log.Fatal("Missing ENV variable NC_Host")
@@ -81,7 +102,7 @@ func NcConnect() {
 		log.Fatalf("Failed to decode Nextcloud status JSON: %v", err)
 	}
 
-	_, err = url.Parse("https://" + ncHost + "/")
+	baseurl, err := url.Parse("https://" + ncHost + "/")
 	if err != nil {
 		log.Fatalf("Failed parsing ENV variable NC_Host: %v", err)
 	}
@@ -91,7 +112,26 @@ func NcConnect() {
 		log.Fatalf("Failed parsing ENV variable NC_RedirUrl: %v", err)
 	}
 
+	authUrl := *baseurl
+	authUrl.Path, _ = url.JoinPath(authUrl.Path, "index.php/apps/oauth2/authorize")
+	params := url.Values{}
+	params.Add("state", "_state_")
+	params.Add("scope", "")
+	params.Add("response_type", "code")
+	params.Add("approval_prompt", "auto")
+	params.Add("redirect_uri", "ncRedirectUrl")
+	params.Add("client_id", "ncClientId")
+	authUrl.RawQuery = params.Encode()
+	ncAuthEndpoint = authUrl.String()
+
+	tokenUrl := *baseurl
+	tokenUrl.Path, _ = url.JoinPath(tokenUrl.Path, "index.php/apps/oauth2/api/v1/token")
+	ncTokenEndpoint = tokenUrl.String()
+
 	log.Printf("Nextcloud instance found with version %v", ncStatus.VersionString)
+	log.Printf("  - AuthEndpoint = %v", ncAuthEndpoint)
+	log.Printf("  - TokenEndpoint = %v", ncTokenEndpoint)
+	log.Printf("  - RedirectUrl = %v", ncRedirectUrl)
 	ncLoadStatesCache()
 
 }
@@ -107,9 +147,9 @@ func ncLoadStatesCache() {
 
 	// Build cache
 	statesMutex.Lock()
-	statesCache = make(map[int]dbNextcloudState)
+	statesCache = make(map[string]dbNextcloudState)
 	for _, state := range states {
-		statesCache[state.Id] = state
+		statesCache[state.State] = state
 	}
 	statesMutex.Unlock()
 
@@ -127,4 +167,60 @@ func ncLoadStatesCache() {
 		log.Printf("Deleted %d outdated items from user_login_states", len(statesCache))
 	}
 
+}
+
+func GetNcLoginParams(c *gin.Context) (newstate string, params LoginParams, err error) {
+	state, err := c.Cookie("session")
+
+	if state == "" || err != nil {
+		// No session cookie
+		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
+		if err != nil {
+			return "", LoginParams{}, err
+		}
+	}
+
+	value := LoginParams{
+		Url: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
+	}
+	return state, value, nil
+}
+
+func generateState(remoteAddr string, userAgent string) (state string, err error) {
+	log.Printf("Generate new state for %v", remoteAddr)
+
+	query := "INSERT INTO `user_login_states`(`remoteaddr`, `useragent`) VALUES(?, ?)"
+	stmt, err := Db.Prepare(query)
+	if err != nil {
+		log.Printf("Failed to prepare user_login_states query: %v", err)
+		return "", err
+	}
+
+	result, err := stmt.Exec(remoteAddr, userAgent)
+	if err != nil {
+		log.Printf("Failed to insert into user_login_states: %v", err)
+		return "", err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("Failed to get insert id from user_login_states: %v", err)
+		return "", err
+	}
+
+	ncLoadStatesCache()
+	statesMutex.RLock()
+	defer statesMutex.RUnlock()
+
+	for _, val := range statesCache {
+		if val.Id == int(id) {
+			return val.State, nil
+		}
+	}
+
+	return "", nil
+}
+
+func revokeState(id int) {
+	log.Printf("Revoke outdated state id %d", id)
 }

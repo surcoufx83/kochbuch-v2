@@ -15,7 +15,9 @@ export class ApiService {
 
   constructor(
     private http: HttpClient,
-  ) { }
+  ) {
+    this.get('/params').pipe(first()).subscribe(() => { })
+  }
 
   public get(urlfragment: string, etag?: string): Subject<HttpResponse<unknown> | HttpErrorResponse | null> {
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | null>();
