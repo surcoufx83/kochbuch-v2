@@ -35,8 +35,9 @@ func main() {
 	// Set up routes
 	router.GET("/", api.GetIndex)
 	router.GET("/categories", api.GetCategories)
-	router.GET("/params", api.GetAppParams)
 	router.POST("/errorreport", api.PostErrorReport)
+	router.POST("/login", api.PostOauth2Login)
+	router.GET("/params", api.GetAppParams)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
 

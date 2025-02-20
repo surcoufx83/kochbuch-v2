@@ -2,6 +2,7 @@ package api
 
 import (
 	"kochbuch-v2-backend/services"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -21,6 +22,7 @@ func CheckValidHostnames() gin.HandlerFunc {
 // GetAppParams handles the /api/params endpoint
 func GetAppParams(c *gin.Context) {
 	state, params, err := services.GetApplicationParams(c)
+	log.Printf("Generated Params: %v", state)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return

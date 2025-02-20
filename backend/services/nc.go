@@ -1,7 +1,9 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -28,7 +30,7 @@ var (
 )
 
 type AppParams struct {
-	LoginUrl string `json:"url"`
+	LoginUrl string `json:"loginUrl"`
 }
 
 type NextcloudStatus struct {
@@ -42,13 +44,93 @@ type NextcloudStatus struct {
 	ExtendedSupport bool   `json:"extendedSupport"`
 }
 
+type nextcloudTokenResponse struct {
+	AccessToken  string `json:"access_token" binding:"required"`
+	TokenType    string `json:"token_type" binding:"required"`
+	ExpiresIn    int    `json:"expires_in" binding:"required"`
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 type dbNextcloudState struct {
-	Id      int       `db:"id"`
-	State   string    `db:"state"`
-	Ip      string    `db:"remoteaddr"`
-	Ua      string    `db:"useragent"`
-	Created time.Time `db:"created"`
-	Until   time.Time `db:"until"`
+	Id           int            `db:"id"`
+	State        string         `db:"state"`
+	Ip           string         `db:"remoteaddr"`
+	Ua           string         `db:"useragent"`
+	Created      time.Time      `db:"created"`
+	Until        sql.NullTime   `db:"until"`
+	Granted      sql.NullTime   `db:"granted"`
+	AccessToken  sql.NullString `db:"accesstoken"`
+	RefreshToken sql.NullString `db:"refreshtoken"`
+	Expires      sql.NullTime   `db:"expires"`
+}
+
+func generateState(remoteAddr string, userAgent string) (state string, err error) {
+	log.Printf("Generate new state for %v", remoteAddr)
+
+	query := "INSERT INTO `user_login_states`(`remoteaddr`, `useragent`) VALUES(?, ?)"
+	stmt, err := Db.Prepare(query)
+	if err != nil {
+		log.Printf("Failed to prepare user_login_states query: %v", err)
+		return "", err
+	}
+
+	result, err := stmt.Exec(remoteAddr, userAgent)
+	if err != nil {
+		log.Printf("Failed to insert into user_login_states: %v", err)
+		return "", err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("Failed to get insert id from user_login_states: %v", err)
+		return "", err
+	}
+
+	ncLoadStatesCache()
+	statesMutex.RLock()
+	defer statesMutex.RUnlock()
+
+	for _, val := range statesCache {
+		if val.Id == int(id) {
+			return val.State, nil
+		}
+	}
+
+	return "", nil
+}
+
+func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, err error) {
+	state, err := c.Cookie("session")
+
+	if state == "" || err != nil {
+		// No session cookie
+		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
+		if err != nil {
+			return "", AppParams{}, err
+		}
+	}
+
+	statesMutex.RLock()
+	clientstate, exists := statesCache[state]
+	statesMutex.RUnlock()
+	log.Printf("Clientstate: %v", clientstate)
+	log.Printf("exists: %v", exists)
+	log.Printf("Cookie: %v", state)
+	if exists {
+		log.Printf("Cookie found in cache: %v", clientstate.State)
+		state = clientstate.State
+	} else {
+		log.Println("Cookie state not in cache")
+		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
+		if err != nil {
+			return "", AppParams{}, err
+		}
+	}
+
+	value := AppParams{
+		LoginUrl: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
+	}
+	return state, value, nil
 }
 
 func NcConnect() {
@@ -119,8 +201,8 @@ func NcConnect() {
 	params.Add("scope", "")
 	params.Add("response_type", "code")
 	params.Add("approval_prompt", "auto")
-	params.Add("redirect_uri", "ncRedirectUrl")
-	params.Add("client_id", "ncClientId")
+	params.Add("redirect_uri", ncRedirectUrl)
+	params.Add("client_id", ncClientId)
 	authUrl.RawQuery = params.Encode()
 	ncAuthEndpoint = authUrl.String()
 
@@ -155,7 +237,12 @@ func ncLoadStatesCache() {
 
 	log.Printf("Loaded %d login states into cache", len(statesCache))
 
-	query = "DELETE FROM `user_login_states` WHERE `until` < current_timestamp()"
+	go ncDeleteExpiredStates()
+
+}
+
+func ncDeleteExpiredStates() {
+	query := "DELETE FROM `user_login_states` WHERE `until` IS NOT NULL AND `until` < current_timestamp()"
 
 	result, err := Db.Exec(query)
 	if err != nil {
@@ -166,59 +253,113 @@ func ncLoadStatesCache() {
 	if rows > 0 {
 		log.Printf("Deleted %d outdated items from user_login_states", len(statesCache))
 	}
-
 }
 
-func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, err error) {
-	state, err := c.Cookie("session")
-
-	if state == "" || err != nil {
-		// No session cookie
-		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
-		if err != nil {
-			return "", AppParams{}, err
-		}
+func NcLoginCallback(state string, code string) (bool, error) {
+	statesMutex.RLock()
+	clientstate, exists := statesCache[state]
+	statesMutex.RUnlock()
+	if !exists {
+		log.Printf("Failed getting state object from cache %v", state)
+		return false, nil
 	}
 
-	value := AppParams{
-		LoginUrl: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
+	tokenResp, err := ncLoginCallbackSendRequest(code)
+	if err != nil {
+		return false, err
 	}
-	return state, value, nil
-}
 
-func generateState(remoteAddr string, userAgent string) (state string, err error) {
-	log.Printf("Generate new state for %v", remoteAddr)
+	clientstate.AccessToken = sql.NullString{String: tokenResp.AccessToken, Valid: true}
+	clientstate.Granted = sql.NullTime{Time: time.Now(), Valid: true}
+	clientstate.Expires = sql.NullTime{Time: time.Now().Add(time.Second * time.Duration(tokenResp.ExpiresIn)), Valid: true}
+	clientstate.RefreshToken = sql.NullString{String: tokenResp.RefreshToken, Valid: true}
+	clientstate.Until = sql.NullTime{Valid: false}
 
-	query := "INSERT INTO `user_login_states`(`remoteaddr`, `useragent`) VALUES(?, ?)"
+	query := "UPDATE `user_login_states` SET `until` = NULL, `granted` = ?, `accesstoken` = ?, `refreshtoken` = ?, `expires` = ? WHERE `id` = ? LIMIT 1"
+
 	stmt, err := Db.Prepare(query)
 	if err != nil {
 		log.Printf("Failed to prepare user_login_states query: %v", err)
-		return "", err
+		return false, err
 	}
 
-	result, err := stmt.Exec(remoteAddr, userAgent)
+	result, err := stmt.Exec(clientstate.Granted, clientstate.AccessToken, clientstate.RefreshToken, clientstate.Expires, clientstate.Id)
 	if err != nil {
-		log.Printf("Failed to insert into user_login_states: %v", err)
-		return "", err
+		log.Printf("Failed to update user_login_states: %v", err)
+		return false, err
 	}
 
-	id, err := result.LastInsertId()
+	count, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("Failed to get insert id from user_login_states: %v", err)
-		return "", err
+		log.Printf("Failed to get rows count from result: %v", err)
+		return false, err
+	}
+	if count == 0 {
+		log.Println("Update did not change any rows")
+		return false, err
 	}
 
-	ncLoadStatesCache()
-	statesMutex.RLock()
-	defer statesMutex.RUnlock()
+	statesMutex.Lock()
+	statesCache[state] = clientstate
+	statesMutex.Unlock()
 
-	for _, val := range statesCache {
-		if val.Id == int(id) {
-			return val.State, nil
-		}
+	go loadUserProfile(clientstate)
+
+	return true, nil
+}
+
+func ncLoginCallbackSendRequest(code string) (nextcloudTokenResponse, error) {
+	// Prepare request payload
+	data := url.Values{}
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", code)
+	data.Set("redirect_uri", ncRedirectUrl)
+
+	req, err := http.NewRequest("POST", ncTokenEndpoint, strings.NewReader(data.Encode()))
+	if err != nil {
+		log.Printf("Failed retrieving access_token: %v", err)
+		return nextcloudTokenResponse{}, err
 	}
 
-	return "", nil
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(ncClientId, ncSecret)
+
+	start := time.Now()
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nextcloudTokenResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Failed to read token response body: %v", err)
+		return nextcloudTokenResponse{}, err
+	}
+
+	// Decode the JSON response into nextcloudTokenResponse
+	var tokenResp nextcloudTokenResponse
+	if err := json.Unmarshal(bodyBytes, &tokenResp); err != nil {
+		log.Printf("Failed to decode token response: %v", err)
+		log.Println(string(bodyBytes))
+		return nextcloudTokenResponse{}, err
+	}
+
+	elapsed := time.Since(start)
+	// Extract seconds and milliseconds
+	secs := int64(elapsed / time.Second)
+	msecs := int64((elapsed % time.Second) / time.Millisecond)
+	log.Printf("Nextcloud token response: %v", tokenResp)
+	log.Printf("                    took: %d.%d", secs, msecs)
+	return tokenResp, nil
+}
+
+func loadUserProfile(state dbNextcloudState) {
+	log.Printf("Getting user profile from Nextcloud instance for state %v", state.State)
+
 }
 
 func revokeState(id int) {

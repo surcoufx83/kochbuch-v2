@@ -1,0 +1,25 @@
+<div class="container w-xl">
+
+    <h3 class="text-center pb-3">
+        Anmeldung wird abgeschlossen
+    </h3>
+
+    <div class="flex items-center">
+        <fa-icon [icon]="Icons.spinner" animation="spin-reverse" size="2x" class="me-4"></fa-icon>
+        @if (Busy() == 1) {
+        Bitte hab noch kurz Geduld. Deine Anmeldung wird gespeichert, es geht gleich weiter...
+        }
+        @else if (Busy() == 2) {
+        Dein Benutzerkonto wird abgerufen...
+        }
+        @else if (Busy() == false) {
+        @if (Failed()) {
+        Es gab einen Fehler beim Synchronisieren Deines Benutzerkontos. Bitte versuche das noch einmal 😔
+        }
+        @else {
+        Fertig. Du wirst weitergeleitet...
+        }
+        }
+    </div>
+
+</div>

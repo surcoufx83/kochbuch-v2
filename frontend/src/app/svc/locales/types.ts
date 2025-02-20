@@ -1,8 +1,18 @@
 export type L10nLocale = {
-    navbar: {
-        brand: {
-            pageTitle: string,
-            iconLabel: string,
+    errorPages: {
+        loginToCreateRecipe: {
+            title: string,
+            paragraphLine1: string,
+            paragraphLine2: string,
+        },
+        routeNotFound: {
+            title1: string,
+            title2: string,
+            paragraphLine1: string,
+            paragraphLine2: string,
+            optionLink1: string,
+            optionLink2: string,
+            optionLink3: string,
         }
     },
     floatingMenu: {
@@ -28,5 +38,15 @@ export type L10nLocale = {
             }
             submitIconAriaLabel: string,
         }
+    },
+    login: {
+        loginWithNcButton: string,
     }
+    navbar: {
+        brand: {
+            pageTitle: string,
+            iconLabel: string,
+        }
+    }
+
 }

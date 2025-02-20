@@ -1,10 +1,20 @@
 import { L10nLocale } from "./types";
 
 export const KB_En: L10nLocale = {
-    navbar: {
-        brand: {
-            pageTitle: "Cookbook",
-            iconLabel: "Cookbook icon of this website"
+    errorPages: {
+        loginToCreateRecipe: {
+            title: "Make it your own cookbook 🧑‍🍳",
+            paragraphLine1: "You need to log in to use your own digital cookbook.",
+            paragraphLine2: "Usage is voluntary and free, but limited to family and friends. Logging in requires a Nextcloud account provided by us."
+        },
+        routeNotFound: {
+            title1: "Oops!",
+            title2: "Page not found 🧑‍🍳🚫",
+            paragraphLine1: "It looks like you've stumbled upon an error!",
+            paragraphLine2: "But no worries! Here are a few options:",
+            optionLink1: "Back to the main menu – You'll surely find some tasty alternatives there.",
+            optionLink2: "Try a different ingredient – Maybe a new search will lead you to the desired recipe.",
+            optionLink3: "Or something completely different – How about a coffee? ☕ Or maybe a slice of cake? 🍰"
         }
     },
     floatingMenu: {
@@ -29,6 +39,15 @@ export const KB_En: L10nLocale = {
                 }
             },
             submitIconAriaLabel: "This button starts the search with the entered search term. After submission, you will be redirected to the results page."
+        }
+    },
+    login: {
+        loginWithNcButton: "Log in with Nextcloud account"
+    },
+    navbar: {
+        brand: {
+            pageTitle: "Cookbook",
+            iconLabel: "Cookbook icon of this website"
         }
     }
 }

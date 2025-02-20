@@ -19,6 +19,7 @@ import { EditorComponent } from './comp/editor/editor.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
 import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
+import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth2-login-callback.component';
 
 @NgModule({
   declarations: [
@@ -34,6 +35,7 @@ import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
     EditorComponent,
     MissingLinkComponent,
     MeNoUserComponent,
+    Oauth2LoginCallbackComponent,
   ],
   imports: [
     BrowserModule,

@@ -1,22 +1,26 @@
 <div class="container w-xl">
 
     <h3 class="text-center pb-3">
-        Mach es zu Deinem Kochbuch 🧑‍🍳
+        {{ Locale.errorPages.loginToCreateRecipe.title }}
     </h3>
 
     <p>
-        Du musst dich anmelden, um dein eigenes digitales Kochbuch zu verwenden.<br />
-        Die Benutzung ist freiwillig und kostenfrei, aber Familie und Freunden vorbehalten. Die Anmeldung erfordert ein
-        von
-        uns bereitgestelltes Nextcloud Konto.
+        {{ Locale.errorPages.loginToCreateRecipe.paragraphLine1 }}<br />
+        {{ Locale.errorPages.loginToCreateRecipe.paragraphLine2 }}
     </p>
 
     <div class="text-center mb-10">
-        <a href="https://google.com">
+        @if (LoginUrl) {
+        <a [href]="LoginUrl">
             <button type="button" class="btn bg-navbar2-back color-body px-3 py-2">
-                Hier anmelden
+                <fa-icon [icon]="Icons.nextcloud" class="me-1"></fa-icon>
+                {{ Locale.login.loginWithNcButton }}
             </button>
         </a>
+        }
+        @else {
+        <p>Login disabled due to technical issues. Sorry!</p>
+        }
     </div>
 
 </div>

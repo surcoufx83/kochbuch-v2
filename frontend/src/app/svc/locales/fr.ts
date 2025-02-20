@@ -1,10 +1,20 @@
 import { L10nLocale } from "./types";
 
 export const KB_Fr: L10nLocale = {
-    navbar: {
-        brand: {
-            pageTitle: "Livre de recettes",
-            iconLabel: "Icône du livre de recettes de ce site web"
+    errorPages: {
+        loginToCreateRecipe: {
+            title: "Faites-en votre propre livre de cuisine 🧑‍🍳",
+            paragraphLine1: "Vous devez vous connecter pour utiliser votre propre livre de cuisine numérique.",
+            paragraphLine2: "L'utilisation est facultative et gratuite, mais réservée à la famille et aux amis. La connexion nécessite un compte Nextcloud fourni par nous."
+        },
+        routeNotFound: {
+            title1: "Oups !",
+            title2: "Page introuvable 🧑‍🍳🚫",
+            paragraphLine1: "On dirait que vous êtes tombé sur une erreur !",
+            paragraphLine2: "Mais pas d’inquiétude ! Voici quelques options :",
+            optionLink1: "Retour au menu principal – Vous y trouverez sûrement de délicieuses alternatives.",
+            optionLink2: "Essayer un autre ingrédient – Peut-être qu'une nouvelle recherche vous mènera à la recette souhaitée.",
+            optionLink3: "Ou quelque chose de complètement différent – Que diriez-vous d'un café ? ☕ Ou peut-être d'une part de gâteau ? 🍰"
         }
     },
     floatingMenu: {
@@ -29,6 +39,15 @@ export const KB_Fr: L10nLocale = {
                 }
             },
             submitIconAriaLabel: "Ce bouton lance la recherche avec le terme saisi. Après validation, vous serez redirigé vers la page de résultats."
+        }
+    },
+    login: {
+        loginWithNcButton: "Se connecter avec un compte Nextcloud"
+    },
+    navbar: {
+        brand: {
+            pageTitle: "Livre de recettes",
+            iconLabel: "Icône du livre de recettes de ce site web"
         }
     }
 }

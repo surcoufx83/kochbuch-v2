@@ -253,6 +253,10 @@ CREATE TABLE `user_login_states` (
     `useragent` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci',
     `created` DATETIME NOT NULL DEFAULT current_timestamp(),
     `until` DATETIME NOT NULL DEFAULT (current_timestamp() + interval 7 day),
+    `granted` DATETIME NULL DEFAULT NULL,
+    `accesstoken` VARCHAR(128) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+    `refreshtoken` VARCHAR(128) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+    `expires` DATETIME NULL DEFAULT NULL,
     PRIMARY KEY (`state`) USING BTREE,
     UNIQUE INDEX `ipagent` (`ipagent`) USING BTREE
 )

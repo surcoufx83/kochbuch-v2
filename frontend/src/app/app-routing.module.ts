@@ -6,6 +6,7 @@ import { SearchComponent } from './comp/search/search.component';
 import { MeComponent } from './comp/me/me.component';
 import { EditorComponent } from './comp/editor/editor.component';
 import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
+import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth2-login-callback.component';
 
 const routes: Routes = [
   { path: 'search', component: SearchComponent },
@@ -14,6 +15,7 @@ const routes: Routes = [
   { path: 'all', component: RecipesComponent },
   { path: 'create', component: EditorComponent },
   { path: 'cat/:id/:name', component: RecipesComponent },
+  { path: 'login/oauth2', component: Oauth2LoginCallbackComponent, pathMatch: 'full' },
   { path: 'r', component: RecipesComponent, pathMatch: 'full' },
   { path: 'r/:id', component: RecipeComponent, pathMatch: 'full' },
   { path: 'r/:id/edit', component: EditorComponent, pathMatch: 'full' },

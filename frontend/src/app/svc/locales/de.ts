@@ -1,10 +1,20 @@
 import { L10nLocale } from "./types";
 
 export const KB_De: L10nLocale = {
-    navbar: {
-        brand: {
-            pageTitle: "Kochbuch",
-            iconLabel: "Kochbuch-Icon dieser Webseite"
+    errorPages: {
+        loginToCreateRecipe: {
+            title: "Mach es zu deinem Kochbuch 🧑‍🍳",
+            paragraphLine1: "Du musst dich anmelden, um dein eigenes digitales Kochbuch zu nutzen.",
+            paragraphLine2: "Die Nutzung ist freiwillig und kostenfrei, aber auf Familie und Freunde beschränkt. Die Anmeldung erfordert ein von uns bereitgestelltes Nextcloud-Konto."
+        },
+        routeNotFound: {
+            title1: "Hoppla!",
+            title2: "Seite nicht gefunden 🧑‍🍳🚫",
+            paragraphLine1: "Es sieht so aus, als wärst du auf einen Fehler gestoßen!",
+            paragraphLine2: "Aber keine Sorge! Hier sind ein paar Möglichkeiten:",
+            optionLink1: "Zurück zum Hauptmenü – Dort findest du garantiert schmackhafte Alternativen.",
+            optionLink2: "Eine andere Zutat ausprobieren – Vielleicht führt eine neue Suche zum gewünschten Rezept.",
+            optionLink3: "Oder etwas ganz anderes – Wie wäre es mit einem Kaffee? ☕ Oder doch lieber ein Stück Kuchen? 🍰"
         }
     },
     floatingMenu: {
@@ -29,6 +39,15 @@ export const KB_De: L10nLocale = {
                 }
             },
             submitIconAriaLabel: "Dieser Button startet die Suche mit dem eingegebenen Suchbegriff. Nach dem Abschicken wirst du zur Ergebnisseite weitergeleitet."
+        }
+    },
+    login: {
+        loginWithNcButton: "Anmelden mit Nextcloud-Konto"
+    },
+    navbar: {
+        brand: {
+            pageTitle: "Kochbuch",
+            iconLabel: "Kochbuch-Icon dieser Webseite"
         }
     }
 }
