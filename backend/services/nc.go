@@ -27,8 +27,8 @@ var (
 	statesCache map[string]dbNextcloudState
 )
 
-type LoginParams struct {
-	Url string `json:"url"`
+type AppParams struct {
+	LoginUrl string `json:"url"`
 }
 
 type NextcloudStatus struct {
@@ -169,19 +169,19 @@ func ncLoadStatesCache() {
 
 }
 
-func GetNcLoginParams(c *gin.Context) (newstate string, params LoginParams, err error) {
+func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, err error) {
 	state, err := c.Cookie("session")
 
 	if state == "" || err != nil {
 		// No session cookie
 		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
 		if err != nil {
-			return "", LoginParams{}, err
+			return "", AppParams{}, err
 		}
 	}
 
-	value := LoginParams{
-		Url: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
+	value := AppParams{
+		LoginUrl: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
 	}
 	return state, value, nil
 }

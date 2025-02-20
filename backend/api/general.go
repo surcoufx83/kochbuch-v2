@@ -18,9 +18,9 @@ func CheckValidHostnames() gin.HandlerFunc {
 	}
 }
 
-// GetLoginParams handles the /api/params endpoint
-func GetApiParams(c *gin.Context) {
-	state, params, err := services.GetNcLoginParams(c)
+// GetAppParams handles the /api/params endpoint
+func GetAppParams(c *gin.Context) {
+	state, params, err := services.GetApplicationParams(c)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
