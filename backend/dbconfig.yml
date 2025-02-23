@@ -1,0 +1,9 @@
+development:
+  dialect: mysql
+  datasource: ${DB_User}:${DB_Password}@tcp(${DB_Server}:${DB_Port})/${DB_Name}?parseTime=true
+  dir: migrations
+
+production:
+  dialect: mysql
+  datasource: ${DB_User}:${DB_Password}@tcp(${DB_Server}:${DB_Port})/${DB_Name}?parseTime=true
+  dir: migrations

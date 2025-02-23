@@ -19,6 +19,13 @@ export class ApiService {
     private http: HttpClient,
   ) {
     this.loadAppParams();
+    const sub = this.loadUser().pipe(first()).subscribe((reply) => {
+      if (reply instanceof HttpResponse && reply.status === HttpStatusCode.Ok) {
+        this._user = reply.body as UserSelf;
+        this._isLoggedIn.next(true);
+      }
+      sub.unsubscribe();
+    });
   }
 
   public get(urlfragment: string, etag?: string): Subject<HttpResponse<unknown> | HttpErrorResponse | null> {

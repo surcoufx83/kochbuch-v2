@@ -1,10 +1,4 @@
-# Database Changes to Version 1
-
-## Updated Units
-
-### Modify units table
-
-```sql
+-- +migrate Up
 UPDATE `units` SET `unit_name_de` = '' WHERE `unit_name_de` IS NULL;
 
 UPDATE `units` SET `unit_name_en` = '' WHERE `unit_name_en` IS NULL;
@@ -55,29 +49,14 @@ UPDATE `units` SET `sg_name_de` = 'Würfel', `pl_name_de` = 'Würfel', `sg_name_
 UPDATE `units` SET `sg_name_de` = 'Packung', `pl_name_de` = 'Packungen', `sg_name_en` = 'pack', `pl_name_en` = 'packs', `sg_name_fr` = 'paquet', `pl_name_fr` = 'paquets', `fractional` = 1 WHERE `unit_id` = 61 AND `sg_name_de` = 'Packung';
 UPDATE `units` SET `sg_name_de` = 'Bund', `pl_name_de` = 'Bunde', `sg_name_en` = 'brunch', `pl_name_en` = 'brunches', `sg_name_fr` = 'botte', `pl_name_fr` = 'bottes', `fractional` = 1 WHERE `unit_id` = 63 AND `sg_name_de` = 'Bund';
 
-
-
 UPDATE `recipe_ingredients` SET `unit_id` = 4 WHERE `unit_id` = 50; -- St -> St.
-
 UPDATE `recipe_ingredients` SET `unit_id` = 5 WHERE `unit_id` = 10; -- Zweig -> Zweige
 DELETE FROM `units` WHERE `unit_id` = 10 AND `sg_name_de` = 'Zweig';
-
 UPDATE `recipe_ingredients` SET `unit_id` = 53 WHERE `unit_id` = 62; -- Zehe -> Zehen
 DELETE FROM `units` WHERE `unit_id` = 62 AND `sg_name_de` = 'Zehe';
 
-```
+CREATE SQL SECURITY INVOKER VIEW `unitsview` AS select `units`.`unit_id` AS `unit_id`,ifnull(`units`.`supersededby_unitid`,0) AS `supersededby_unitid`,ifnull(`units`.`saveas_unitid`,0) AS `saveas_unitid`,`units`.`saveas_factor` AS `saveas_factor`,`units`.`localized` AS `localized`,`units`.`sg_name_de` AS `sg_name_de`,`units`.`sg_name_en` AS `sg_name_en`,`units`.`sg_name_fr` AS `sg_name_fr`,`units`.`pl_name_de` AS `pl_name_de`,`units`.`pl_name_en` AS `pl_name_en`,`units`.`pl_name_fr` AS `pl_name_fr`,`units`.`decimal_places` AS `decimal_places`,`units`.`fractional` AS `fractional`,`units`.`created` AS `created`,`units`.`updated` AS `updated` from `units`;
 
-### Create a view unitsview for better access
-
-```sql
-ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `unitsview` AS select `units`.`unit_id` AS `unit_id`,ifnull(`units`.`supersededby_unitid`,0) AS `supersededby_unitid`,ifnull(`units`.`saveas_unitid`,0) AS `saveas_unitid`,`units`.`saveas_factor` AS `saveas_factor`,`units`.`localized` AS `localized`,`units`.`sg_name_de` AS `sg_name_de`,`units`.`sg_name_en` AS `sg_name_en`,`units`.`sg_name_fr` AS `sg_name_fr`,`units`.`pl_name_de` AS `pl_name_de`,`units`.`pl_name_en` AS `pl_name_en`,`units`.`pl_name_fr` AS `pl_name_fr`,`units`.`decimal_places` AS `decimal_places`,`units`.`fractional` AS `fractional`,`units`.`created` AS `created`,`units`.`updated` AS `updated` from `units`;
-```
-
-## Updated Recipes
-
-### Modify recipes table
-
-```sql
 UPDATE `recipes` SET `recipe_name_de` = '' WHERE `recipe_name_de` IS NULL;
 UPDATE `recipes` SET `recipe_name_en` = '' WHERE `recipe_name_en` IS NULL;
 UPDATE `recipes` SET `recipe_description_de` = '' WHERE `recipe_description_de` IS NULL;
@@ -134,14 +113,10 @@ ALTER TABLE `recipes`
 ALTER TABLE `recipes`
     ADD COLUMN `locale` VARCHAR(2) NOT NULL DEFAULT 'de' AFTER `shared_external`;
 
-ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrecipes` AS select `r`.`recipe_id` AS `recipe_id`,ifnull(`r`.`user_id`,0) AS `user_id`,ifnull(`r`.`edit_user_id`,0) AS `edit_user_id`,`r`.`aigenerated` AS `aigenerated`,`r`.`localized` AS `localized`,`r`.`placeholder` AS `placeholder`,`r`.`shared_internal` AS `shared_internal`,`r`.`shared_external` AS `shared_external`,`r`.`locale` AS `locale`,`r`.`name_de` AS `name_de`,`r`.`name_en` AS `name_en`,`r`.`name_fr` AS `name_fr`,`r`.`description_de` AS `description_de`,`r`.`description_en` AS `description_en`,`r`.`description_fr` AS `description_fr`,`r`.`servings_count` AS `servings_count`,`r`.`source_description_de` AS `source_description_de`,`r`.`source_description_en` AS `source_description_en`,`r`.`source_description_fr` AS `source_description_fr`,`r`.`source_url` AS `source_url`,`r`.`created` AS `created`,`r`.`modified` AS `modified`,`r`.`published` AS `published`,`r`.`difficulty` AS `difficulty`,`r`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,ifnull(`p`.`picture_id`,0) AS `picture_id`,ifnull(`p`.`picture_sortindex`,0) AS `picture_sortindex`,ifnull(`p`.`picture_name`,'') AS `picture_name`,ifnull(`p`.`picture_description`,'') AS `picture_description`,ifnull(`p`.`picture_hash`,'') AS `picture_hash`,ifnull(`p`.`picture_filename`,'') AS `picture_filename`,ifnull(`p`.`picture_full_path`,'') AS `picture_full_path`,cast(ifnull(`p`.`picture_uploaded`,'2000-01-01 00:00:00') as datetime) AS `picture_uploaded`,ifnull(`p`.`picture_width`,0) AS `picture_width`,ifnull(`p`.`picture_height`,0) AS `picture_height`,`rv`.`views` AS `views`,`rc`.`cooked` AS `cooked`,`v`.`votesum` AS `votesum`,`v`.`votes` AS `votes`,`v`.`avgvotes` AS `avgvotes`,`rr`.`votesum` AS `ratesum`,`rr`.`votes` AS `ratings`,`rr`.`avgvotes` AS `avgratings`,`s`.`stepscount` AS `stepscount`,ifnull(`s`.`preparationtime`,-1) AS `preparationtime`,ifnull(`s`.`cookingtime`,-1) AS `cookingtime`,ifnull(`s`.`chilltime`,-1) AS `chilltime` from ((((((`recipes` `r` left join `recipe_pictures` `p` on(`p`.`recipe_id` = `r`.`recipe_id` and `p`.`picture_sortindex` = 0)) join `voting_cooked` `rc` on(`rc`.`recipe_id` = `r`.`recipe_id`)) join `voting_views` `rv` on(`rv`.`recipe_id` = `r`.`recipe_id`)) join `voting_hearts` `v` on(`v`.`recipe_id` = `r`.`recipe_id`)) join `voting_difficulty` `rr` on(`rr`.`recipe_id` = `r`.`recipe_id`)) join `allrecipessteps` `s` on(`s`.`recipe_id` = `r`.`recipe_id`)) group by `r`.`recipe_id`,`r`.`user_id`,`r`.`edit_user_id`,`r`.`aigenerated`,`r`.`localized`,`r`.`placeholder`,`r`.`shared_internal`,`r`.`shared_external`,`r`.`locale`,`r`.`name_de`,`r`.`name_en`,`r`.`name_fr`,`r`.`description_de`,`r`.`description_en`,`r`.`description_fr`,`r`.`servings_count`,`r`.`source_description_de`,`r`.`source_description_en`,`r`.`source_description_fr`,`r`.`source_url`,`r`.`created`,`r`.`modified`,`r`.`published`,`r`.`difficulty`,`r`.`ingredientsGroupByStep`,`p`.`picture_id`,`p`.`picture_sortindex`,`p`.`picture_name`,`p`.`picture_description`,`p`.`picture_hash`,`p`.`picture_filename`,`p`.`picture_full_path`,`p`.`picture_uploaded`,`p`.`picture_width`,`p`.`picture_height`,`rv`.`views`,`rc`.`cooked`,`v`.`votesum`,`v`.`votes`,`v`.`avgvotes`,`s`.`stepscount`,`s`.`preparationtime`,`s`.`cookingtime`,`s`.`chilltime`;
+ALTER SQL SECURITY INVOKER VIEW `allrecipes` AS select `r`.`recipe_id` AS `recipe_id`,ifnull(`r`.`user_id`,0) AS `user_id`,ifnull(`r`.`edit_user_id`,0) AS `edit_user_id`,`r`.`aigenerated` AS `aigenerated`,`r`.`localized` AS `localized`,`r`.`placeholder` AS `placeholder`,`r`.`shared_internal` AS `shared_internal`,`r`.`shared_external` AS `shared_external`,`r`.`locale` AS `locale`,`r`.`name_de` AS `name_de`,`r`.`name_en` AS `name_en`,`r`.`name_fr` AS `name_fr`,`r`.`description_de` AS `description_de`,`r`.`description_en` AS `description_en`,`r`.`description_fr` AS `description_fr`,`r`.`servings_count` AS `servings_count`,`r`.`source_description_de` AS `source_description_de`,`r`.`source_description_en` AS `source_description_en`,`r`.`source_description_fr` AS `source_description_fr`,`r`.`source_url` AS `source_url`,`r`.`created` AS `created`,`r`.`modified` AS `modified`,`r`.`published` AS `published`,`r`.`difficulty` AS `difficulty`,`r`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,ifnull(`p`.`picture_id`,0) AS `picture_id`,ifnull(`p`.`picture_sortindex`,0) AS `picture_sortindex`,ifnull(`p`.`picture_name`,'') AS `picture_name`,ifnull(`p`.`picture_description`,'') AS `picture_description`,ifnull(`p`.`picture_hash`,'') AS `picture_hash`,ifnull(`p`.`picture_filename`,'') AS `picture_filename`,ifnull(`p`.`picture_full_path`,'') AS `picture_full_path`,cast(ifnull(`p`.`picture_uploaded`,'2000-01-01 00:00:00') as datetime) AS `picture_uploaded`,ifnull(`p`.`picture_width`,0) AS `picture_width`,ifnull(`p`.`picture_height`,0) AS `picture_height`,`rv`.`views` AS `views`,`rc`.`cooked` AS `cooked`,`v`.`votesum` AS `votesum`,`v`.`votes` AS `votes`,`v`.`avgvotes` AS `avgvotes`,`rr`.`votesum` AS `ratesum`,`rr`.`votes` AS `ratings`,`rr`.`avgvotes` AS `avgratings`,`s`.`stepscount` AS `stepscount`,ifnull(`s`.`preparationtime`,-1) AS `preparationtime`,ifnull(`s`.`cookingtime`,-1) AS `cookingtime`,ifnull(`s`.`chilltime`,-1) AS `chilltime` from ((((((`recipes` `r` left join `recipe_pictures` `p` on(`p`.`recipe_id` = `r`.`recipe_id` and `p`.`picture_sortindex` = 0)) join `voting_cooked` `rc` on(`rc`.`recipe_id` = `r`.`recipe_id`)) join `voting_views` `rv` on(`rv`.`recipe_id` = `r`.`recipe_id`)) join `voting_hearts` `v` on(`v`.`recipe_id` = `r`.`recipe_id`)) join `voting_difficulty` `rr` on(`rr`.`recipe_id` = `r`.`recipe_id`)) join `allrecipessteps` `s` on(`s`.`recipe_id` = `r`.`recipe_id`)) group by `r`.`recipe_id`,`r`.`user_id`,`r`.`edit_user_id`,`r`.`aigenerated`,`r`.`localized`,`r`.`placeholder`,`r`.`shared_internal`,`r`.`shared_external`,`r`.`locale`,`r`.`name_de`,`r`.`name_en`,`r`.`name_fr`,`r`.`description_de`,`r`.`description_en`,`r`.`description_fr`,`r`.`servings_count`,`r`.`source_description_de`,`r`.`source_description_en`,`r`.`source_description_fr`,`r`.`source_url`,`r`.`created`,`r`.`modified`,`r`.`published`,`r`.`difficulty`,`r`.`ingredientsGroupByStep`,`p`.`picture_id`,`p`.`picture_sortindex`,`p`.`picture_name`,`p`.`picture_description`,`p`.`picture_hash`,`p`.`picture_filename`,`p`.`picture_full_path`,`p`.`picture_uploaded`,`p`.`picture_width`,`p`.`picture_height`,`rv`.`views`,`rc`.`cooked`,`v`.`votesum`,`v`.`votes`,`v`.`avgvotes`,`s`.`stepscount`,`s`.`preparationtime`,`s`.`cookingtime`,`s`.`chilltime`;
 
-ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `allrecipes_nouser` AS select `allrecipes`.`recipe_id` AS `recipe_id`,`allrecipes`.`user_id` AS `user_id`,`allrecipes`.`edit_user_id` AS `edit_user_id`,`allrecipes`.`aigenerated` AS `aigenerated`,`allrecipes`.`localized` AS `localized`,`allrecipes`.`placeholder` AS `placeholder`,`allrecipes`.`shared_internal` AS `shared_internal`,`allrecipes`.`shared_external` AS `shared_external`,`allrecipes`.`locale` AS `locale`,`allrecipes`.`name_de` AS `name_de`,`allrecipes`.`name_en` AS `name_en`,`allrecipes`.`name_fr` AS `name_fr`,`allrecipes`.`description_de` AS `description_de`,`allrecipes`.`description_en` AS `description_en`,`allrecipes`.`description_fr` AS `description_fr`,`allrecipes`.`servings_count` AS `servings_count`,`allrecipes`.`source_description_de` AS `source_description_de`,`allrecipes`.`source_description_en` AS `source_description_en`,`allrecipes`.`source_description_fr` AS `source_description_fr`,`allrecipes`.`source_url` AS `source_url`,`allrecipes`.`created` AS `created`,`allrecipes`.`modified` AS `modified`,`allrecipes`.`published` AS `published`,`allrecipes`.`difficulty` AS `difficulty`,`allrecipes`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,`allrecipes`.`picture_id` AS `picture_id`,`allrecipes`.`picture_sortindex` AS `picture_sortindex`,`allrecipes`.`picture_name` AS `picture_name`,`allrecipes`.`picture_description` AS `picture_description`,`allrecipes`.`picture_hash` AS `picture_hash`,`allrecipes`.`picture_filename` AS `picture_filename`,`allrecipes`.`picture_full_path` AS `picture_full_path`,`allrecipes`.`picture_uploaded` AS `picture_uploaded`,`allrecipes`.`picture_width` AS `picture_width`,`allrecipes`.`picture_height` AS `picture_height`,`allrecipes`.`views` AS `views`,`allrecipes`.`cooked` AS `cooked`,`allrecipes`.`votesum` AS `votesum`,`allrecipes`.`votes` AS `votes`,`allrecipes`.`avgvotes` AS `avgvotes`,`allrecipes`.`ratesum` AS `ratesum`,`allrecipes`.`ratings` AS `ratings`,`allrecipes`.`avgratings` AS `avgratings`,`allrecipes`.`stepscount` AS `stepscount`,`allrecipes`.`preparationtime` AS `preparationtime`,`allrecipes`.`cookingtime` AS `cookingtime`,`allrecipes`.`chilltime` AS `chilltime` from `allrecipes` where `allrecipes`.`shared_external` = 1;
-```
+ALTER SQL SECURITY INVOKER VIEW `allrecipes_nouser` AS select `allrecipes`.`recipe_id` AS `recipe_id`,`allrecipes`.`user_id` AS `user_id`,`allrecipes`.`edit_user_id` AS `edit_user_id`,`allrecipes`.`aigenerated` AS `aigenerated`,`allrecipes`.`localized` AS `localized`,`allrecipes`.`placeholder` AS `placeholder`,`allrecipes`.`shared_internal` AS `shared_internal`,`allrecipes`.`shared_external` AS `shared_external`,`allrecipes`.`locale` AS `locale`,`allrecipes`.`name_de` AS `name_de`,`allrecipes`.`name_en` AS `name_en`,`allrecipes`.`name_fr` AS `name_fr`,`allrecipes`.`description_de` AS `description_de`,`allrecipes`.`description_en` AS `description_en`,`allrecipes`.`description_fr` AS `description_fr`,`allrecipes`.`servings_count` AS `servings_count`,`allrecipes`.`source_description_de` AS `source_description_de`,`allrecipes`.`source_description_en` AS `source_description_en`,`allrecipes`.`source_description_fr` AS `source_description_fr`,`allrecipes`.`source_url` AS `source_url`,`allrecipes`.`created` AS `created`,`allrecipes`.`modified` AS `modified`,`allrecipes`.`published` AS `published`,`allrecipes`.`difficulty` AS `difficulty`,`allrecipes`.`ingredientsGroupByStep` AS `ingredientsGroupByStep`,`allrecipes`.`picture_id` AS `picture_id`,`allrecipes`.`picture_sortindex` AS `picture_sortindex`,`allrecipes`.`picture_name` AS `picture_name`,`allrecipes`.`picture_description` AS `picture_description`,`allrecipes`.`picture_hash` AS `picture_hash`,`allrecipes`.`picture_filename` AS `picture_filename`,`allrecipes`.`picture_full_path` AS `picture_full_path`,`allrecipes`.`picture_uploaded` AS `picture_uploaded`,`allrecipes`.`picture_width` AS `picture_width`,`allrecipes`.`picture_height` AS `picture_height`,`allrecipes`.`views` AS `views`,`allrecipes`.`cooked` AS `cooked`,`allrecipes`.`votesum` AS `votesum`,`allrecipes`.`votes` AS `votes`,`allrecipes`.`avgvotes` AS `avgvotes`,`allrecipes`.`ratesum` AS `ratesum`,`allrecipes`.`ratings` AS `ratings`,`allrecipes`.`avgratings` AS `avgratings`,`allrecipes`.`stepscount` AS `stepscount`,`allrecipes`.`preparationtime` AS `preparationtime`,`allrecipes`.`cookingtime` AS `cookingtime`,`allrecipes`.`chilltime` AS `chilltime` from `allrecipes` where `allrecipes`.`shared_external` = 1;
 
-## Update Categories
-
-```sql
 ALTER TABLE `categories`
     CHANGE COLUMN `techname` `name_de` VARCHAR(64) NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `catid`,
     ADD COLUMN `name_en` VARCHAR(64) NOT NULL AFTER `name_de`,
@@ -212,12 +187,8 @@ UPDATE `categoryitems` SET `name_de` = 'Keks', `name_en` = 'Biscuit', `name_fr` 
 UPDATE `categoryitems` SET `name_de` = 'Eiscreme', `name_en` = 'Ice Cream', `name_fr` = 'Glace' WHERE `itemid` = 44;
 UPDATE `categoryitems` SET `name_de` = 'Pudding', `name_en` = 'Pudding', `name_fr` = 'Pudding' WHERE `itemid` = 45;
 
-ALTER ALGORITHM = UNDEFINED DEFINER=`root`@`%` SQL SECURITY INVOKER VIEW `categoryitemsview` AS select `c`.`catid` AS `cat_id`,`c`.`name_de` AS `cat_name_de`,`c`.`name_en` AS `cat_name_en`,`c`.`name_fr` AS `cat_name_fr`,`c`.`icon` AS `cat_icon`,`c`.`modified` AS `cat_modified`,`i`.`itemid` AS `item_id`,`i`.`name_de` AS `item_name_de`,`i`.`name_en` AS `item_name_en`,`i`.`name_fr` AS `item_name_fr`,`i`.`icon` AS `item_icon`,`i`.`modified` AS `item_modified` from (`categoryitems` `i` join `categories` `c` on(`c`.`catid` = `i`.`catid`));
-```
+ALTER SQL SECURITY INVOKER VIEW `categoryitemsview` AS select `c`.`catid` AS `cat_id`,`c`.`name_de` AS `cat_name_de`,`c`.`name_en` AS `cat_name_en`,`c`.`name_fr` AS `cat_name_fr`,`c`.`icon` AS `cat_icon`,`c`.`modified` AS `cat_modified`,`i`.`itemid` AS `item_id`,`i`.`name_de` AS `item_name_de`,`i`.`name_en` AS `item_name_en`,`i`.`name_fr` AS `item_name_fr`,`i`.`icon` AS `item_icon`,`i`.`modified` AS `item_modified` from (`categoryitems` `i` join `categories` `c` on(`c`.`catid` = `i`.`catid`));
 
-## Logging Changes
-
-```sql
 DELETE FROM `apilog`;
 
 ALTER TABLE `apilog`
@@ -241,11 +212,6 @@ ALTER TABLE `apilog`
 ALTER TABLE `apilog`
     CHANGE COLUMN `severity` `severity` SET('I','W','E') NOT NULL COLLATE 'utf8mb4_general_ci' AFTER `when`;
 
-```
-
-## Login handling
-
-```sql
 CREATE TABLE `user_login_states` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     `userid` MEDIUMINT(8) UNSIGNED NULL DEFAULT NULL,
@@ -266,4 +232,5 @@ CREATE TABLE `user_login_states` (
 )
 COLLATE='utf8mb4_general_ci'
 ENGINE=InnoDB;
-```
+
+-- +migrate Down

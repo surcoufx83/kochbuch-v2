@@ -37,6 +37,7 @@ func main() {
 	router.GET("/categories", api.GetCategories)
 	router.POST("/errorreport", api.PostErrorReport)
 	router.POST("/login", api.PostOauth2Login)
+	router.GET("/me", api.GetMyProfile)
 	router.GET("/params", api.GetAppParams)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
