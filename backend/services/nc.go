@@ -18,12 +18,13 @@ import (
 var (
 	ValidDomains map[string]bool
 
-	ncRedirectUrl   string
-	ncHost          string
-	ncClientId      string
-	ncSecret        string
-	ncAuthEndpoint  string
-	ncTokenEndpoint string
+	ncRedirectUrl     string
+	ncHost            string
+	ncClientId        string
+	ncSecret          string
+	ncAuthEndpoint    string
+	ncTokenEndpoint   string
+	ncProfileEndpoint string
 
 	statesMutex sync.RWMutex
 	statesCache map[string]dbNextcloudState
@@ -53,6 +54,7 @@ type nextcloudTokenResponse struct {
 
 type dbNextcloudState struct {
 	Id           int            `db:"id"`
+	UserId       sql.NullInt32  `db:"userid"`
 	State        string         `db:"state"`
 	Ip           string         `db:"remoteaddr"`
 	Ua           string         `db:"useragent"`
@@ -62,6 +64,26 @@ type dbNextcloudState struct {
 	AccessToken  sql.NullString `db:"accesstoken"`
 	RefreshToken sql.NullString `db:"refreshtoken"`
 	Expires      sql.NullTime   `db:"expires"`
+}
+
+// Nextcloud structure when querying user profile
+type NextcloudUserProfileResponse struct {
+	OCS struct {
+		Meta struct {
+			Status     string `json:"status"`
+			StatusCode int    `json:"statuscode"`
+			Message    string `json:"message"`
+		} `json:"meta"`
+		Data NextcloudUserProfile `json:"data"`
+	} `json:"ocs"`
+}
+
+type NextcloudUserProfile struct {
+	Id          string   `json:"id"`
+	Enabled     bool     `json:"enabled"`
+	Email       string   `json:"email"`
+	DisplayName string   `json:"displayname"`
+	Groups      []string `json:"groups"`
 }
 
 func generateState(remoteAddr string, userAgent string) (state string, err error) {
@@ -210,16 +232,24 @@ func NcConnect() {
 	tokenUrl.Path, _ = url.JoinPath(tokenUrl.Path, "index.php/apps/oauth2/api/v1/token")
 	ncTokenEndpoint = tokenUrl.String()
 
+	profileUrl := *baseurl
+	profileUrl.Path, _ = url.JoinPath(profileUrl.Path, "ocs/v2.php/cloud/user")
+	params = url.Values{}
+	params.Add("format", "json")
+	profileUrl.RawQuery = params.Encode()
+	ncProfileEndpoint = profileUrl.String()
+
 	log.Printf("Nextcloud instance found with version %v", ncStatus.VersionString)
 	log.Printf("  - AuthEndpoint = %v", ncAuthEndpoint)
 	log.Printf("  - TokenEndpoint = %v", ncTokenEndpoint)
+	log.Printf("  - ProfileEndpoint = %v", ncProfileEndpoint)
 	log.Printf("  - RedirectUrl = %v", ncRedirectUrl)
 	ncLoadStatesCache()
 
 }
 
 func ncLoadStatesCache() {
-	query := "SELECT * FROM `user_login_states` WHERE `until` > current_timestamp()"
+	query := "SELECT * FROM `user_login_states` WHERE `until` > current_timestamp() OR `granted` IS NOT NULL"
 	var states []dbNextcloudState
 
 	err := Db.Select(&states, query)
@@ -232,6 +262,7 @@ func ncLoadStatesCache() {
 	statesCache = make(map[string]dbNextcloudState)
 	for _, state := range states {
 		statesCache[state.State] = state
+		log.Printf("Loaded %v", state.State)
 	}
 	statesMutex.Unlock()
 
@@ -359,6 +390,47 @@ func ncLoginCallbackSendRequest(code string) (nextcloudTokenResponse, error) {
 
 func loadUserProfile(state dbNextcloudState) {
 	log.Printf("Getting user profile from Nextcloud instance for state %v", state.State)
+
+	if !state.AccessToken.Valid {
+		log.Printf("  - skipped due to invalid access_token %v", state.AccessToken)
+		return
+	}
+
+	req, err := http.NewRequest("GET", ncProfileEndpoint, nil)
+	if err != nil {
+		log.Printf("Failed preparing request for user profile: %v", err)
+		return
+	}
+
+	// Set required headers
+	req.Header.Set("Authorization", "Bearer "+state.AccessToken.String)
+	req.Header.Set("OCS-APIRequest", "true")
+
+	log.Printf("Request: %v", req)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Failed sending request for user profile: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Check for a successful HTTP status code.
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Unexpected status for user profile: %d  body = %s", resp.StatusCode, string(body))
+		return
+	}
+
+	var profileResp NextcloudUserProfileResponse
+	if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Failed to parse user profile: %d  body = %s", resp.StatusCode, string(body))
+		return
+	}
+
+	log.Printf("User profile: %v", profileResp)
 
 }
 

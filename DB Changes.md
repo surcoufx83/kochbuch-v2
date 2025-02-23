@@ -248,17 +248,21 @@ ALTER TABLE `apilog`
 ```sql
 CREATE TABLE `user_login_states` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `userid` MEDIUMINT(8) UNSIGNED NULL DEFAULT NULL,
     `state` VARCHAR(36) NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
     `remoteaddr` VARCHAR(32) NOT NULL COLLATE 'utf8mb4_general_ci',
     `useragent` VARCHAR(256) NOT NULL COLLATE 'utf8mb4_general_ci',
     `created` DATETIME NOT NULL DEFAULT current_timestamp(),
-    `until` DATETIME NOT NULL DEFAULT (current_timestamp() + interval 7 day),
+    `until` DATETIME NULL DEFAULT (current_timestamp() + interval 7 day),
     `granted` DATETIME NULL DEFAULT NULL,
     `accesstoken` VARCHAR(128) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
     `refreshtoken` VARCHAR(128) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
     `expires` DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (`state`) USING BTREE,
-    UNIQUE INDEX `ipagent` (`ipagent`) USING BTREE
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `remoteaddr_useragent` (`remoteaddr`, `useragent`) USING BTREE,
+    UNIQUE INDEX `state` (`state`) USING BTREE,
+    INDEX `FK_user_login_states_users` (`userid`) USING BTREE,
+    CONSTRAINT `FK_user_login_states_users` FOREIGN KEY (`userid`) REFERENCES `users` (`user_id`) ON UPDATE CASCADE ON DELETE CASCADE
 )
 COLLATE='utf8mb4_general_ci'
 ENGINE=InnoDB;

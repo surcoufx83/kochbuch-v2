@@ -7,7 +7,8 @@
     <div class="flex items-center">
         <fa-icon [icon]="Icons.spinner" animation="spin-reverse" size="2x" class="me-4"></fa-icon>
         @if (Busy() == 1) {
-        Bitte hab noch kurz Geduld. Deine Anmeldung wird gespeichert, es geht gleich weiter...
+        Bitte hab noch kurz Geduld. Deine Anmeldung wird gespeichert, es geht gleich weiter.<br />
+        Das dauert normalerweise ca. 30 Sekunden.
         }
         @else if (Busy() == 2) {
         Dein Benutzerkonto wird abgerufen...
