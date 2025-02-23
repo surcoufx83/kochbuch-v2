@@ -556,7 +556,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 
 	log.Printf("User profile: %v", profileResp)
 	var userProfile DbUserProfile
-	var insertedOne bool
+	insertedOne := false
 
 	for _, groupname := range profileResp.OCS.Data.Groups {
 		if groupNamesCache[groupname] == 0 {
@@ -579,6 +579,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 	}
 
 	defer ncLoadUserCache()
+	defer ncLoadStatesCache()
 
 	for _, user := range userCache {
 		if user.UserName == profileResp.OCS.Data.Id {
@@ -594,6 +595,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 			return DbUserProfile{}, err
 		}
 	}
+
 	registerUserGroups(tx, userProfile, profileResp.OCS.Data.Groups)
 	if err != nil {
 		_ = tx.Rollback()

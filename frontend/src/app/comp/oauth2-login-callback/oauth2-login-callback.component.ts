@@ -7,7 +7,7 @@ import { L10nService } from '../../svc/l10n.service';
 import { L10nLocale } from '../../svc/locales/types';
 import { SharedDataService } from '../../svc/shared-data.service';
 import { UserSelf } from '../../types';
-import { HttpResponse } from '@angular/common/http';
+import { HttpResponse, HttpStatusCode } from '@angular/common/http';
 
 @Component({
   selector: 'kb-oauth2-login-callback',
@@ -68,9 +68,9 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
         console.log('=====', response)
         if (response instanceof HttpResponse) {
           this.Busy.set(2);
-          const sub2 = this.apiService.loadUser().pipe(first()).subscribe((response2) => {
-            console.log('=====', response2)
-          });
+          setTimeout(() => {
+            this.postLoginQeryProfile();
+          }, 500);
         }
         else {
           this.Failed.set(true);
@@ -79,6 +79,27 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
       });
 
     }));
+  }
+
+  private profileQueryCount = 0;
+  postLoginQeryProfile(): void {
+    if (this.profileQueryCount > 10) {
+      this.Failed.set(true);
+      this.Busy.set(false);
+      return;
+    }
+
+    this.profileQueryCount++;
+
+    const sub = this.apiService.loadUser().pipe(first()).subscribe((reply) => {
+      sub.unsubscribe();
+      if (!(reply instanceof HttpResponse && reply.status === HttpStatusCode.Ok)) {
+        setTimeout(() => {
+          this.postLoginQeryProfile();
+        }, 1000);
+      }
+    });
+
   }
 
 }
