@@ -31,10 +31,10 @@ var (
 	statesCache map[string]dbNextcloudState
 
 	userMutex sync.RWMutex
-	userCache map[int]DbUserProfile
+	userCache map[int]types.UserProfile
 
 	groupsMutex     sync.RWMutex
-	groupsCache     map[int]DbGroup
+	groupsCache     map[int]types.Group
 	groupNamesCache map[string]int
 )
 
@@ -92,40 +92,6 @@ type nextcloudUserProfile struct {
 	Email       string   `json:"email"`
 	DisplayName string   `json:"displayname"`
 	Groups      []string `json:"groups"`
-}
-
-type DbUserProfile struct {
-	Id                    int              `json:"id" db:"user_id"`
-	UserName              string           `json:"username" db:"cloudid"`
-	DisplayName           string           `json:"displayname" db:"clouddisplayname"`
-	NcEnabled             bool             `json:"-" db:"cloudenabled"`
-	FirstName             string           `json:"firstname" db:"firstname"`
-	LastName              string           `json:"lastname" db:"lastname"`
-	Enabled               bool             `json:"enabled" db:"enabled"`
-	Admin                 bool             `json:"admin" db:"admin"`
-	Email                 types.NullString `json:"email" db:"email"`
-	EmailValidationPhrase types.NullString `json:"-" db:"email_validationphrase"`
-	EmailValidated        types.NullTime   `json:"-" db:"email_validated"`
-	NcSyncTime            types.NullTime   `json:"-" db:"cloudsync"`
-	NcSyncStatus          int16            `json:"-" db:"cloudsync_status"`
-	Created               time.Time        `json:"created" db:"created"`
-	Modified              types.NullTime   `json:"-" db:"modified"`
-	Groups                []DbGroup        `json:"groups"`
-}
-
-type DbUserProfileSimple struct {
-	Id          int    `json:"id" db:"user_id"`
-	DisplayName string `json:"displayname" db:"clouddisplayname"`
-}
-
-type DbGroup struct {
-	Id          int            `json:"id" db:"id"`
-	DisplayName string         `json:"displayname" db:"displayname"`
-	Name        string         `json:"name" db:"ncname"`
-	GrantAccess bool           `json:"-" db:"access_granted"`
-	GrantAdmin  string         `json:"-" db:"is_admin"`
-	Created     time.Time      `json:"-" db:"created"`
-	Modified    types.NullTime `json:"-" db:"modified"`
 }
 
 type dbUserGroup struct {
@@ -329,7 +295,7 @@ func ncLoadStatesCache() {
 func ncLoadUserCache() {
 	log.Println("Loading registered users")
 	query := "SELECT * FROM `users`"
-	var profiles []DbUserProfile
+	var profiles []types.UserProfile
 
 	err := Db.Select(&profiles, query)
 	if err != nil {
@@ -338,8 +304,15 @@ func ncLoadUserCache() {
 
 	// Build cache
 	userMutex.Lock()
-	userCache = make(map[int]DbUserProfile)
+	userCache = make(map[int]types.UserProfile)
 	for _, profile := range profiles {
+		profile.SimpleProfile = types.NullUserProfileSimple{
+			Profile: types.UserProfileSimple{
+				Id:          profile.Id,
+				DisplayName: profile.DisplayName,
+			},
+			Valid: true,
+		}
 		userCache[profile.Id] = profile
 		log.Printf("  - Loaded %v", profile.UserName)
 	}
@@ -373,7 +346,7 @@ func ncLoadUserGroupsCache() {
 func ncLoadGroupsCache() {
 	log.Println("Loading registered groups")
 	query := "SELECT * FROM `groups`"
-	var groups []DbGroup
+	var groups []types.Group
 
 	err := Db.Select(&groups, query)
 	if err != nil {
@@ -382,7 +355,7 @@ func ncLoadGroupsCache() {
 
 	// Build cache
 	groupsMutex.Lock()
-	groupsCache = make(map[int]DbGroup)
+	groupsCache = make(map[int]types.Group)
 	groupNamesCache = make(map[string]int)
 	for _, group := range groups {
 		groupsCache[group.Id] = group
@@ -512,18 +485,18 @@ func ncLoginCallbackSendRequest(code string) (nextcloudTokenResponse, error) {
 	return tokenResp, nil
 }
 
-func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
+func loadUserProfile(state dbNextcloudState) (types.UserProfile, error) {
 	log.Printf("Getting user profile from Nextcloud instance for state %v", state.State)
 
 	if !state.AccessToken.Valid {
 		log.Printf("  - skipped due to invalid access_token %v", state.AccessToken)
-		return DbUserProfile{}, nil
+		return types.UserProfile{}, nil
 	}
 
 	req, err := http.NewRequest("GET", ncProfileEndpoint, nil)
 	if err != nil {
 		log.Printf("Failed preparing request for user profile: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	// Set required headers
@@ -536,7 +509,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Failed sending request for user profile: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 	defer resp.Body.Close()
 
@@ -544,18 +517,18 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Unexpected status for user profile: %d  body = %s", resp.StatusCode, string(body))
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	var profileResp nextcloudUserProfileResponse
 	if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Failed to parse user profile: %d  body = %s", resp.StatusCode, string(body))
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	log.Printf("User profile: %v", profileResp)
-	var userProfile DbUserProfile
+	var userProfile types.UserProfile
 	insertedOne := false
 
 	for _, groupname := range profileResp.OCS.Data.Groups {
@@ -563,7 +536,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 			_, err := createNewGroup(groupname)
 			if err != nil {
 				log.Printf("Failed creating new group: %v", err)
-				return DbUserProfile{}, err
+				return types.UserProfile{}, err
 			}
 			insertedOne = true
 		}
@@ -575,7 +548,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 	tx, err := Db.Begin()
 	if err != nil {
 		log.Printf("Failed starting transaction: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	defer ncLoadUserCache()
@@ -592,14 +565,14 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 		userProfile, err = registerUserProfile(tx, profileResp)
 		if err != nil || userProfile.Id == 0 {
 			_ = tx.Rollback()
-			return DbUserProfile{}, err
+			return types.UserProfile{}, err
 		}
 	}
 
 	registerUserGroups(tx, userProfile, profileResp.OCS.Data.Groups)
 	if err != nil {
 		_ = tx.Rollback()
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	query := "UPDATE `user_login_states` SET `userid` = ? WHERE `id` = ? LIMIT 1"
@@ -608,21 +581,21 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 	if err != nil {
 		log.Printf("Failed to prepare user_login_states query: %v", err)
 		_ = tx.Rollback()
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	_, err = stmt.Exec(userProfile.Id, state.Id)
 	if err != nil {
 		log.Printf("Failed to update user_login_states: %v", err)
 		_ = tx.Rollback()
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		_ = tx.Rollback()
 		log.Printf("Failed to commit transaction: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	log.Printf("User profile: %v", userProfile)
@@ -631,7 +604,7 @@ func loadUserProfile(state dbNextcloudState) (DbUserProfile, error) {
 
 }
 
-func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (DbUserProfile, error) {
+func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (types.UserProfile, error) {
 	log.Printf("  > Creating new user profile: %v", profile.OCS.Data.Id)
 
 	query := "INSERT INTO `users`(`cloudid`, `clouddisplayname`, `cloudenabled`, `cloudsync`, `cloudsync_status`, `enabled`) VALUES(?, ?, ?, CURRENT_TIMESTAMP(), 200, ?)"
@@ -639,26 +612,26 @@ func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (DbUs
 	stmt, err := tx.Prepare(query)
 	if err != nil {
 		log.Printf("Failed to prepare INSERT INTO users query: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	result, err := stmt.Exec(profile.OCS.Data.Id, profile.OCS.Data.DisplayName, profile.OCS.Data.Enabled, profile.OCS.Data.Enabled)
 	if err != nil {
 		log.Printf("Failed to INSERT INTO users: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	userid, err := result.LastInsertId()
 	if err != nil {
 		log.Printf("Failed to get id from INSERT INTO users: %v", err)
-		return DbUserProfile{}, err
+		return types.UserProfile{}, err
 	}
 
 	return userCache[int(userid)], nil
 
 }
 
-func registerUserGroups(tx *sql.Tx, profile DbUserProfile, groups []string) (bool, error) {
+func registerUserGroups(tx *sql.Tx, profile types.UserProfile, groups []string) (bool, error) {
 	log.Printf("  > Saving user groups: %v", groups)
 
 	stmt, err := tx.Prepare("DELETE FROM `user_groups` WHERE `userid` = ?")
@@ -724,12 +697,12 @@ func createNewGroup(name string) (int, error) {
 	return int(groupid), nil
 }
 
-func GetSelf(c *gin.Context) (int, DbUserProfile, error) {
+func GetSelf(c *gin.Context) (int, types.UserProfile, error) {
 	state, err := c.Cookie("session")
 
 	if state == "" || err != nil {
 		// No session cookie
-		return http.StatusBadRequest, DbUserProfile{}, err
+		return http.StatusBadRequest, types.UserProfile{}, err
 	}
 
 	statesMutex.RLock()
@@ -737,14 +710,21 @@ func GetSelf(c *gin.Context) (int, DbUserProfile, error) {
 	statesMutex.RUnlock()
 	if !exists {
 		log.Printf("Cookie not found in cache: %v", state)
-		return http.StatusBadRequest, DbUserProfile{}, nil
+		return http.StatusBadRequest, types.UserProfile{}, nil
 	}
 
 	if !clientstate.UserId.Valid || clientstate.UserId.Int32 == 0 {
 		log.Printf("Cookie does not has loggedin user: %v", state)
-		return http.StatusUnauthorized, DbUserProfile{}, nil
+		return http.StatusUnauthorized, types.UserProfile{}, nil
 	}
 
 	return http.StatusOK, userCache[int(clientstate.UserId.Int32)], nil
 
+}
+
+func GetUser(id int) (int, types.UserProfile) {
+	if userCache[id].Id > 0 {
+		return http.StatusOK, userCache[id]
+	}
+	return http.StatusNotFound, types.UserProfile{}
 }

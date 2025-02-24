@@ -26,7 +26,7 @@ export type Group = {
 export type Recipe = {
     aiGenerated: boolean,
     aiLocalized: boolean,
-    categories: number[],
+    categories: RecipeCategoryitem[],
     created: string,
     difficulty: 0 | 1 | 2 | 3,
     id: number,
@@ -35,13 +35,37 @@ export type Recipe = {
     localization: RecipeLocalization,
     modified: string,
     originalRecipeId: number,
+    pictures: RecipePicture[],
+    preparation: RecipePreparation[],
     published: string,
     servingsCount: number,
     sharedInternal: boolean,
     sharedPublic: boolean,
     simple: boolean,
     sourceUrl: string,
+    statistics: RecipeStatistics,
+    timing: RecipeTiming,
     userLocale: string,
+}
+
+export type RecipeCategoryitem = {
+    categoryitem: number,
+    created: string,
+    user: User
+}
+
+export type RecipeIngredient = {
+    id: number,
+    index: number,
+    localization: RecipeIngredientLocalization,
+    quantity: number | null
+    unitId: number | null
+}
+
+export type RecipeIngredientLocalization = {
+    [languageCode: string]: {
+        title: string,
+    },
 }
 
 export type RecipeLocalization = {
@@ -50,6 +74,61 @@ export type RecipeLocalization = {
         sourceDescription: string,
         title: string,
     },
+}
+
+export type RecipePicture = {
+    id: number,
+    index: number,
+    localization: RecipePictureLocalization,
+    size: RecipePictureSize,
+    uploaded: string,
+    user: User
+}
+
+export type RecipePictureLocalization = {
+    [languageCode: string]: {
+        description: string,
+        name: string,
+    },
+}
+
+export type RecipePictureSize = {
+    height: number,
+    width: number,
+}
+
+export type RecipePreparation = {
+    id: number,
+    index: number,
+    ingredients: RecipeIngredient[],
+    localization: RecipePreparationLocalization,
+    timing: RecipeTiming,
+}
+
+export type RecipePreparationLocalization = {
+    [languageCode: string]: {
+        title: string,
+        instruct: string,
+    },
+}
+
+export type RecipeStatistics = {
+    cooked: number,
+    ratings: RecipeStatisticsItem,
+    steps: number,
+    views: number,
+    votes: RecipeStatisticsItem,
+}
+
+export type RecipeStatisticsItem = {
+    avg: number,
+    count: number,
+}
+
+export type RecipeTiming = {
+    cooking: number | null,
+    preparing: number | null,
+    waiting: number | null,
 }
 
 export type UserSelf = {

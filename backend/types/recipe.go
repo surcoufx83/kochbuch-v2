@@ -19,12 +19,14 @@ type Recipe struct {
 	UserLocale   string                        `json:"userLocale"`
 	Localization map[string]RecipeLocalization `json:"localization"`
 
-	Categories  []uint16      `json:"categories"`
-	Pictures    []Picture     `json:"pictures"`
-	Preparation []Preparation `json:"preparation"`
+	Categories  []RecipeCategoryitem `json:"categories"`
+	Pictures    []Picture            `json:"pictures"`
+	Preparation []Preparation        `json:"preparation"`
 
-	ServingsCount uint8 `json:"servingsCount"`
-	Difficulty    uint8 `json:"difficulty"`
+	ServingsCount uint8             `json:"servingsCount"`
+	Difficulty    uint8             `json:"difficulty"`
+	Statistics    RecipeStatistics  `json:"statistics"`
+	Timing        PreparationTiming `json:"timing"`
 
 	SharedInternal bool `json:"sharedInternal"`
 	SharedPublic   bool `json:"sharedPublic"`
@@ -34,20 +36,37 @@ type Recipe struct {
 	PublishedTime NullTime  `json:"published"`
 }
 
+type RecipeCategoryitem struct {
+	ItemId  uint16                `json:"categoryitem"`
+	UserId  NullUserProfileSimple `json:"user"`
+	Created time.Time             `json:"created"`
+}
+
 type RecipeLocalization struct {
 	Title             string `json:"title"`
 	Description       string `json:"description"`
 	SourceDescription string `json:"sourceDescription"`
 }
 
+type RecipeStatistics struct {
+	Steps   uint8                `json:"steps"`
+	Views   uint32               `json:"views"`
+	Cooked  uint32               `json:"cooked"`
+	Votes   RecipeStatisticsItem `json:"votes"`
+	Ratings RecipeStatisticsItem `json:"ratings"`
+}
+
+type RecipeStatisticsItem struct {
+	Avg   float32 `json:"avg"`
+	Count uint32  `json:"count"`
+}
+
 type Ingredient struct {
-	Id            uint64                            `json:"id"`
-	PreparationId uint64                            `json:"-"`
-	RecipeId      uint32                            `json:"-"`
-	SortIndex     uint8                             `json:"index"`
-	Quantity      float32                           `json:"quantity"`
-	UnitId        uint8                             `json:"unitId"`
-	Localization  map[string]IngredientLocalization `json:"localization"`
+	Id           uint64                            `json:"id"`
+	SortIndex    uint16                            `json:"index"`
+	Quantity     NullFloat64                       `json:"quantity"`
+	UnitId       NullInt32                         `json:"unitId"`
+	Localization map[string]IngredientLocalization `json:"localization"`
 }
 
 type IngredientLocalization struct {
@@ -57,7 +76,7 @@ type IngredientLocalization struct {
 type Picture struct {
 	Id           uint32                         `json:"id"`
 	RecipeId     uint32                         `json:"-"`
-	UserId       NullInt32                      `json:"userId"`
+	User         NullUserProfileSimple          `json:"user"`
 	Index        uint8                          `json:"index"`
 	Localization map[string]PictureLocalization `json:"localization"`
 	FileName     string                         `json:"-"`
@@ -78,7 +97,6 @@ type PictureLocalization struct {
 
 type Preparation struct {
 	Id           uint64                             `json:"id"`
-	RecipeId     uint32                             `json:"-"`
 	Index        uint8                              `json:"index"`
 	Ingredients  []Ingredient                       `json:"ingredients"`
 	Localization map[string]PreparationLocalization `json:"localization"`
@@ -111,4 +129,39 @@ type Unit struct {
 type UnitLocalization struct {
 	NameSingular string `json:"singular"`
 	NamePlural   string `json:"plural"`
+}
+
+type UserProfile struct {
+	Id                    int                   `json:"id" db:"user_id"`
+	UserName              string                `json:"username" db:"cloudid"`
+	DisplayName           string                `json:"displayname" db:"clouddisplayname"`
+	NcEnabled             bool                  `json:"-" db:"cloudenabled"`
+	FirstName             string                `json:"firstname" db:"firstname"`
+	LastName              string                `json:"lastname" db:"lastname"`
+	Enabled               bool                  `json:"enabled" db:"enabled"`
+	Admin                 bool                  `json:"admin" db:"admin"`
+	Email                 NullString            `json:"email" db:"email"`
+	EmailValidationPhrase NullString            `json:"-" db:"email_validationphrase"`
+	EmailValidated        NullTime              `json:"-" db:"email_validated"`
+	NcSyncTime            NullTime              `json:"-" db:"cloudsync"`
+	NcSyncStatus          int16                 `json:"-" db:"cloudsync_status"`
+	Created               time.Time             `json:"created" db:"created"`
+	Modified              NullTime              `json:"-" db:"modified"`
+	Groups                []Group               `json:"groups"`
+	SimpleProfile         NullUserProfileSimple `json:"-"`
+}
+
+type UserProfileSimple struct {
+	Id          int    `json:"id" db:"user_id"`
+	DisplayName string `json:"displayname" db:"clouddisplayname"`
+}
+
+type Group struct {
+	Id          int       `json:"id" db:"id"`
+	DisplayName string    `json:"displayname" db:"displayname"`
+	Name        string    `json:"name" db:"ncname"`
+	GrantAccess bool      `json:"-" db:"access_granted"`
+	GrantAdmin  string    `json:"-" db:"is_admin"`
+	Created     time.Time `json:"-" db:"created"`
+	Modified    NullTime  `json:"-" db:"modified"`
 }

@@ -24,6 +24,8 @@ var (
 	recipesEtagStr     string
 	publicRecipesCache map[uint32]types.Recipe
 
+	recipePreparationIngredients map[uint64][]types.Ingredient
+
 	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time
@@ -96,7 +98,7 @@ type DbRecipe struct {
 	StepsCount             uint8            `db:"stepscount"`
 	PreparingTime          types.NullInt32  `db:"preparing_time"`
 	CookingTime            types.NullInt32  `db:"cooking_time"`
-	WitingTime             types.NullInt32  `db:"waiting_time"`
+	WaitingTime            types.NullInt32  `db:"waiting_time"`
 }
 
 type dbUnit struct {
@@ -247,7 +249,7 @@ func GetUnits() (map[uint8]types.Unit, string) {
 }
 
 func LoadRecipes(db *sqlx.DB) {
-	query := "SELECT * FROM allrecipes"
+	query := "SELECT * FROM `allrecipes`"
 	var recipes []DbRecipe
 
 	err := db.Select(&recipes, query)
@@ -292,7 +294,7 @@ func LoadRecipes(db *sqlx.DB) {
 					SourceDescription: recipe.SourceDescriptionFr,
 				},
 			},
-			Categories:     []uint16{},
+			Categories:     []types.RecipeCategoryitem{},
 			Preparation:    []types.Preparation{},
 			Pictures:       []types.Picture{},
 			ServingsCount:  recipe.ServingsCount,
@@ -302,14 +304,34 @@ func LoadRecipes(db *sqlx.DB) {
 			CreatedTime:    recipe.Created,
 			ModifiedTime:   recipe.Modified,
 			PublishedTime:  recipe.Published,
+			Statistics: types.RecipeStatistics{
+				Steps:  recipe.StepsCount,
+				Views:  recipe.ViewsCount,
+				Cooked: recipe.CookedCount,
+				Votes: types.RecipeStatisticsItem{
+					Avg:   recipe.VotesAvg,
+					Count: recipe.VotesCount,
+				},
+				Ratings: types.RecipeStatisticsItem{
+					Avg:   recipe.RatingsAvg,
+					Count: recipe.RatingsCount,
+				},
+			},
+			Timing: types.PreparationTiming{
+				Preparing: recipe.PreparingTime,
+				Cooking:   recipe.CookingTime,
+				Waiting:   recipe.WaitingTime,
+			},
 		}
 
 		if recipe.PictureId.Valid {
 
+			_, userobj := GetUser(int(recipe.PictureUserId.Int32))
+
 			picture := types.Picture{
 				Id:       uint32(recipe.PictureId.Int32),
 				RecipeId: recipe.Id,
-				UserId:   recipe.PictureUserId,
+				User:     userobj.SimpleProfile,
 				Index:    uint8(recipe.PictureIndex.Int32),
 				Localization: map[string]types.PictureLocalization{
 					"de": {
@@ -353,6 +375,145 @@ func LoadRecipes(db *sqlx.DB) {
 	recipesMutex.Unlock()
 	log.Printf("Loaded %d recipes into cache", len(recipes))
 	log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
+
+	loadRecipesCategories(db)
+	loadRecipesIngredients(db)
+	loadRecipesPreparation(db)
+}
+
+func loadRecipesCategories(db *sqlx.DB) {
+	query := "SELECT * FROM `recipe_categories`"
+	var items []struct {
+		RecipeId int       `db:"recipe_id"`
+		ItemId   int       `db:"catitem_id"`
+		UserId   int       `db:"user_id"`
+		Created  time.Time `db:"created"`
+	}
+
+	err := db.Select(&items, query)
+	if err != nil {
+		log.Fatalf("Failed to load recipes categories: %v", err)
+	}
+
+	recipesMutex.Lock()
+	for _, item := range items {
+		log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
+		_, user := GetUser(item.UserId)
+		recipe := recipesCache[uint32(item.RecipeId)]
+		recipe.Categories = append(recipe.Categories, types.RecipeCategoryitem{
+			ItemId:  uint16(item.ItemId),
+			UserId:  user.SimpleProfile,
+			Created: item.Created,
+		})
+		recipesCache[uint32(item.RecipeId)] = recipe
+	}
+
+	recipesMutex.Unlock()
+	log.Printf("Loaded %d recipes categories into cache", len(items))
+}
+
+func loadRecipesIngredients(db *sqlx.DB) {
+	query := "SELECT * FROM `recipe_ingredients` WHERE `step_id` IS NOT NULL ORDER BY `step_id`, `sortindex`"
+	var items []struct {
+		Id            uint64            `db:"ingredient_id"`
+		RecipeId      uint32            `db:"recipe_id"`
+		StepId        uint64            `db:"step_id"`
+		UnitId        types.NullInt32   `db:"unit_id"`
+		Index         uint16            `db:"sortindex"`
+		Quantity      types.NullFloat64 `db:"quantity"`
+		DescriptionDe string            `db:"description_de"`
+		DescriptionEn string            `db:"description_en"`
+		DescriptionFr string            `db:"description_fr"`
+	}
+
+	err := db.Select(&items, query)
+	if err != nil {
+		log.Fatalf("Failed to load recipes ingredients: %v", err)
+	}
+
+	recipePreparationIngredients = make(map[uint64][]types.Ingredient)
+
+	recipesMutex.Lock()
+	for _, item := range items {
+		log.Printf("  - %d < %d: %s", item.StepId, item.Id, item.DescriptionDe)
+		recipePreparationIngredients[item.StepId] = append(recipePreparationIngredients[item.StepId], types.Ingredient{
+			Id:        item.Id,
+			SortIndex: item.Index,
+			Quantity:  item.Quantity,
+			UnitId:    item.UnitId,
+			Localization: map[string]types.IngredientLocalization{
+				"de": {
+					Title: item.DescriptionDe,
+				},
+				"en": {
+					Title: item.DescriptionEn,
+				},
+				"fr": {
+					Title: item.DescriptionFr,
+				},
+			},
+		})
+	}
+
+	recipesMutex.Unlock()
+	log.Printf("Loaded %d recipes preparation steps into cache", len(items))
+}
+
+func loadRecipesPreparation(db *sqlx.DB) {
+	query := "SELECT * FROM `recipe_steps` ORDER BY `recipe_id`, `sortindex`"
+	var steps []struct {
+		Id         uint64          `db:"step_id"`
+		RecipeId   uint32          `db:"recipe_id"`
+		Index      uint8           `db:"sortindex"`
+		TitleDe    string          `db:"title_de"`
+		TitleEn    string          `db:"title_en"`
+		TitleFr    string          `db:"title_fr"`
+		InstructDe string          `db:"instruct_de"`
+		InstructEn string          `db:"instruct_en"`
+		InstructFr string          `db:"instruct_fr"`
+		Preparing  types.NullInt32 `db:"preparing"`
+		Cooking    types.NullInt32 `db:"cooking"`
+		Waiting    types.NullInt32 `db:"waiting"`
+	}
+
+	err := db.Select(&steps, query)
+	if err != nil {
+		log.Fatalf("Failed to load recipes preparation steps: %v", err)
+	}
+
+	recipesMutex.Lock()
+	for _, step := range steps {
+		log.Printf("  - %d < %d: %s", step.RecipeId, step.Index, step.TitleDe)
+		recipe := recipesCache[uint32(step.RecipeId)]
+		recipe.Preparation = append(recipe.Preparation, types.Preparation{
+			Id:          step.Id,
+			Index:       step.Index,
+			Ingredients: recipePreparationIngredients[step.Id],
+			Localization: map[string]types.PreparationLocalization{
+				"de": {
+					Title:        step.TitleDe,
+					Instructions: step.InstructDe,
+				},
+				"en": {
+					Title:        step.TitleEn,
+					Instructions: step.InstructEn,
+				},
+				"fr": {
+					Title:        step.TitleFr,
+					Instructions: step.InstructFr,
+				},
+			},
+			Timing: types.PreparationTiming{
+				Preparing: step.Preparing,
+				Cooking:   step.Cooking,
+				Waiting:   step.Waiting,
+			},
+		})
+		recipesCache[uint32(step.RecipeId)] = recipe
+	}
+
+	recipesMutex.Unlock()
+	log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
 }
 
 func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
