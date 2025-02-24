@@ -20,6 +20,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
 import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
 import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth2-login-callback.component';
+import { WelcomeHeaderComponent } from './comp/recipes/welcome-header/welcome-header.component';
+import { ListingComponent } from './comp/recipes/listing/listing.component';
 
 @NgModule({
   declarations: [
@@ -36,6 +38,8 @@ import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth
     MissingLinkComponent,
     MeNoUserComponent,
     Oauth2LoginCallbackComponent,
+    WelcomeHeaderComponent,
+    ListingComponent,
   ],
   imports: [
     BrowserModule,

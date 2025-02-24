@@ -3,10 +3,12 @@ package services
 import (
 	"kochbuch-v2-backend/types"
 	"log"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,10 +18,11 @@ var (
 	categoriesEtag    time.Time
 	categoriesEtagStr string
 
-	publicRecipesMutex   sync.RWMutex
-	publicRecipesCache   map[uint32]types.Recipe
-	publicRecipesEtag    time.Time
-	publicRecipesEtagStr string
+	recipesMutex       sync.RWMutex
+	recipesCache       map[uint32]types.Recipe
+	recipesEtag        time.Time
+	recipesEtagStr     string
+	publicRecipesCache map[uint32]types.Recipe
 
 	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
@@ -43,53 +46,53 @@ type dbCategory struct {
 }
 
 type DbRecipe struct {
-	Id                     uint32    `db:"recipe_id"`
-	UserId                 uint32    `db:"user_id"`
-	EditUserId             uint32    `db:"edit_user_id"`
-	AiGenerated            bool      `db:"aigenerated"`
-	AiLocalized            bool      `db:"localized"`
-	IsPlaceholder          bool      `db:"placeholder"`
-	SharedInternal         bool      `db:"shared_internal"`
-	SharedPublic           bool      `db:"shared_external"`
-	Locale                 string    `db:"locale"`
-	NameDe                 string    `db:"name_de"`
-	NameEn                 string    `db:"name_en"`
-	NameFr                 string    `db:"name_fr"`
-	DescriptionDe          string    `db:"description_de"`
-	DescriptionEn          string    `db:"description_en"`
-	DescriptionFr          string    `db:"description_fr"`
-	ServingsCount          uint8     `db:"servings_count"`
-	SourceDescriptionDe    string    `db:"source_description_de"`
-	SourceDescriptionEn    string    `db:"source_description_en"`
-	SourceDescriptionFr    string    `db:"source_description_fr"`
-	SourceUrl              string    `db:"source_url"`
-	Created                time.Time `db:"created"`
-	Modified               time.Time `db:"modified"`
-	Published              time.Time `db:"published"`
-	Difficulty             uint8     `db:"difficulty"`
-	IngredientsGroupByStep bool      `db:"ingredientsGroupByStep"`
-	PictureId              uint32    `db:"picture_id"`
-	PictureIndex           uint8     `db:"picture_sortindex"`
-	PictureName            string    `db:"picture_name"`
-	PictureDescription     string    `db:"picture_description"`
-	PictureHash            string    `db:"picture_hash"`
-	PictureFilename        string    `db:"picture_filename"`
-	PictureFullPath        string    `db:"picture_full_path"`
-	PictureUploaded        time.Time `db:"picture_uploaded"`
-	PictureWidth           uint16    `db:"picture_width"`
-	PictureHeight          uint16    `db:"picture_height"`
-	ViewsCount             uint32    `db:"views"`
-	CookedCount            uint32    `db:"cooked"`
-	VotesCount             uint32    `db:"votes"`
-	VotesSum               uint32    `db:"votesum"`
-	VotesAvg               float32   `db:"avgvotes"`
-	RatingsCount           uint32    `db:"ratings"`
-	RatingsSum             uint32    `db:"ratesum"`
-	RatingsAvg             float32   `db:"avgratings"`
-	StepsCount             uint8     `db:"stepscount"`
-	PreparationTime        int16     `db:"preparationtime"`
-	CookingTime            int16     `db:"cookingtime"`
-	ChillTime              int16     `db:"chilltime"`
+	Id                     uint32          `db:"recipe_id"`
+	UserId                 types.NullInt32 `db:"user_id"`
+	EditUserId             types.NullInt32 `db:"edit_user_id"`
+	AiGenerated            bool            `db:"aigenerated"`
+	AiLocalized            bool            `db:"localized"`
+	IsPlaceholder          bool            `db:"placeholder"`
+	SharedInternal         bool            `db:"shared_internal"`
+	SharedPublic           bool            `db:"shared_external"`
+	Locale                 string          `db:"locale"`
+	NameDe                 string          `db:"name_de"`
+	NameEn                 string          `db:"name_en"`
+	NameFr                 string          `db:"name_fr"`
+	DescriptionDe          string          `db:"description_de"`
+	DescriptionEn          string          `db:"description_en"`
+	DescriptionFr          string          `db:"description_fr"`
+	ServingsCount          uint8           `db:"servings_count"`
+	SourceDescriptionDe    string          `db:"source_description_de"`
+	SourceDescriptionEn    string          `db:"source_description_en"`
+	SourceDescriptionFr    string          `db:"source_description_fr"`
+	SourceUrl              string          `db:"source_url"`
+	Created                time.Time       `db:"created"`
+	Modified               time.Time       `db:"modified"`
+	Published              types.NullTime  `db:"published"`
+	Difficulty             uint8           `db:"difficulty"`
+	IngredientsGroupByStep bool            `db:"ingredientsGroupByStep"`
+	PictureId              uint32          `db:"picture_id"`
+	PictureIndex           uint8           `db:"picture_sortindex"`
+	PictureName            string          `db:"picture_name"`
+	PictureDescription     string          `db:"picture_description"`
+	PictureHash            string          `db:"picture_hash"`
+	PictureFilename        string          `db:"picture_filename"`
+	PictureFullPath        string          `db:"picture_full_path"`
+	PictureUploaded        time.Time       `db:"picture_uploaded"`
+	PictureWidth           uint16          `db:"picture_width"`
+	PictureHeight          uint16          `db:"picture_height"`
+	ViewsCount             uint32          `db:"views"`
+	CookedCount            uint32          `db:"cooked"`
+	VotesCount             uint32          `db:"votes"`
+	VotesSum               uint32          `db:"votesum"`
+	VotesAvg               float32         `db:"avgvotes"`
+	RatingsCount           uint32          `db:"ratings"`
+	RatingsSum             uint32          `db:"ratesum"`
+	RatingsAvg             float32         `db:"avgratings"`
+	StepsCount             uint8           `db:"stepscount"`
+	PreparationTime        int16           `db:"preparationtime"`
+	CookingTime            int16           `db:"cookingtime"`
+	ChillTime              int16           `db:"chilltime"`
 }
 
 type dbUnit struct {
@@ -239,8 +242,8 @@ func GetUnits() (map[uint8]types.Unit, string) {
 	return unitsCache, unitsEtagStr
 }
 
-func LoadPublicRecipes(db *sqlx.DB) {
-	query := "SELECT * FROM allrecipes_nouser"
+func LoadRecipes(db *sqlx.DB) {
+	query := "SELECT * FROM allrecipes"
 	var recipes []DbRecipe
 
 	err := db.Select(&recipes, query)
@@ -249,11 +252,14 @@ func LoadPublicRecipes(db *sqlx.DB) {
 	}
 
 	// Build cache
-	publicRecipesMutex.Lock()
+	recipesMutex.Lock()
+	recipesCache = make(map[uint32]types.Recipe)
 	publicRecipesCache = make(map[uint32]types.Recipe)
 	for _, recipe := range recipes {
 
-		publicRecipesCache[recipe.Id] = types.Recipe{
+		log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
+
+		recipesCache[recipe.Id] = types.Recipe{
 			Id:               recipe.Id,
 			SimpleStruct:     true,
 			IsFork:           false,
@@ -292,20 +298,40 @@ func LoadPublicRecipes(db *sqlx.DB) {
 			PublishedTime:  recipe.Published,
 		}
 
-		if recipe.Modified.After(publicRecipesEtag) {
-			publicRecipesEtag = recipe.Modified
+		if recipe.SharedPublic {
+			publicRecipesCache[recipe.Id] = recipesCache[recipe.Id]
+		}
+
+		if recipe.Modified.After(recipesEtag) {
+			recipesEtag = recipe.Modified
 		}
 	}
 
-	publicRecipesEtagStr = hash(publicRecipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
-	publicRecipesMutex.Unlock()
+	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
+	recipesMutex.Unlock()
 	log.Printf("Loaded %d recipes into cache", len(recipes))
-	log.Printf("Public recipes cache ETag: %v", publicRecipesEtagStr)
+	log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
 }
 
-func GetPublicRecipes() (map[uint32]types.Recipe, string) {
-	publicRecipesMutex.RLock()
-	defer publicRecipesMutex.RUnlock()
+func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
+	code, user, err := GetSelf(c)
 
-	return publicRecipesCache, publicRecipesEtagStr
+	if err != nil || code != http.StatusOK || user.Id == 0 {
+		return publicRecipesCache, recipesEtagStr
+	}
+
+	recipesMutex.RLock()
+	defer recipesMutex.RUnlock()
+
+	userRecipes := make(map[uint32]types.Recipe)
+	for _, recipe := range recipesCache {
+		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
+			userRecipes[recipe.Id] = recipe
+		}
+	}
+	return userRecipes, recipesEtagStr
+}
+
+func GetRecipesEtag() string {
+	return recipesEtagStr
 }

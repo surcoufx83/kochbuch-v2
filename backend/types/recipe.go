@@ -10,8 +10,8 @@ type Recipe struct {
 	IsPlaceholder    bool   `json:"isPlaceholder"`
 	SourceUrl        string `json:"sourceUrl"`
 
-	OwnerUserId    uint32 `json:"-"`
-	LastEditUserId uint32 `json:"-"`
+	OwnerUserId    NullInt32 `json:"-"`
+	LastEditUserId NullInt32 `json:"-"`
 
 	AiGenerated bool `json:"aiGenerated"`
 	AiLocalized bool `json:"aiLocalized"`
@@ -29,7 +29,7 @@ type Recipe struct {
 
 	CreatedTime   time.Time `json:"created"`
 	ModifiedTime  time.Time `json:"modified"`
-	PublishedTime time.Time `json:"published"`
+	PublishedTime NullTime  `json:"published"`
 }
 
 type RecipeLocalization struct {

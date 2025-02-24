@@ -168,6 +168,21 @@ p {
     margin-bottom: 1rem;
 }
 
+.recipe-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--kb-border-color);
+    padding: calc(2 * var(--spacing));
+    border-radius: calc(var(--spacing) * 2);
+    word-wrap: break-word;
+
+    >:nth-child(1) {
+        border-top-left-radius: calc(var(--spacing) * 2);
+        border-top-right-radius: calc(var(--spacing) * 2);
+    }
+
+}
+
 .rounded {
     border-radius: calc(var(--spacing) * 2);
 }

@@ -26,7 +26,7 @@ func main() {
 	// Load entities into cache
 	services.LoadCategories(services.Db)
 	services.LoadUnits(services.Db)
-	services.LoadPublicRecipes(services.Db)
+	services.LoadRecipes(services.Db)
 
 	// Set up Gin router
 	router := gin.Default()

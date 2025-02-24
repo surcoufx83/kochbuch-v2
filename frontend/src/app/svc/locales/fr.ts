@@ -41,6 +41,12 @@ export const KB_Fr: L10nLocale = {
             submitIconAriaLabel: "Ce bouton lance la recherche avec le terme saisi. Après validation, vous serez redirigé vers la page de résultats."
         }
     },
+    homeRecipesPage: {
+        titleUser: "Bonjour [0]",
+        titleGuest: "Bonjour visiteur",
+        descriptionUser: "Vous trouverez ici les dernières recettes du livre de cuisine. La fonction de recherche se trouve en bas de la fenêtre.",
+        descriptionGuest: "Ravi de vous voir parcourir le livre de cuisine. Veuillez vous connecter via le bouton utilisateur en bas de la fenêtre pour accéder à toutes les recettes."
+    },
     login: {
         loginWithNcButton: "Se connecter avec un compte Nextcloud"
     },

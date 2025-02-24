@@ -39,6 +39,12 @@ export type L10nLocale = {
             submitIconAriaLabel: string,
         }
     },
+    homeRecipesPage: {
+        titleUser: string,
+        titleGuest: string,
+        descriptionUser: string,
+        descriptionGuest: string,
+    },
     login: {
         loginWithNcButton: string,
     }
@@ -48,5 +54,4 @@ export type L10nLocale = {
             iconLabel: string,
         }
     }
-
 }

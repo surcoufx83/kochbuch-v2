@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ApiService } from './api.service';
-import { Category } from '../types';
+import { Category, Recipe } from '../types';
 import { HttpStatusCode } from '@angular/common/http';
 
 @Injectable({
@@ -16,6 +16,10 @@ export class SharedDataService {
   private _categoriesEtag?: string;
   private _categoryItemsMapping = new BehaviorSubject<{ [key: number]: number }>({}); // item_id -> category_id
   public Categories = this._categories.asObservable();
+
+  private _recipes = new BehaviorSubject<{ [key: number]: Recipe }>({});
+  private _recipesEtag?: string;
+  public Recipes = this._recipes.asObservable();
 
   private _searchIsActive = new BehaviorSubject<boolean>(false);
   public SearchIsActive = this._searchIsActive.asObservable();
@@ -35,6 +39,7 @@ export class SharedDataService {
 
   private loadFromBrowserCache(): void {
     this.loadCategoriesFromCache();
+    this.loadRecipesFromCache();
   }
 
   private loadCategoriesFromCache(): void {
@@ -44,6 +49,15 @@ export class SharedDataService {
       this._categories.next(categories.categories);
       this._categoryItemsMapping.next(categories.categoryItemsMapping);
       this._categoriesEtag = categories.etag;
+    }
+  }
+
+  private loadRecipesFromCache(): void {
+    let recipesData: string | null = localStorage.getItem('kbRecipes');
+    if (recipesData !== null) {
+      const recipes = JSON.parse(recipesData) as RecipesCache;
+      this._recipes.next(recipes.recipes);
+      this._recipesEtag = recipes.etag;
     }
   }
 
@@ -67,8 +81,22 @@ export class SharedDataService {
     });
   }
 
+  private loadRecipesFromServer(): void {
+    this.apiService.get('recipes', this._recipesEtag).subscribe((res) => {
+      console.log(res)
+      if (res?.status === HttpStatusCode.Ok) {
+        const recipes = (res as RecipesResponse).body.recipes;
+        console.log(recipes)
+        this._recipes.next(Object.values(recipes));
+        this._recipesEtag = res.headers.get('etag') ?? undefined;
+        this.saveRecipesToCache();
+      }
+    });
+  }
+
   private reloadEntitiesFromServer(): void {
     this.loadCategoriesFromServer();
+    this.loadRecipesFromServer();
   }
 
   private saveCategoriesToCache(): void {
@@ -78,6 +106,14 @@ export class SharedDataService {
       etag: this._categoriesEtag,
     };
     localStorage.setItem('kbCategories', JSON.stringify(cache));
+  }
+
+  private saveRecipesToCache(): void {
+    const cache: RecipesCache = {
+      recipes: this._recipes.value,
+      etag: this._recipesEtag,
+    };
+    localStorage.setItem('kbRecipes', JSON.stringify(cache));
   }
 
   public SetTitle(title: string): void {
@@ -100,5 +136,16 @@ type CategoriesResponse = {
 type CategoriesCache = {
   categories: { [key: number]: Category };
   categoryItemsMapping: { [key: number]: number };
+  etag?: string;
+}
+
+type RecipesResponse = {
+  body: {
+    recipes: { [key: number]: Recipe };
+  }
+}
+
+type RecipesCache = {
+  recipes: { [key: number]: Recipe };
   etag?: string;
 }

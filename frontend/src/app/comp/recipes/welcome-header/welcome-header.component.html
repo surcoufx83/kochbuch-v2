@@ -1,0 +1,16 @@
+@if (LoggedIn && User && User.id > 0) {
+<h3 class="pb-3">
+    {{ replace(Locale.homeRecipesPage.titleUser, [User.firstname]) }}
+</h3>
+<p>
+    {{ Locale.homeRecipesPage.descriptionUser }}
+</p>
+}
+@else {
+<h3 class="pb-3">
+    {{ Locale.homeRecipesPage.titleGuest }}
+</h3>
+<p>
+    {{ Locale.homeRecipesPage.descriptionGuest }}
+</p>
+}

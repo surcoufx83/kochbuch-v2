@@ -9,8 +9,7 @@ import (
 
 func GetRecipes(c *gin.Context) {
 
-	// Get categories from cache
-	recipes, etag := services.GetPublicRecipes()
+	etag := services.GetRecipesEtag()
 
 	// Get Etag from request
 	requestEtag := c.Request.Header.Get("If-None-Match")
@@ -19,6 +18,9 @@ func GetRecipes(c *gin.Context) {
 		// Etag matches, return 304 Not Modified
 		c.Status(http.StatusNotModified)
 	} else {
+		// Get categories from cache
+		recipes, _ := services.GetRecipes(c)
+
 		// Set Etag header
 		c.Header("Etag", etag)
 
