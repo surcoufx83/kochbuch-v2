@@ -95,6 +95,12 @@ type PictureLocalization struct {
 	Description string `json:"description"`
 }
 
+type PictureApiEndpoint struct {
+	PictureId uint32
+	RecipeId  uint32
+	ForwardTo string
+}
+
 type Preparation struct {
 	Id           uint64                             `json:"id"`
 	Index        uint8                              `json:"index"`

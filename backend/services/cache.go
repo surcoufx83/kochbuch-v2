@@ -26,6 +26,8 @@ var (
 
 	recipePreparationIngredients map[uint64][]types.Ingredient
 
+	picturesCache map[string]types.PictureApiEndpoint
+
 	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time

@@ -172,7 +172,6 @@ p {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--kb-border-color);
-    padding: calc(2 * var(--spacing));
     border-radius: calc(var(--spacing) * 2);
     word-wrap: break-word;
 
