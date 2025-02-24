@@ -46,53 +46,57 @@ type dbCategory struct {
 }
 
 type DbRecipe struct {
-	Id                     uint32          `db:"recipe_id"`
-	UserId                 types.NullInt32 `db:"user_id"`
-	EditUserId             types.NullInt32 `db:"edit_user_id"`
-	AiGenerated            bool            `db:"aigenerated"`
-	AiLocalized            bool            `db:"localized"`
-	IsPlaceholder          bool            `db:"placeholder"`
-	SharedInternal         bool            `db:"shared_internal"`
-	SharedPublic           bool            `db:"shared_external"`
-	Locale                 string          `db:"locale"`
-	NameDe                 string          `db:"name_de"`
-	NameEn                 string          `db:"name_en"`
-	NameFr                 string          `db:"name_fr"`
-	DescriptionDe          string          `db:"description_de"`
-	DescriptionEn          string          `db:"description_en"`
-	DescriptionFr          string          `db:"description_fr"`
-	ServingsCount          uint8           `db:"servings_count"`
-	SourceDescriptionDe    string          `db:"source_description_de"`
-	SourceDescriptionEn    string          `db:"source_description_en"`
-	SourceDescriptionFr    string          `db:"source_description_fr"`
-	SourceUrl              string          `db:"source_url"`
-	Created                time.Time       `db:"created"`
-	Modified               time.Time       `db:"modified"`
-	Published              types.NullTime  `db:"published"`
-	Difficulty             uint8           `db:"difficulty"`
-	IngredientsGroupByStep bool            `db:"ingredientsGroupByStep"`
-	PictureId              uint32          `db:"picture_id"`
-	PictureIndex           uint8           `db:"picture_sortindex"`
-	PictureName            string          `db:"picture_name"`
-	PictureDescription     string          `db:"picture_description"`
-	PictureHash            string          `db:"picture_hash"`
-	PictureFilename        string          `db:"picture_filename"`
-	PictureFullPath        string          `db:"picture_full_path"`
-	PictureUploaded        time.Time       `db:"picture_uploaded"`
-	PictureWidth           uint16          `db:"picture_width"`
-	PictureHeight          uint16          `db:"picture_height"`
-	ViewsCount             uint32          `db:"views"`
-	CookedCount            uint32          `db:"cooked"`
-	VotesCount             uint32          `db:"votes"`
-	VotesSum               uint32          `db:"votesum"`
-	VotesAvg               float32         `db:"avgvotes"`
-	RatingsCount           uint32          `db:"ratings"`
-	RatingsSum             uint32          `db:"ratesum"`
-	RatingsAvg             float32         `db:"avgratings"`
-	StepsCount             uint8           `db:"stepscount"`
-	PreparationTime        int16           `db:"preparationtime"`
-	CookingTime            int16           `db:"cookingtime"`
-	ChillTime              int16           `db:"chilltime"`
+	Id                     uint32           `db:"recipe_id"`
+	UserId                 types.NullInt32  `db:"user_id"`
+	EditUserId             types.NullInt32  `db:"edit_user_id"`
+	AiGenerated            bool             `db:"aigenerated"`
+	AiLocalized            bool             `db:"localized"`
+	IsPlaceholder          bool             `db:"placeholder"`
+	SharedInternal         bool             `db:"shared_internal"`
+	SharedPublic           bool             `db:"shared_external"`
+	Locale                 string           `db:"locale"`
+	NameDe                 string           `db:"name_de"`
+	NameEn                 string           `db:"name_en"`
+	NameFr                 string           `db:"name_fr"`
+	DescriptionDe          string           `db:"description_de"`
+	DescriptionEn          string           `db:"description_en"`
+	DescriptionFr          string           `db:"description_fr"`
+	ServingsCount          uint8            `db:"servings_count"`
+	SourceDescriptionDe    string           `db:"source_description_de"`
+	SourceDescriptionEn    string           `db:"source_description_en"`
+	SourceDescriptionFr    string           `db:"source_description_fr"`
+	SourceUrl              string           `db:"source_url"`
+	Created                time.Time        `db:"created"`
+	Modified               time.Time        `db:"modified"`
+	Published              types.NullTime   `db:"published"`
+	Difficulty             uint8            `db:"difficulty"`
+	IngredientsGroupByStep bool             `db:"ingredientsGroupByStep"`
+	PictureId              types.NullInt32  `db:"picture_id"`
+	PictureUserId          types.NullInt32  `db:"picture_user_id"`
+	PictureIndex           types.NullInt32  `db:"picture_sortindex"`
+	PictureNameDe          types.NullString `db:"picture_name_de"`
+	PictureNameEn          types.NullString `db:"picture_name_en"`
+	PictureNameFr          types.NullString `db:"picture_name_fr"`
+	PictureDescriptionDe   types.NullString `db:"picture_description_de"`
+	PictureDescriptionEn   types.NullString `db:"picture_description_en"`
+	PictureDescriptionFr   types.NullString `db:"picture_description_fr"`
+	PictureFilename        types.NullString `db:"picture_filename"`
+	PictureFullPath        types.NullString `db:"picture_fullpath"`
+	PictureUploaded        types.NullTime   `db:"picture_uploaded"`
+	PictureWidth           types.NullInt32  `db:"picture_width"`
+	PictureHeight          types.NullInt32  `db:"picture_height"`
+	ViewsCount             uint32           `db:"views"`
+	CookedCount            uint32           `db:"cooked"`
+	VotesCount             uint32           `db:"votes"`
+	VotesSum               uint32           `db:"votesum"`
+	VotesAvg               float32          `db:"avgvotes"`
+	RatingsCount           uint32           `db:"ratings"`
+	RatingsSum             uint32           `db:"ratesum"`
+	RatingsAvg             float32          `db:"avgratings"`
+	StepsCount             uint8            `db:"stepscount"`
+	PreparingTime          types.NullInt32  `db:"preparing_time"`
+	CookingTime            types.NullInt32  `db:"cooking_time"`
+	WitingTime             types.NullInt32  `db:"waiting_time"`
 }
 
 type dbUnit struct {
@@ -259,7 +263,7 @@ func LoadRecipes(db *sqlx.DB) {
 
 		log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
 
-		recipesCache[recipe.Id] = types.Recipe{
+		recipeItem := types.Recipe{
 			Id:               recipe.Id,
 			SimpleStruct:     true,
 			IsFork:           false,
@@ -289,6 +293,8 @@ func LoadRecipes(db *sqlx.DB) {
 				},
 			},
 			Categories:     []uint16{},
+			Preparation:    []types.Preparation{},
+			Pictures:       []types.Picture{},
 			ServingsCount:  recipe.ServingsCount,
 			Difficulty:     recipe.Difficulty,
 			SharedInternal: recipe.SharedInternal,
@@ -298,13 +304,49 @@ func LoadRecipes(db *sqlx.DB) {
 			PublishedTime:  recipe.Published,
 		}
 
-		if recipe.SharedPublic {
-			publicRecipesCache[recipe.Id] = recipesCache[recipe.Id]
+		if recipe.PictureId.Valid {
+
+			picture := types.Picture{
+				Id:       uint32(recipe.PictureId.Int32),
+				RecipeId: recipe.Id,
+				UserId:   recipe.PictureUserId,
+				Index:    uint8(recipe.PictureIndex.Int32),
+				Localization: map[string]types.PictureLocalization{
+					"de": {
+						Name:        recipe.PictureNameDe.String,
+						Description: recipe.PictureDescriptionDe.String,
+					},
+					"en": {
+						Name:        recipe.PictureNameEn.String,
+						Description: recipe.PictureDescriptionEn.String,
+					},
+					"fr": {
+						Name:        recipe.PictureNameFr.String,
+						Description: recipe.PictureDescriptionFr.String,
+					},
+				},
+				FileName: recipe.PictureFilename.String,
+				FullPath: recipe.PictureFullPath.String,
+				Uploaded: recipe.PictureUploaded,
+				Dimension: types.PictureDimension{
+					Height: recipe.PictureHeight.Int32,
+					Width:  recipe.PictureWidth.Int32,
+				},
+			}
+			recipeItem.Pictures = append(recipeItem.Pictures, picture)
+
 		}
 
 		if recipe.Modified.After(recipesEtag) {
 			recipesEtag = recipe.Modified
 		}
+
+		recipesCache[recipe.Id] = recipeItem
+
+		if recipe.SharedPublic {
+			publicRecipesCache[recipe.Id] = recipesCache[recipe.Id]
+		}
+
 	}
 
 	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
