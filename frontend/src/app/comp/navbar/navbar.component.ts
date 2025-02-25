@@ -20,7 +20,11 @@ export class NavbarComponent {
     apiService: ApiService,
     private l10nService: L10nService,
   ) {
-    apiService.isLoggedIn.subscribe((state) => this.LoggedIn.set(state));
+    apiService.isLoggedIn.subscribe((state) => {
+      if (state === 'unknown')
+        return;
+      this.LoggedIn.set(state)
+    });
   }
 
   get Locale(): L10nLocale {

@@ -53,5 +53,9 @@ export type L10nLocale = {
             pageTitle: string,
             iconLabel: string,
         }
+    },
+    recipe: {
+        aiLocalizedContent: string,
+        submittedBy: string,
     }
 }

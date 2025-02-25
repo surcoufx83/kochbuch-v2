@@ -10,7 +10,7 @@ export class ApiService {
 
   private appParams?: ApiParams;
 
-  private _isLoggedIn = new BehaviorSubject<boolean>(false);
+  private _isLoggedIn = new BehaviorSubject<'unknown' | boolean>('unknown');
   public isLoggedIn = this._isLoggedIn.asObservable();
 
   private _user?: UserSelf;

@@ -17,7 +17,7 @@ import { UserSelf } from '../../types';
 export class MeComponent implements OnDestroy, OnInit {
 
   Icons = IconLib;
-  LoggedIn = signal<boolean>(false);
+  LoggedIn = signal<boolean | 'unknown'>('unknown');
   PageRef = signal<string>('');
   PageSrc = signal<string>('');
   User = signal<UserSelf | false>(false);

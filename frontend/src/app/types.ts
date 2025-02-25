@@ -45,6 +45,7 @@ export type Recipe = {
     sourceUrl: string,
     statistics: RecipeStatistics,
     timing: RecipeTiming,
+    user: User | null,
     userLocale: string,
 }
 

@@ -17,6 +17,7 @@ import { Recipe, UserSelf } from '../../types';
 export class RecipesComponent implements OnDestroy, OnInit {
 
   Icons = IconLib;
+  LangCode = signal<string>('de');
   LoggedIn = signal<boolean>(false);
   Recipes = signal<Recipe[]>([]);
   User = signal<UserSelf | false>(false);
@@ -28,7 +29,9 @@ export class RecipesComponent implements OnDestroy, OnInit {
     private l10nService: L10nService,
     private router: Router,
     private sharedDataService: SharedDataService,
-  ) { }
+  ) {
+    this.LangCode.set(this.l10nService.LangCode);
+  }
 
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
@@ -41,12 +44,24 @@ export class RecipesComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+      if (state === 'unknown')
+        return;
       this.LoggedIn.set(state);
       this.User.set(this.apiService.User ?? false);
     }));
+    this.subs.push(this.l10nService.userLocale.subscribe((l) => {
+      console.log(l)
+      if (l !== this.LangCode()) {
+        this.LangCode.set(l);
+      }
+    }));
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
       console.log(items)
-      this.Recipes.set(Object.values(items).sort((a, b) => a.published > b.published ? 1 : -1));
+      this.Recipes.set(
+        Object.values(items)
+          .filter((a) => a.pictures.length > 0)
+          .sort((a, b) => a.published > b.published ? -1 : 1)
+      );
     }));
   }
 

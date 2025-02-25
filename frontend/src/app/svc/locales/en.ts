@@ -55,5 +55,9 @@ export const KB_En: L10nLocale = {
             pageTitle: "Cookbook",
             iconLabel: "Cookbook icon of this website"
         }
+    },
+    recipe: {
+        aiLocalizedContent: "This recipe or parts of it have been automatically translated.",
+        submittedBy: "Submitted by [0]"
     }
 }

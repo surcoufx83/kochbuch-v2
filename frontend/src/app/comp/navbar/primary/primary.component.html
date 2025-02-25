@@ -18,10 +18,19 @@
         </div> -->
     </div>
     <!-- brand icon and app name, search field -->
-    <!-- <div class="flex lg:hidden items-center select-none">
-        <h4 class="m-0 cursor-pointer text-center w-[24px]" (click)="toggleMenuBar()">
-            <fa-icon [icon]="!ShowMenu() ? Icons.menu : Icons.menuOpened"></fa-icon>
-        </h4>
-    </div> -->
+    <div class="flex items-center select-none">
+        <button type="button" class="btn outline m-0 px-2" (click)="setLocale('de')">
+            DE
+        </button>
+        <button type="button" class="btn outline m-0 ms-2 px-2" (click)="setLocale('en')">
+            EN
+        </button>
+        <button type="button" class="btn outline m-0 ms-2 px-2" (click)="setLocale('fr')">
+            FR
+        </button>
+        <button type="button" class="btn outline m-0 ms-2 px-2" (click)="setLocale(null)">
+            X
+        </button>
+    </div>
 </div>
 <!-- main top navigation bar-->

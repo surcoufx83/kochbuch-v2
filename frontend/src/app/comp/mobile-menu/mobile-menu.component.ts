@@ -56,6 +56,8 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+      if (state === 'unknown')
+        return;
       this.LoggedIn.set(state);
       this.User.set(this.apiService.User ?? false);
     }));

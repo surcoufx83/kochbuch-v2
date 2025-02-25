@@ -27,8 +27,6 @@ var (
 
 	recipePreparationIngredients map[uint64][]types.Ingredient
 
-	picturesCache map[string]types.PictureApiEndpoint
-
 	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time
@@ -268,6 +266,8 @@ func LoadRecipes(db *sqlx.DB) {
 
 		log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
 
+		_, userobj := GetUser(int(recipe.PictureUserId.Int32))
+
 		recipeItem := types.Recipe{
 			Id:               recipe.Id,
 			SimpleStruct:     true,
@@ -277,6 +277,7 @@ func LoadRecipes(db *sqlx.DB) {
 			SourceUrl:        recipe.SourceUrl,
 			OwnerUserId:      recipe.UserId,
 			LastEditUserId:   recipe.EditUserId,
+			User:             userobj.SimpleProfile,
 			AiGenerated:      recipe.AiGenerated,
 			AiLocalized:      recipe.AiLocalized,
 			UserLocale:       recipe.Locale,

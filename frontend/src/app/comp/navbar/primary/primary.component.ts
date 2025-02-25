@@ -40,8 +40,15 @@ export class PrimaryComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+      if (state === 'unknown')
+        return;
       this.LoggedIn.set(state);
       this.User.set(this.apiService.User ?? false);
     }));
   }
+
+  setLocale(code: 'de' | 'en' | 'fr' | null): void {
+    this.l10nService.setLocale(code);
+  }
+
 }

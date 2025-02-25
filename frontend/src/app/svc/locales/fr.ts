@@ -55,5 +55,9 @@ export const KB_Fr: L10nLocale = {
             pageTitle: "Livre de recettes",
             iconLabel: "Icône du livre de recettes de ce site web"
         }
+    },
+    recipe: {
+        aiLocalizedContent: "Cette recette ou certaines de ses parties ont été traduites automatiquement.",
+        submittedBy: "Ajouté par [0]"
     }
 }

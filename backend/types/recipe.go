@@ -10,8 +10,9 @@ type Recipe struct {
 	IsPlaceholder    bool   `json:"isPlaceholder"`
 	SourceUrl        string `json:"sourceUrl"`
 
-	OwnerUserId    NullInt32 `json:"-"`
-	LastEditUserId NullInt32 `json:"-"`
+	OwnerUserId    NullInt32             `json:"-"`
+	LastEditUserId NullInt32             `json:"-"`
+	User           NullUserProfileSimple `json:"user"`
 
 	AiGenerated bool `json:"aiGenerated"`
 	AiLocalized bool `json:"aiLocalized"`
@@ -93,12 +94,6 @@ type PictureDimension struct {
 type PictureLocalization struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-}
-
-type PictureApiEndpoint struct {
-	PictureId uint32
-	RecipeId  uint32
-	ForwardTo string
 }
 
 type Preparation struct {

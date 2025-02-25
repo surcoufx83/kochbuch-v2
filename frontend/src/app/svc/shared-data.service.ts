@@ -9,6 +9,9 @@ import { HttpStatusCode } from '@angular/common/http';
 })
 export class SharedDataService {
 
+  private initialized = false;
+  private lastloginstate: 'unknown' | boolean = false;
+
   private _pageTitle = new BehaviorSubject<string>('');
   public PageTitle = this._pageTitle.asObservable();
 
@@ -33,6 +36,23 @@ export class SharedDataService {
   constructor(
     private apiService: ApiService,
   ) {
+    this.apiService.isLoggedIn.subscribe((state) => {
+      if (state === 'unknown')
+        return;
+      if (!this.initialized) {
+        this.lastloginstate = state;
+        this.initialized = true;
+        return;
+      }
+      if (this.lastloginstate !== state) {
+        console.warn('Login state changed!')
+        const localecache = localStorage.getItem('kbLocale');
+        localStorage.clear();
+        if (localecache)
+          localStorage.setItem('kbLocale', localecache);
+        this.reloadEntitiesFromServer();
+      }
+    });
     this.loadFromBrowserCache();
     this.reloadEntitiesFromServer();
   }

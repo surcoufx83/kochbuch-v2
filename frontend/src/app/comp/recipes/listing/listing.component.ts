@@ -15,6 +15,7 @@ export class ListingComponent {
   Icons = IconLib;
 
   @Input({ required: true }) Recipes: Recipe[] = [];
+  @Input({ required: true }) LangCode: string = 'de';
 
   constructor(
     private l10nService: L10nService,
