@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"kochbuch-v2-backend/api"
 	"kochbuch-v2-backend/services"
 	"log"
@@ -38,9 +39,15 @@ func main() {
 	router.POST("/errorreport", api.PostErrorReport)
 	router.POST("/login", api.PostOauth2Login)
 	router.GET("/me", api.GetMyProfile)
+	// router.GET("/media/uploads/:projectid/:pictureid/:filename", api.GetRecipePicture)
 	router.GET("/params", api.GetAppParams)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
+
+	media := router.Group("/media", CacheMiddleware(2592000))
+	{
+		media.GET("/uploads/:projectid/:pictureid/:filename", api.GetRecipePicture)
+	}
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -74,4 +81,11 @@ func main() {
 	services.Db.Close()
 	log.Println("Database connection closed")
 
+}
+
+func CacheMiddleware(maxAge int) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+		c.Next()
+	}
 }

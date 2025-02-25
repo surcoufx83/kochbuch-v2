@@ -4,7 +4,8 @@
         <div class="recipe-card">
             @if (item.pictures.length > 0) {
             <div class="header-img">
-                <img [src]="'/api/media/uploads/' + item.id + '/' + item.pictures[0].id">
+                <img
+                    [src]="'/api/media/uploads/' + item.id + '/' + item.pictures[0].id + '/' + item.pictures[0].filename">
             </div>
             }
             {{ item.localization['de'].title }}

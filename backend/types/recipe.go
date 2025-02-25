@@ -79,7 +79,7 @@ type Picture struct {
 	User         NullUserProfileSimple          `json:"user"`
 	Index        uint8                          `json:"index"`
 	Localization map[string]PictureLocalization `json:"localization"`
-	FileName     string                         `json:"-"`
+	FileName     string                         `json:"filename"`
 	FullPath     string                         `json:"-"`
 	Uploaded     NullTime                       `json:"uploaded"`
 	Dimension    PictureDimension               `json:"size"`

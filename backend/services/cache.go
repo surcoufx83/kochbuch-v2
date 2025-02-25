@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"kochbuch-v2-backend/types"
 	"log"
 	"net/http"
@@ -539,4 +540,22 @@ func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
 
 func GetRecipesEtag() string {
 	return recipesEtagStr
+}
+
+func GetRecipe(id uint32, c *gin.Context) (types.Recipe, error) {
+	_, user, _ := GetSelf(c)
+
+	recipesMutex.RLock()
+	defer recipesMutex.RUnlock()
+
+	for _, recipe := range recipesCache {
+		if recipe.Id != id {
+			continue
+		}
+
+		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
+			return recipe, nil
+		}
+	}
+	return types.Recipe{}, errors.New("not found")
 }

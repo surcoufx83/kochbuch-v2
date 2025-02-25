@@ -82,7 +82,8 @@ export type RecipePicture = {
     localization: RecipePictureLocalization,
     size: RecipePictureSize,
     uploaded: string,
-    user: User
+    user: User,
+    filename: string,
 }
 
 export type RecipePictureLocalization = {
