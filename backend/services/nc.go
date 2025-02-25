@@ -697,12 +697,12 @@ func createNewGroup(name string) (int, error) {
 	return int(groupid), nil
 }
 
-func GetSelf(c *gin.Context) (int, types.UserProfile, error) {
+func GetSelf(c *gin.Context) (int, string, types.UserProfile, error) {
 	state, err := c.Cookie("session")
 
 	if state == "" || err != nil {
 		// No session cookie
-		return http.StatusBadRequest, types.UserProfile{}, err
+		return http.StatusBadRequest, "", types.UserProfile{}, err
 	}
 
 	statesMutex.RLock()
@@ -710,15 +710,15 @@ func GetSelf(c *gin.Context) (int, types.UserProfile, error) {
 	statesMutex.RUnlock()
 	if !exists {
 		log.Printf("Cookie not found in cache: %v", state)
-		return http.StatusBadRequest, types.UserProfile{}, nil
+		return http.StatusBadRequest, "", types.UserProfile{}, nil
 	}
 
 	if !clientstate.UserId.Valid || clientstate.UserId.Int32 == 0 {
 		log.Printf("Cookie does not has loggedin user: %v", state)
-		return http.StatusUnauthorized, types.UserProfile{}, nil
+		return http.StatusUnauthorized, "", types.UserProfile{}, nil
 	}
 
-	return http.StatusOK, userCache[int(clientstate.UserId.Int32)], nil
+	return http.StatusOK, state, userCache[int(clientstate.UserId.Int32)], nil
 
 }
 
@@ -727,4 +727,42 @@ func GetUser(id int) (int, types.UserProfile) {
 		return http.StatusOK, userCache[id]
 	}
 	return http.StatusNotFound, types.UserProfile{}
+}
+
+func Logout(c *gin.Context) (int, error) {
+	code, state, _, err := GetSelf(c)
+	if err != nil || code != http.StatusOK || state == "" {
+		return http.StatusAccepted, nil
+	}
+
+	statesMutex.Lock()
+	defer statesMutex.Unlock()
+
+	log.Printf("  > Removing session: %v", state)
+
+	query := "DELETE FROM `user_login_states` WHERE `state` = ? LIMIT 1"
+
+	stmt, err := Db.Prepare(query)
+	if err != nil {
+		log.Printf("Failed to prepare DELETE FROM user_login_states query: %v", err)
+		return http.StatusInternalServerError, err
+	}
+
+	result, err := stmt.Exec(state)
+	if err != nil {
+		log.Printf("Failed to DELETE FROM user_login_states: %v", err)
+		return http.StatusInternalServerError, err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Failed to get rowcount from DELETE FROM user_login_states: %v", err)
+	} else if count != 0 {
+		log.Printf("Rowcount == 0 from DELETE FROM user_login_states: %v", err)
+	}
+
+	delete(statesCache, state)
+
+	return http.StatusAccepted, nil
+
 }

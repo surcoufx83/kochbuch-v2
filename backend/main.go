@@ -38,6 +38,7 @@ func main() {
 	router.GET("/categories", api.GetCategories)
 	router.POST("/errorreport", api.PostErrorReport)
 	router.POST("/login", api.PostOauth2Login)
+	router.POST("/logout", api.PostLogout)
 	router.GET("/me", api.GetMyProfile)
 	// router.GET("/media/uploads/:projectid/:pictureid/:filename", api.GetRecipePicture)
 	router.GET("/params", api.GetAppParams)

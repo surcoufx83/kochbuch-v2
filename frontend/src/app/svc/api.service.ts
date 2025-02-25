@@ -53,10 +53,6 @@ export class ApiService {
     });
   }
 
-  public get LoginUrl(): string | undefined {
-    return this.appParams?.loginUrl;
-  }
-
   public loadUser(): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
 
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null>();
@@ -68,9 +64,25 @@ export class ApiService {
         this._user = r.body as UserSelf;
         this._isLoggedIn.next(true);
       }
+      else {
+        this._isLoggedIn.next(false);
+      }
     });
 
     return reply;
+  }
+
+  public get LoginUrl(): string | undefined {
+    return this.appParams?.loginUrl;
+  }
+
+  public logout(): void {
+    const sub = this.post('logout', {}).pipe(first()).subscribe((reply) => {
+      console.log(reply);
+      this.setCookie('session', '', -1);
+      localStorage.removeItem('kbParams');
+      location.replace('/');
+    });
   }
 
   public oauth2Callback(state: string, code: string): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
@@ -106,6 +118,14 @@ export class ApiService {
 
   public reportError(report: PageErrorReport): void {
     this.post('errorreport', report).pipe(first()).subscribe(() => { });
+  }
+
+  private setCookie(name: string, value: string, expireDays: number, path: string = '') {
+    let d: Date = new Date();
+    d.setTime(d.getTime() + expireDays * 24 * 60 * 60 * 1000);
+    let expires: string = `expires=${d.toUTCString()}`;
+    let cpath: string = path ? `; path=${path}` : '';
+    document.cookie = `${name}=${value}; ${expires}${cpath}`;
   }
 
   public get User(): UserSelf | undefined {

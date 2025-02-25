@@ -15,12 +15,17 @@ type loginCallbackObject struct {
 
 // Handles the /me endpoint to query own users profile
 func GetMyProfile(c *gin.Context) {
-	code, profile, _ := services.GetSelf(c)
+	code, _, profile, _ := services.GetSelf(c)
 	if code != http.StatusOK {
 		c.String(code, "")
 	} else {
 		c.JSON(code, profile)
 	}
+}
+
+func PostLogout(c *gin.Context) {
+	code, _ := services.Logout(c)
+	c.Status(code)
 }
 
 // Handles the /login endpoint containing the Nextcloud Login code

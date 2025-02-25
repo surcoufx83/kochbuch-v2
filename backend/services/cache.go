@@ -521,7 +521,7 @@ func loadRecipesPreparation(db *sqlx.DB) {
 }
 
 func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
-	code, user, err := GetSelf(c)
+	code, _, user, err := GetSelf(c)
 
 	if err != nil || code != http.StatusOK || user.Id == 0 {
 		return publicRecipesCache, recipesEtagStr
@@ -544,7 +544,7 @@ func GetRecipesEtag() string {
 }
 
 func GetRecipe(id uint32, c *gin.Context) (types.Recipe, error) {
-	_, user, _ := GetSelf(c)
+	_, _, user, _ := GetSelf(c)
 
 	recipesMutex.RLock()
 	defer recipesMutex.RUnlock()

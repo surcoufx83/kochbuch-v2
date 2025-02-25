@@ -21,7 +21,7 @@
     }
 
     body {
-        background-image: linear-gradient(#282a28, darken(#282a28, 10%)) !important;
+        background: no-repeat fixed linear-gradient(#282a28 0vh, #141514 90vh, #0a0a0a 100vh) !important;
     }
 
 }
@@ -70,7 +70,7 @@ a {
 
 body {
     background-color: var(--kb-bg-back-color);
-    background-image: linear-gradient(#f5eae1, darken(#f5eae1, 10%));
+    background: no-repeat fixed linear-gradient(#f5eae1 0vh, #4d3019 90vh, #0f0a05 100vh);
     color: var(--kb-text-color);
     font-family: var(--kb-font-default);
     font-size: var(--kb-font-size-default);
@@ -185,6 +185,7 @@ p {
 }
 
 .recipe-card {
+    background-color: var(--kb-bg-back-color);
     display: flex;
     flex-direction: column;
     border: 1px solid var(--kb-border-color);

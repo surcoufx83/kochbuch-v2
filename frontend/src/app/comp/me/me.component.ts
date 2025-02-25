@@ -36,6 +36,10 @@ export class MeComponent implements OnDestroy, OnInit {
     return this.l10nService.Locale;
   }
 
+  logout(): void {
+    this.apiService.logout();
+  }
+
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
     this.subs = [];

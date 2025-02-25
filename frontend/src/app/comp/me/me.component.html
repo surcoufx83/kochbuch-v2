@@ -1,8 +1,18 @@
 @if (LoggedIn() === 'unknown') {
-
+Loggedin == unknown
+<br />
+{{User()|json}}
 }
 @else if (LoggedIn() === true) {
 
+
+<button type="button" class="btn outline m-0 ms-2 px-2" (click)="logout()">
+    Logout
+</button>
+
+Loggedin == true
+<br />
+{{User()|json}}
 }
 @else {
 <kb-me-no-user [PageRef]="PageRef()" [PageSrc]="PageSrc()"></kb-me-no-user>
