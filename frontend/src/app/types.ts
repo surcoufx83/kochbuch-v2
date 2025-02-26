@@ -37,7 +37,7 @@ export type Recipe = {
     originalRecipeId: number,
     pictures: RecipePicture[],
     preparation: RecipePreparation[],
-    published: string,
+    published: string | null,
     servingsCount: number,
     sharedInternal: boolean,
     sharedPublic: boolean,

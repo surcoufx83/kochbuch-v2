@@ -24,18 +24,18 @@ export const KB_En: L10nLocale = {
             searchInput: {
                 ariaLabel: "Enter your search query into this field. For example, the word \"Shepherd's Pie\" to search for such dishes.",
                 placeholder: {
-                    jan: "Enter search term (e.g. Haggis with Neeps and Tatties)",
-                    feb: "Enter search term (e.g. Pancakes with Lemon and Sugar)",
-                    mar: "Enter search term (e.g. Roast Lamb with Mint Sauce)",
-                    apr: "Enter search term (e.g. Spring Asparagus Salad)",
-                    may: "Enter search term (e.g. Venison Stew)",
-                    jun: "Enter search term (e.g. Fresh Summer Salad)",
-                    jul: "Enter search term (e.g. Strawberry Trifle)",
-                    aug: "Enter search term (e.g. Grilled Vegetables with Halloumi)",
-                    sep: "Enter search term (e.g. Pumpkin Soup with Ginger)",
-                    oct: "Enter search term (e.g. Traditional Potato Gratin)",
-                    nov: "Enter search term (e.g. Roast Goose with Braised Red Cabbage)",
-                    dec: "Enter search term (e.g. Christmas Pudding)"
+                    jan: "Search term (e.g. Haggis with Neeps and Tatties)",
+                    feb: "Search term (e.g. Pancakes with Lemon and Sugar)",
+                    mar: "Search term (e.g. Roast Lamb with Rosemary)",
+                    apr: "Search term (e.g. Creamy Asparagus Soup)",
+                    may: "Search term (e.g. Venison Stew)",
+                    jun: "Search term (e.g. Fresh Summer Salad)",
+                    jul: "Search term (e.g. Strawberry Shortcake)",
+                    aug: "Search term (e.g. Grilled Vegetables with Halloumi)",
+                    sep: "Search term (e.g. Pumpkin Soup with Ginger)",
+                    oct: "Search term (e.g. Traditional Potato Gratin)",
+                    nov: "Search term (e.g. Roast Goose with Braised Red Cabbage)",
+                    dec: "Search term (e.g. Christmas Pudding)"
                 }
             },
             submitIconAriaLabel: "This button starts the search with the entered search term. After submission, you will be redirected to the results page."
@@ -58,6 +58,12 @@ export const KB_En: L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: "This recipe or parts of it have been automatically translated.",
+        difficulty: {
+            0: "No information",
+            1: "Easy",
+            2: "Medium",
+            3: "Difficult"
+        },
         submittedBy: "Submitted by [0]"
     }
 }

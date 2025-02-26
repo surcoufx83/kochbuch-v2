@@ -3,11 +3,11 @@
     <!-- brand icon and app name, search field -->
     <div class="flex items-center">
         <a [routerLink]="['/']" class="flex items-center truncate">
-            <h1 class="mb-0" style="line-height: 1;" aria-labelledby="brand-label">
+            <!-- <h1 class="mb-0" style="line-height: 1;" aria-labelledby="brand-label">
                 KB
-            </h1>
-            <h4 class="m-0 ps-3 overflow-clip text-nowrap transition-width duration-150 ease-in-out"
-                [ngClass]="[ ShowLanguageSelector() ? 'w-0' : 'w-44']">
+            </h1> -->
+            <h4 class="m-0 overflow-clip text-nowrap transition-width duration-150 ease-in-out"
+                [ngClass]="[ ShowLanguageSelector() ? 'w-0 md:w-44' : 'w-44']">
                 {{ Locale.navbar.brand.pageTitle }}
             </h4>
             <span class="sr-only" id="brand-label">
@@ -31,7 +31,7 @@
             <button type="button" class="flex items-center btn my-0 ms-2 px-2"
                 (click)="ShowLanguageSelector.set(!ShowLanguageSelector())">
                 <fa-icon [icon]="Icons.caretLeft" [ngClass]="{ 'color-navbar-bg': ShowLanguageSelector() }"></fa-icon>
-                <fa-icon [icon]="Icons.ailocalized"></fa-icon>
+                <fa-icon [icon]="Icons.ailocalized" [size]="'lg'"></fa-icon>
                 <fa-icon [icon]="Icons.caretRight" [ngClass]="{ 'color-navbar-bg': !ShowLanguageSelector() }"></fa-icon>
             </button>
         </div>

@@ -57,10 +57,11 @@ export class RecipesComponent implements OnDestroy, OnInit {
     }));
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
       console.log(items)
+      // return;
       this.Recipes.set(
         Object.values(items)
           .filter((a) => a.pictures.length > 0)
-          .sort((a, b) => a.published > b.published ? -1 : 1)
+          .sort((a, b) => (a.published ?? a.modified) > (b.published ?? b.modified) ? -1 : 1)
       );
     }));
   }

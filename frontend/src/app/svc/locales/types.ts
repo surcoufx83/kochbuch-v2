@@ -56,6 +56,12 @@ export type L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: string,
+        difficulty: {
+            0: string,
+            1: string,
+            2: string,
+            3: string,
+        },
         submittedBy: string,
     }
 }

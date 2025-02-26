@@ -24,18 +24,18 @@ export const KB_Fr: L10nLocale = {
             searchInput: {
                 ariaLabel: "Saisissez votre requête de recherche dans ce champ. Par exemple, le mot \"Lasagne\" pour rechercher ce type de plat.",
                 placeholder: {
-                    jan: "Saisir un terme de recherche (ex. Haggis avec navets et pommes de terre)",
-                    feb: "Saisir un terme de recherche (ex. Crêpes au citron et sucre)",
-                    mar: "Saisir un terme de recherche (ex. Agneau rôti à la menthe)",
-                    apr: "Saisir un terme de recherche (ex. Asperges printanières en salade)",
-                    may: "Saisir un terme de recherche (ex. Ragoût de gibier)",
-                    jun: "Saisir un terme de recherche (ex. Salade fraîche d'été)",
-                    jul: "Saisir un terme de recherche (ex. Fraisier)",
-                    aug: "Saisir un terme de recherche (ex. Légumes grillés avec halloumi)",
-                    sep: "Saisir un terme de recherche (ex. Soupe de potiron au gingembre)",
-                    oct: "Saisir un terme de recherche (ex. Gratin de pommes de terre traditionnel)",
-                    nov: "Saisir un terme de recherche (ex. Oie rôtie avec chou rouge braisé)",
-                    dec: "Saisir un terme de recherche (ex. Pudding de Noël)"
+                    jan: "Terme de recherche (ex. Haggis avec navets et pommes de terre)",
+                    feb: "Terme de recherche (ex. Crêpes au citron et sucre)",
+                    mar: "Terme de recherche (ex. Agneau rôti au romarin)",
+                    apr: "Terme de recherche (ex. Velouté d'asperges)",
+                    may: "Terme de recherche (ex. Ragoût de gibier)",
+                    jun: "Terme de recherche (ex. Salade estivale fraîche)",
+                    jul: "Terme de recherche (ex. Tarte aux fraises)",
+                    aug: "Terme de recherche (ex. Légumes grillés avec halloumi)",
+                    sep: "Terme de recherche (ex. Soupe de potiron au gingembre)",
+                    oct: "Terme de recherche (ex. Gratin de pommes de terre traditionnel)",
+                    nov: "Terme de recherche (ex. Oie rôtie avec chou rouge braisé)",
+                    dec: "Terme de recherche (ex. Pudding de Noël)"
                 }
             },
             submitIconAriaLabel: "Ce bouton lance la recherche avec le terme saisi. Après validation, vous serez redirigé vers la page de résultats."
@@ -58,6 +58,12 @@ export const KB_Fr: L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: "Cette recette ou certaines de ses parties ont été traduites automatiquement.",
+        difficulty: {
+            0: "Aucune indication",
+            1: "Facile",
+            2: "Moyen",
+            3: "Difficile"
+        },
         submittedBy: "Ajouté par [0]"
     }
 }

@@ -26,7 +26,7 @@ export class WelcomeHeaderComponent {
   }
 
   public replace(content: string, replacements: any[]): string {
-    return this.l10nService.replace(content, replacements);
+    return this.l10nService.Replace(content, replacements);
   }
 
 }

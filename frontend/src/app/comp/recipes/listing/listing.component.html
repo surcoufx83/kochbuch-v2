@@ -47,13 +47,16 @@
 
             <div class="footer justify-evenly">
                 <div>
-                    View
+
+                    @if (item.difficulty > 0) {
+                    {{ Locale.recipe.difficulty[item.difficulty] }}
+                    }
                 </div>
                 <div>
                     Cook
                 </div>
                 <div>
-                    Date
+                    {{ formatDate(item.published ?? item.modified, 'PP') }}
                 </div>
             </div>
         </div>

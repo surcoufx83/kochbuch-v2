@@ -21,12 +21,16 @@ export class ListingComponent {
     private l10nService: L10nService,
   ) { }
 
+  public formatDate(date: string | number | Date, formatStr: string): string {
+    return this.l10nService.FormatDate(date, formatStr);
+  }
+
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
   }
 
   public replace(content: string, replacements: any[]): string {
-    return this.l10nService.replace(content, replacements);
+    return this.l10nService.Replace(content, replacements);
   }
 
 }

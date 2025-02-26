@@ -4,29 +4,26 @@
 
 // fix required for @use
 // see https://github.com/lipis/flag-icons/issues/1335
-$flag-icons-included-countries: 'gb' 'de' 'fr';
+$flag-icons-included-countries: 'eu' 'de' 'fr';
 @import 'flag-icons/sass/flag-icons';
 
 @media (prefers-color-scheme: dark) {
 
     :root {
-        // palette: https://coolors.co/282a28-f5eae1-002448-375a0c-ef767a
+        // palette: https://coolors.co/3c3e3c-f5eae1-00478f-375a0c-ef767a
         --kb-bg-back-color: #282a28;
         --kb-bg-back-color-rgb: 40, 42, 40;
+        --kb-card-back-color: #3c3e3c;
         --kb-border-color: #5a5e5a;
-        --kb-bg-navbar-back-color: #002448;
-        --kb-bg-navbar2-back-color: #003366;
+        --kb-bg-navbar-back-color: #00478f;
+        --kb-bg-navbar2-back-color: #002448;
         --kb-text-color: #f5eae1;
         --kb-navbar-text-color: #f5eae1;
-        --kb-menu-buttons-bg: #003366;
+        --kb-menu-buttons-bg: #00478f;
         --kb-menu-buttons-color: #f5eae1;
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
         --kb-link-color: #375a0c;
         --kb-warn-color: #ef787a;
-    }
-
-    body {
-        background: no-repeat fixed linear-gradient(#282a28 0vh, #141514 90vh, #0a0a0a 100vh) !important;
     }
 
 }
@@ -37,12 +34,13 @@ $flag-icons-included-countries: 'gb' 'de' 'fr';
         // palette: https://coolors.co/f5eae1-141514-002448-375a0c-bb4430
         --kb-bg-back-color: #f5eae1;
         --kb-bg-back-color-rgb: 245, 234, 225;
+        --kb-card-back-color: #ebd4c2;
         --kb-border-color: #282a28;
         --kb-bg-navbar-back-color: #002448;
         --kb-bg-navbar2-back-color: #003366;
         --kb-text-color: #141514;
         --kb-navbar-text-color: #f5eae1;
-        --kb-menu-buttons-bg: #003366;
+        --kb-menu-buttons-bg: #002448;
         --kb-menu-buttons-color: #f5eae1;
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
         --kb-link-color: #375a0c;
@@ -75,7 +73,6 @@ a {
 
 body {
     background-color: var(--kb-bg-back-color);
-    background: no-repeat fixed linear-gradient(#f5eae1 0vh, #4d3019 90vh, #0f0a05 100vh);
     color: var(--kb-text-color);
     font-family: var(--kb-font-default);
     font-size: var(--kb-font-size-default);
@@ -203,7 +200,7 @@ p {
 }
 
 .recipe-card {
-    background-color: var(--kb-bg-back-color);
+    background-color: var(--kb-card-back-color);
     display: flex;
     flex-direction: column;
     border: 1px solid var(--kb-border-color);

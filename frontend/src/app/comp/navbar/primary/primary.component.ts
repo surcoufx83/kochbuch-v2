@@ -17,7 +17,7 @@ export class PrimaryComponent implements OnInit, OnDestroy {
 
   Icons = IconLib;
   ActiveLocale = signal<string>('');
-  ShownLocales: { locale: L10nLocale, flag: string, key: string }[];
+  ShownLocales: { flag: string, key: string }[];
   ShowLanguageSelector = signal<boolean>(false);
   LoggedIn = signal<boolean>(false);
   User = signal<UserSelf | false>(false);
@@ -52,7 +52,7 @@ export class PrimaryComponent implements OnInit, OnDestroy {
   }
 
   setLocale(code: string): void {
-    this.l10nService.setLocale(code);
+    this.l10nService.SetLocale(code);
   }
 
 }

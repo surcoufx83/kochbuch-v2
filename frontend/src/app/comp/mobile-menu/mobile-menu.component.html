@@ -1,21 +1,21 @@
-<div class="menu-bar p-4">
+<div class="menu-bar py-3 px-4">
     <form (submit)="onSubmitSearch($event); $event.preventDefault()" [formGroup]="SearchForm">
         <div class="flex items-center justify-center">
             <!-- multifunctional search button -->
             <a [routerLink]="!IsSearchUrl() ? ['/search'] : undefined"
                 (click)="!SearchState() ? onStartSearch(search) : undefined"
-                [ngClass]="{ 'w-full': SearchState(), 'lg:w-lg': SearchState(), 'w-[75px]': !SearchState() }"
-                class="transition-[width] duration-150 ease-in-out">
+                [ngClass]="{ 'w-full': SearchState(), 'lg:w-lg': SearchState(), 'w-[57px] mx-4': !SearchState() }"
+                class="transition-[width, margin] duration-150 ease-in-out">
 
-                <div class="button-like btn px-3 py-2 flex items-center transition-[width] duration-150 ease-in-out w-[50px] overflow-hidden"
-                    [ngClass]="{ 'mx-3': !SearchState(), 'w-full': SearchState() }" name="momenu-search-opener"
+                <div class="button-like btn px-3 py-2 flex items-center transition-[width] duration-150 ease-in-out w-[57px] h-[57px] overflow-hidden"
+                    [ngClass]="{ '': !SearchState(), 'w-full': SearchState() }" name="momenu-search-opener"
                     [attr.aria-label]="Locale.floatingMenu.searchButton.ariaLabel">
 
                     <button (click)="onClickSearchButtonIcon($event)"
                         [attr.aria-label]="Locale.floatingMenu.searchButton.searchIconAriaLabel" role="button"
                         type="button">
                         <fa-icon [icon]="!SearchState() ? Icons.search : Icons.searchClose" [fixedWidth]="true"
-                            size="lg"></fa-icon>
+                            size="xl"></fa-icon>
                     </button>
 
                     <input type="search" name="mobmenu-search" id="mobmenu-search" #search class="mr-2 ml-4 grow"
@@ -26,7 +26,7 @@
 
                     <button [attr.aria-label]="Locale.floatingMenu.searchButton.submitIconAriaLabel" role="button"
                         type="submit">
-                        <fa-icon [icon]="Icons.searchStart" [fixedWidth]="true" size="lg"></fa-icon>
+                        <fa-icon [icon]="Icons.searchStart" [fixedWidth]="true" size="xl"></fa-icon>
                     </button>
                 </div>
 
@@ -35,11 +35,11 @@
 
             <!-- button to navigate to login/profile page -->
             <a [routerLink]="['/me']" [queryParams]="{ ref: 'mobile-menu', source: 'profile' }"
-                [ngClass]="{ 'w-[75px]': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
-                class="transition-[width] duration-150 ease-in-out self-stretch">
-                <button class="btn mx-3 p-3">
+                [ngClass]="{ 'w-[57px] mx-4': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
+                class="transition-[width, margin] duration-150 ease-in-out">
+                <button class="btn p-3 aspect-1/1">
                     <fa-icon [icon]="LoggedIn() ? Icons.account : Icons.accountNone" [fixedWidth]="true"
-                        size="lg"></fa-icon>
+                        size="xl"></fa-icon>
                 </button>
             </a>
             <!-- button to navigate to login/profile page -->
@@ -47,10 +47,10 @@
             <!-- button to create a new recipe -->
             @if (LoggedIn()) {
             <a [routerLink]="['/create']" [queryParams]="{ ref: 'mobile-menu', source: 'new' }"
-                [ngClass]="{ 'w-[75px]': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
-                class="transition-[width] duration-150 ease-in-out self-stretch">
-                <button class="btn mx-3 p-3">
-                    <fa-icon [icon]="Icons.recipeNew" [fixedWidth]="true" size="lg"></fa-icon>
+                [ngClass]="{ 'w-[57px] mx-4': !SearchState(), 'w-0 overflow-hidden': SearchState() }"
+                class="transition-[width, margin] duration-150 ease-in-out">
+                <button class="btn p-3 aspect-1/1">
+                    <fa-icon [icon]="Icons.recipeNew" [fixedWidth]="true" size="xl"></fa-icon>
                 </button>
             </a>
             }

@@ -4,27 +4,32 @@ import { L10nLocale } from './locales/types';
 import { KB_De } from './locales/de';
 import { KB_En } from './locales/en';
 import { KB_Fr } from './locales/fr';
+import { enUS as FNS_En, de as FNS_De, fr as FNS_Fr, Locale } from 'date-fns/locale';
+import { format, formatDate, parseISO } from 'date-fns';
 
 @Injectable({
   providedIn: 'root'
 })
 export class L10nService {
 
-  private availableLocales: { [key: string]: { locale: L10nLocale, flag: string, key: string } } = {
+  private availableLocales: { [key: string]: { locale: L10nLocale, datefns: Locale, flag: string, key: string } } = {
     'de': {
       locale: KB_De,
+      datefns: FNS_De,
       flag: 'fi-de',
       key: 'de',
     },
-    'en': {
-      locale: KB_En,
-      flag: 'fi-gb',
-      key: 'en',
-    },
     'fr': {
       locale: KB_Fr,
+      datefns: FNS_Fr,
       flag: 'fi-fr',
       key: 'fr',
+    },
+    'en': {
+      locale: KB_En,
+      datefns: FNS_En,
+      flag: 'fi-eu',
+      key: 'en',
     },
   };
   private fallbackLocale = 'de';
@@ -63,8 +68,17 @@ export class L10nService {
     });
   }
 
-  public get AvailableLocales(): { [key: string]: { locale: L10nLocale, flag: string, key: string } } {
+  public get AvailableLocales(): { [key: string]: { locale: L10nLocale, datefns: Locale, flag: string, key: string } } {
     return this.availableLocales;
+  }
+
+  public FormatDate(date: string | number | Date, formatStr: string): string {
+    if (typeof (date) === 'string') {
+      date = parseISO(date);
+    }
+    return format(date, formatStr, {
+      locale: this.availableLocales[this.LangCode].datefns ?? FNS_De
+    });
   }
 
   public get LangCode(): string {
@@ -75,14 +89,14 @@ export class L10nService {
     return this.availableLocales[this.userLocaleStr].locale;
   }
 
-  public replace(content: string, replacements: any[]): string {
+  public Replace(content: string, replacements: any[]): string {
     for (let i = 0; i < replacements.length; i++) {
       content = content.replace(`[${i}]`, replacements[i]);
     }
     return content;
   }
 
-  setLocale(code: string | null): void {
+  SetLocale(code: string | null): void {
     if (code === null) {
       localStorage.removeItem('kbLocale');
       for (let i = 0; i < navigator.languages.length; i++) {
