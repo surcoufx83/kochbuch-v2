@@ -2,6 +2,11 @@
 @use "@fontsource/source-sans-pro";
 @use "@fontsource/cinzel";
 
+// fix required for @use
+// see https://github.com/lipis/flag-icons/issues/1335
+$flag-icons-included-countries: 'gb' 'de' 'fr';
+@import 'flag-icons/sass/flag-icons';
+
 @media (prefers-color-scheme: dark) {
 
     :root {
@@ -95,6 +100,12 @@ button,
         &.outline {
             border: 1px solid var(--kb-bg-back-color);
         }
+
+        &.active {
+            background-color: var(--kb-bg-navbar2-back-color);
+            border: 1px solid var(--kb-border-color);
+        }
+
     }
 
     &.no-style {
@@ -105,6 +116,10 @@ button,
 
 .color-body {
     color: var(--kb-text-color);
+}
+
+.color-navbar-bg {
+    color: var(--kb-bg-navbar-back-color);
 }
 
 .container {
@@ -170,10 +185,13 @@ input {
     border-radius: calc(var(--spacing) * 2);
 }
 
-nav a,
-h1,
-h4 {
-    color: var(--kb-navbar-text-color) !important;
+nav {
+
+    a,
+    h1,
+    h4 {
+        color: var(--kb-navbar-text-color) !important;
+    }
 }
 
 p {

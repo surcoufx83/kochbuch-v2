@@ -10,10 +10,22 @@ import { KB_Fr } from './locales/fr';
 })
 export class L10nService {
 
-  private availableLocales: { [key: string]: L10nLocale } = {
-    'de': KB_De,
-    'en': KB_En,
-    'fr': KB_Fr,
+  private availableLocales: { [key: string]: { locale: L10nLocale, flag: string, key: string } } = {
+    'de': {
+      locale: KB_De,
+      flag: 'fi-de',
+      key: 'de',
+    },
+    'en': {
+      locale: KB_En,
+      flag: 'fi-gb',
+      key: 'en',
+    },
+    'fr': {
+      locale: KB_Fr,
+      flag: 'fi-fr',
+      key: 'fr',
+    },
   };
   private fallbackLocale = 'de';
 
@@ -51,12 +63,16 @@ export class L10nService {
     });
   }
 
+  public get AvailableLocales(): { [key: string]: { locale: L10nLocale, flag: string, key: string } } {
+    return this.availableLocales;
+  }
+
   public get LangCode(): string {
     return this.userLocaleStr;
   }
 
   public get Locale(): L10nLocale {
-    return this.availableLocales[this.userLocaleStr];
+    return this.availableLocales[this.userLocaleStr].locale;
   }
 
   public replace(content: string, replacements: any[]): string {
@@ -66,18 +82,21 @@ export class L10nService {
     return content;
   }
 
-  setLocale(code: 'de' | 'en' | 'fr' | null): void {
+  setLocale(code: string | null): void {
     if (code === null) {
       localStorage.removeItem('kbLocale');
       for (let i = 0; i < navigator.languages.length; i++) {
         if (Object.keys(this.availableLocales).includes(navigator.languages[i].substring(0, 2))) {
-          code = navigator.languages[i].substring(0, 2) as 'de' | 'en' | 'fr';
+          code = navigator.languages[i].substring(0, 2);
           break;
         }
       }
       if (code === null)
-        code = this.fallbackLocale as 'de' | 'en' | 'fr';
+        code = this.fallbackLocale;
     }
+    if (!Object.keys(this.availableLocales).includes(code))
+      code = this.fallbackLocale;
+
     this._userLocale$.next(code);
     localStorage.setItem('kbLocale', JSON.stringify({
       locale: code

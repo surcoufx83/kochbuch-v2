@@ -16,6 +16,9 @@ import { Subscription } from 'rxjs';
 export class PrimaryComponent implements OnInit, OnDestroy {
 
   Icons = IconLib;
+  ActiveLocale = signal<string>('');
+  ShownLocales: { locale: L10nLocale, flag: string, key: string }[];
+  ShowLanguageSelector = signal<boolean>(false);
   LoggedIn = signal<boolean>(false);
   User = signal<UserSelf | false>(false);
 
@@ -26,7 +29,7 @@ export class PrimaryComponent implements OnInit, OnDestroy {
     private l10nService: L10nService,
     private sharedDataService: SharedDataService,
   ) {
-
+    this.ShownLocales = Object.values(this.l10nService.AvailableLocales);
   }
 
   get Locale(): L10nLocale {
@@ -45,9 +48,10 @@ export class PrimaryComponent implements OnInit, OnDestroy {
       this.LoggedIn.set(state);
       this.User.set(this.apiService.User ?? false);
     }));
+    this.subs.push(this.l10nService.userLocale.subscribe((l) => this.ActiveLocale.set(l)));
   }
 
-  setLocale(code: 'de' | 'en' | 'fr' | null): void {
+  setLocale(code: string): void {
     this.l10nService.setLocale(code);
   }
 
