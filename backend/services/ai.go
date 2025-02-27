@@ -47,39 +47,65 @@ type createAssistantReqTool struct {
 type recipeTranslationReq struct {
 	TargetLanguage string                         `json:"targetLang"`
 	Data           recipeTranslationReqRecipeData `json:"data"`
+	Error          types.NullString               `json:"error"`
 }
 
 type recipeTranslationReqRecipeData struct {
-	Recipe recipeTranslationReqRecipe `json:"recipe"`
+	Recipe AiRecipeTranslation `json:"recipe"`
 }
 
-type recipeTranslationReqRecipe struct {
-	Title             string                            `json:"title"`
-	Description       string                            `json:"description"`
-	SourceDescription string                            `json:"sourceDescription"`
-	Pictures          []recipeTranslationReqPicture     `json:"pictures"`
-	Preparation       []recipeTranslationReqPreparation `json:"preparation"`
+type AiRecipeTranslation struct {
+	Title             string                           `json:"title"`
+	Description       string                           `json:"description"`
+	SourceDescription string                           `json:"sourceDescription"`
+	Pictures          []AiRecipeTranslationPicture     `json:"pictures"`
+	Preparation       []AiRecipeTranslationPreparation `json:"preparation"`
 }
 
-type recipeTranslationReqIngredient struct {
-	Title string `json:"title"`
-}
-
-type recipeTranslationReqPicture struct {
+type AiRecipeTranslationPicture struct {
+	Id          uint32 `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-type recipeTranslationReqPreparation struct {
-	Title        string                           `json:"title"`
-	Instructions string                           `json:"instruct"`
-	Ingredients  []recipeTranslationReqIngredient `json:"ingredients"`
+type AiRecipeTranslationPreparation struct {
+	Id           uint64                          `json:"id"`
+	Title        string                          `json:"title"`
+	Instructions string                          `json:"instruct"`
+	Ingredients  []AiRecipeTranslationIngredient `json:"ingredients"`
+}
+
+type AiRecipeTranslationIngredient struct {
+	Id    uint64 `json:"id"`
+	Title string `json:"title"`
+}
+
+type createThreadReq struct {
+	AssistantId string                  `json:"assistant_id"`
+	Thread      createThreadReqMessages `json:"thread"`
+}
+
+type createThreadReqMessages struct {
+	Messages []types.AiMessageRequest `json:"messages"`
+}
+
+type createThreadResp struct {
+	RunID       string `json:"id"`
+	Object      string `json:"object"`
+	AssistantID string `json:"assistant_id"`
+	ThreadID    string `json:"thread_id"`
+	Status      string `json:"status"`
+}
+
+type getThreadMessagesResp struct {
+	Object   string            `json:"object"`
+	Messages []types.AiMessage `json:"data"`
 }
 
 func AiConnect() (int, error) {
 	aiBaseUrl = "https://api.openai.com/v1/"
 	aiTranslatorName = "Kochbuch-v2 Recipe translator"
-	aiTranslatorInstructions = "You are a technical assistant specialized in translating cooking recipes. The input is a JSON object with the following structure: { \"targetLang\": \"<language code>\", \"data\": { ... } }. Your task is to translate all string values within the 'data' object into the language specified by 'targetLang'. IMPORTANT: Do not change any keys or the overall structure of the JSON. The 'data' object may represent a complete recipe—including picture descriptions, preparation instructions, and ingredients—or only parts of it. Use culturally appropriate expressions for the target language (e.g., British phrases for English, German phrases for German, and French phrases for French). Do not translate picture file names if they appear as values. If any error occurs, return a JSON object with the format: { \"error\": \"message\" }."
+	aiTranslatorInstructions = "You are a technical assistant specialized in translating cooking recipes. The input is a JSON object with the following structure: { \"targetLang\": \"<language code>\", \"data\": { ... } }. Your task is to translate all string values within the 'data' object into the language specified by 'targetLang'. IMPORTANT: Do not change any keys or the overall structure of the JSON. The 'data' object may represent a complete recipe—including picture descriptions, preparation instructions, and ingredients—or only parts of it. Use culturally appropriate expressions for the target language (e.g., British phrases for English, German phrases for German, and French phrases for French). Do not translate ids and picture file names if they appear as values. If any error occurs, return a JSON object with the format: { \"error\": \"message\" }."
 
 	aiApiKey = os.Getenv("AI_APIKey")
 	aiTranslatorModel = os.Getenv("AI_APIModel")
@@ -211,7 +237,7 @@ func aiCreateAssistant() (int, error) {
 	log.Printf("  > id = %s", assistantsResp.Id)
 	aiTranslatorId = assistantsResp.Id
 
-	return http.StatusAccepted, nil
+	return http.StatusOK, nil
 
 }
 
@@ -246,16 +272,10 @@ func aiTranslateRecipes() {
 			return
 		}
 
-		t, _ := json.Marshal(recipe)
-		fmt.Println(string(t))
-
-		fmt.Println(recipe.Id == recipeid)
-		fmt.Println(recipe.UserLocale == "de")
-
 		if recipe.Id == recipeid {
 			if recipe.UserLocale == "de" {
 				aiTranslateRecipe(recipe, recipe.UserLocale, "en")
-
+				aiTranslateRecipe(recipe, recipe.UserLocale, "fr")
 			}
 		}
 
@@ -263,29 +283,31 @@ func aiTranslateRecipes() {
 }
 
 func aiTranslateRecipe(recipe types.Recipe, from string, to string) {
-	log.Printf("  > Creating translateble object from %v to %v", from, to)
+	log.Printf("  > %v > Creating translateble object from %v to %v", to, from, to)
 
 	reqData := recipeTranslationReq{
 		TargetLanguage: to,
 		Data: recipeTranslationReqRecipeData{
-			Recipe: recipeTranslationReqRecipe{
+			Recipe: AiRecipeTranslation{
 				Title:             recipe.Localization[from].Title,
 				Description:       recipe.Localization[from].Description,
 				SourceDescription: recipe.Localization[from].SourceDescription,
-				Pictures:          []recipeTranslationReqPicture{},
-				Preparation:       []recipeTranslationReqPreparation{},
+				Pictures:          []AiRecipeTranslationPicture{},
+				Preparation:       []AiRecipeTranslationPreparation{},
 			},
 		},
 	}
 
 	for _, prep := range recipe.Preparation {
-		step := recipeTranslationReqPreparation{
+		step := AiRecipeTranslationPreparation{
+			Id:           prep.Id,
 			Title:        prep.Localization[from].Title,
 			Instructions: prep.Localization[from].Instructions,
-			Ingredients:  []recipeTranslationReqIngredient{},
+			Ingredients:  []AiRecipeTranslationIngredient{},
 		}
 		for _, ing := range prep.Ingredients {
-			steping := recipeTranslationReqIngredient{
+			steping := AiRecipeTranslationIngredient{
+				Id:    ing.Id,
 				Title: ing.Localization[from].Title,
 			}
 			step.Ingredients = append(step.Ingredients, steping)
@@ -294,7 +316,8 @@ func aiTranslateRecipe(recipe types.Recipe, from string, to string) {
 	}
 
 	for _, pic := range recipe.Pictures {
-		reqpic := recipeTranslationReqPicture{
+		reqpic := AiRecipeTranslationPicture{
+			Id:          pic.Id,
 			Name:        pic.Localization[from].Name,
 			Description: pic.Localization[from].Description,
 		}
@@ -303,9 +326,164 @@ func aiTranslateRecipe(recipe types.Recipe, from string, to string) {
 
 	reqJson, err := json.Marshal(reqData)
 	if err != nil {
-		log.Printf("  > Failed to create JSON data: %v", err)
+		log.Printf("  > %v > Failed to create JSON data: %v", to, err)
 		return
 	}
-	fmt.Println(string(reqJson))
+
+	res, resp := aiCreateThread(reqJson, to)
+	if !res {
+		return
+	}
+
+	go aiFetchThreadResponse(resp, recipe, to)
+
+}
+
+func aiCreateThread(message []byte, to string) (bool, createThreadResp) {
+	log.Printf("  > %v > Creating messaging thread at OpenAI API", to)
+
+	msg := types.AiMessageRequest{
+		Role:    "user",
+		Content: string(message),
+	}
+
+	threadReq := createThreadReq{
+		AssistantId: aiTranslatorId,
+		Thread: createThreadReqMessages{
+			Messages: []types.AiMessageRequest{},
+		},
+	}
+	threadReq.Thread.Messages = append(threadReq.Thread.Messages, msg)
+
+	reqDataBytes, err := json.Marshal(threadReq)
+	if err != nil {
+		log.Printf("  > %v > Failed preparing request payload: %v", to, err)
+		return false, createThreadResp{}
+	}
+
+	bodyReader := bytes.NewReader(reqDataBytes)
+	req, err := http.NewRequest("POST", aiBaseUrl+"threads/runs", bodyReader)
+	if err != nil {
+		log.Printf("  > %v > Failed preparing request to create thread: %v", to, err)
+		return false, createThreadResp{}
+	}
+
+	// Set required headers
+	req.Header.Set("Authorization", "Bearer "+aiApiKey)
+	req.Header.Set("OpenAI-Beta", "assistants=v2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("  > %v > Failed sending request to create thread: %v", to, err)
+		return false, createThreadResp{}
+	}
+	defer resp.Body.Close()
+
+	// Check for a successful HTTP status code.
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > %v > Unexpected status to create thread: %d  body = %s", to, resp.StatusCode, string(body))
+		return false, createThreadResp{}
+	}
+
+	var threadResp createThreadResp
+	if err := json.NewDecoder(resp.Body).Decode(&threadResp); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > %v > Failed to parse response body = %s", to, string(body))
+		return false, createThreadResp{}
+	}
+
+	return true, threadResp
+}
+
+func aiFetchThreadResponse(thread createThreadResp, recipe types.Recipe, to string) {
+	log.Printf("  > %v > Waiting for translated recipe a few seconds", to)
+
+	time.Sleep(10 * time.Second)
+	log.Printf("  > %v > Querying translated recipe", to)
+	log.Printf("    > %v > thread_id %v", to, thread.ThreadID)
+	log.Printf("    > %v >    run_id %v", to, thread.RunID)
+
+	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+thread.ThreadID+"/messages", nil)
+	if err != nil {
+		log.Printf("  > %v > Failed preparing request to get messages: %v", to, err)
+		return
+	}
+
+	// Set required headers
+	req.Header.Set("Authorization", "Bearer "+aiApiKey)
+	req.Header.Set("OpenAI-Beta", "assistants=v2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("  > %v > Failed sending request to get messages: %v", to, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Check for a successful HTTP status code.
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > %v > Unexpected status to get messages: %d  body = %s", to, resp.StatusCode, string(body))
+		return
+	}
+
+	var msgResp getThreadMessagesResp
+	if err := json.NewDecoder(resp.Body).Decode(&msgResp); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > %v > Failed to parse response body = %s", to, string(body))
+		return
+	}
+
+	msgBytes, err := json.Marshal(msgResp)
+	if err != nil {
+		log.Printf("  > %v > Failed to JSON decode response: %v", to, err)
+		return
+	}
+
+	if len(msgResp.Messages) == 0 {
+		log.Printf("  > %v > Empty messages array: %v", to, err)
+		fmt.Println(string(msgBytes))
+		return
+	}
+
+	if msgResp.Messages[0].Role != "assistant" {
+		log.Printf("  > %v > Message 0 not of expected role assistant: %v", to, err)
+		fmt.Println(string(msgBytes))
+		return
+	}
+
+	if len(msgResp.Messages[0].Content) == 0 {
+		log.Printf("  > %v > Empty messages content array: %v", to, err)
+		fmt.Println(string(msgBytes))
+		return
+	}
+
+	var reply recipeTranslationReq
+	if err = json.Unmarshal([]byte(msgResp.Messages[0].Content[0].Text.Value), &reply); err != nil {
+		log.Printf("  > %v > Failed to JSON decode first message content: %v", to, err)
+		fmt.Println(msgResp.Messages[0].Content[0].Text.Value)
+		return
+	}
+
+	if reply.Error.Valid && reply.Error.String != "" {
+		log.Printf("  > %v > Reply contains error message: %v", to, reply.Error.String)
+		return
+	}
+
+	if reply.TargetLanguage != to {
+		log.Printf("  > %v > Reply language does not match expected one: %v !- %v", to, reply.TargetLanguage, to)
+		return
+	}
+
+	originRecipe, err := GetRecipeInternal(recipe.Id)
+	if err != nil {
+		log.Printf("  > %v > Failed getting Recipe from cache: %v", to, err)
+		return
+	}
+
+	PutRecipeLocalization(originRecipe, to, reply.Data.Recipe, true)
 
 }

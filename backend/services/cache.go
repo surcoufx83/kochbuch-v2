@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"kochbuch-v2-backend/types"
 	"log"
@@ -572,4 +573,143 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 		return recipe, nil
 	}
 	return types.Recipe{}, errors.New("not found")
+}
+
+func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTranslation, ai bool) (bool, error) {
+	log.Printf("Updating recipe localisation %v %v", recipe.Id, recipe.Localization[lang].Title)
+
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Printf("  > Failed starting transaction: %v", err)
+		return false, err
+	}
+
+	res, err := putRecipeLocalizationMetadata(tx, &recipe, lang, &locale, ai)
+	if err != nil || !res {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	res, err = putRecipeLocalizationPictures(tx, &recipe, lang, &locale)
+	if err != nil || !res {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	res, err = putRecipeLocalizationPreparation(tx, &recipe, lang, &locale)
+	if err != nil || !res {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	go LoadRecipes(Db)
+
+	return true, nil
+}
+
+func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation, ai bool) (bool, error) {
+	log.Printf("  > Patching general data")
+	stmt, err := tx.Prepare("UPDATE `recipes` SET `localized` = ?, `name_" + lang + "` = ?, `description_" + lang + "` = ?, `source_description_" + lang + "` = ? WHERE `recipe_id` = ?")
+	if err != nil {
+		log.Printf("  > Failed preparing stmt: %v", err)
+		return false, err
+	}
+
+	if !ai {
+		ai = recipe.AiLocalized
+	}
+
+	_, err = stmt.Exec(ai, locale.Title, locale.Description, locale.SourceDescription, recipe.Id)
+	if err != nil {
+		log.Printf("  > Failed executing stmt: %v", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func putRecipeLocalizationPictures(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
+	log.Printf("  > Patching pictures")
+	stmt, err := tx.Prepare("UPDATE `recipe_pictures` SET `name_" + lang + "` = ?, `description_" + lang + "` = ? WHERE `picture_id` = ?")
+	if err != nil {
+		log.Printf("  > Failed preparing stmt: %v", err)
+		return false, err
+	}
+
+	for _, pic := range recipe.Pictures {
+		for _, langpic := range locale.Pictures {
+			if pic.Id != langpic.Id {
+				continue
+			}
+
+			_, err = stmt.Exec(langpic.Name, langpic.Description, pic.Id)
+			if err != nil {
+				log.Printf("  > Failed executing stmt: %v", err)
+				return false, err
+			}
+
+		}
+	}
+
+	return true, nil
+}
+
+func putRecipeLocalizationPreparation(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
+	log.Printf("  > Patching preparation steps")
+	stmt, err := tx.Prepare("UPDATE `recipe_steps` SET `title_" + lang + "` = ?, `instruct_" + lang + "` = ? WHERE `step_id` = ?")
+	if err != nil {
+		log.Printf("  > Failed preparing stmt: %v", err)
+		return false, err
+	}
+
+	for _, prep := range recipe.Preparation {
+		for _, langprep := range locale.Preparation {
+			if prep.Id != langprep.Id {
+				continue
+			}
+
+			_, err = stmt.Exec(langprep.Title, langprep.Instructions, prep.Id)
+			if err != nil {
+				log.Printf("  > Failed executing stmt: %v", err)
+				return false, err
+			}
+
+			putRecipeLocalizationPreparationIngredients(tx, &prep, lang, &langprep)
+
+		}
+	}
+
+	return true, nil
+}
+
+func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Preparation, lang string, locale *AiRecipeTranslationPreparation) (bool, error) {
+	log.Printf("    > Patching ingredients for a step")
+	stmt, err := tx.Prepare("UPDATE `recipe_ingredients` SET `description_" + lang + "` = ? WHERE `ingredient_id` = ?")
+	if err != nil {
+		log.Printf("  > Failed preparing stmt: %v", err)
+		return false, err
+	}
+
+	for _, ing := range prep.Ingredients {
+		for _, langing := range locale.Ingredients {
+			if ing.Id != langing.Id {
+				continue
+			}
+
+			_, err = stmt.Exec(langing.Title, ing.Id)
+			if err != nil {
+				log.Printf("  > Failed executing stmt: %v", err)
+				return false, err
+			}
+
+		}
+	}
+
+	return true, nil
 }

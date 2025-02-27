@@ -1,0 +1,29 @@
+meta {
+  name: Create and Run Thread
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://api.openai.com/v1/threads/runs
+  body: json
+  auth: inherit
+}
+
+headers {
+  OpenAI-Beta: assistants=v2
+}
+
+body:json {
+  {
+      "assistant_id": "asst_pbY3uEaZIPXjudHsmoWngU6j",
+      "thread": {
+          "messages": [
+              {
+                  "role": "user",
+                  "content": "{\"targetLang\":\"en\",\"data\":{\"recipe\":{\"title\":\"Couscous mit Schmand-Dipp\",\"description\":\"Fruchtig würziger Couscous als Beilage oder als Hauptgericht mit einem frischen Salat.\",\"sourceDescription\":\"\",\"pictures\":[{\"name\":\"IMG_20200815_195521.jpg\",\"description\":\"\"}],\"preparation\":[{\"title\":\"Zutaten vorbereiten\",\"instruct\":\"Zuerst Ingwer schälen; Ingwer, 2 der Knoblauchzehen und die Datteln fein würfeln; die Zwiebeln grob würfeln, die Minzblätter fein hacken.\",\"ingredients\":[]},{\"title\":\"Schmand-Dipp vorbereiten\",\"instruct\":\"Die verbleibenden Knoblauchzehen in eine kleine Schüssel pressen, Schmand und Limettensaft dazugeben und verrühren. Bis zum Servieren des Couscous kalt stellen.\",\"ingredients\":[]},{\"title\":\"Couscous zubereiten\",\"instruct\":\"Den Couscous in eine große Salatschüssel geben. Den Orangensaft im Wasserkocher aufkochen und über den Couscous gießen. Mit zwei Gabeln den Couscous immer wieder rühren, damit er nicht verklumpt. Den Wasserkocher mit Wasser spülen und auskochen lassen, damit keine Reste vom O-Saft verbleiben.\\r\\nNach kurzer Abkühlung (ca. 5 Minuten) Ingwer, Minzblätter, Zwiebeln, gewürfelten Knoblauch, Datteln, Olivenöl, etwas geriebene Muskatnuss, Kardamom und Kreuzkümmel zugeben und immer wieder mit den Gabeln vermengen. Mit Salz und Pfeffer abschmecken, bei Bedarf mit Kardamom und Kreuzkümmel nachschärfen.\\r\\n\\r\\nNoch warm oder nach dem Abkühlen servieren und genießen. Dazu passt Salat, zum Beispiel mit einer fruchtigen Vinaigrette.\",\"ingredients\":[]}]}}}"
+              }
+          ]
+      }
+  }
+}
