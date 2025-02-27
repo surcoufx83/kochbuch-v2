@@ -1,0 +1,15 @@
+meta {
+  name: Delete assistant
+  type: http
+  seq: 4
+}
+
+delete {
+  url: https://api.openai.com/v1/assistants/asst_55wRCXKPyg43oxbz9qjqy0YU
+  body: none
+  auth: inherit
+}
+
+headers {
+  OpenAI-Beta: assistants=v2
+}

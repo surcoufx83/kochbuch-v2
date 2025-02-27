@@ -1,0 +1,24 @@
+meta {
+  name: Create assistant
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://api.openai.com/v1/assistants
+  body: json
+  auth: inherit
+}
+
+headers {
+  OpenAI-Beta: assistants=v2
+}
+
+body:json {
+  {
+    "name": "Kochbuch-v2 Recipe translator",
+    "tools": [ { "type": "code_interpreter" } ],
+    "model": "gpt-4o-mini",
+    "instructions": "You are a technical assistant specializing in recipe translation. You will receive a JSON object with the following structure: { \"targetLang\": \"<language code>\", \"data\": { ... } }. The 'data' field may represent a cooking recipe, its ingredients, or units of ingredients. Your task is to translate all string values contained in the 'data' object into the language specified by 'targetLang', while preserving the overall JSON structure, keys, and any non-string elements. Do not modify numbers, keys, or other non-text content. Return the translated 'data' object. In case of any error, return an object like: { \"error\": \"description in English\" }."
+  }
+}

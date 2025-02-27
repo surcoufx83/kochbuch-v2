@@ -24,6 +24,9 @@ func main() {
 	// Check connection to Nextcloud API
 	services.NcConnect()
 
+	// Check connection to AI assistant
+	go services.AiConnect()
+
 	// Load entities into cache
 	services.LoadCategories(services.Db)
 	services.LoadUnits(services.Db)

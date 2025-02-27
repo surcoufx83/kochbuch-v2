@@ -560,3 +560,16 @@ func GetRecipe(id uint32, c *gin.Context) (types.Recipe, error) {
 	}
 	return types.Recipe{}, errors.New("not found")
 }
+
+func GetRecipeInternal(id uint32) (types.Recipe, error) {
+	recipesMutex.RLock()
+	defer recipesMutex.RUnlock()
+
+	for _, recipe := range recipesCache {
+		if recipe.Id != id {
+			continue
+		}
+		return recipe, nil
+	}
+	return types.Recipe{}, errors.New("not found")
+}

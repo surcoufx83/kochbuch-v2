@@ -40,4 +40,5 @@ func DbConnect() {
 	}
 
 	log.Println("Connected to database!")
+	log.Println("")
 }
