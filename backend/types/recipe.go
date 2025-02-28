@@ -14,8 +14,8 @@ type Recipe struct {
 	LastEditUserId NullInt32             `json:"-"`
 	User           NullUserProfileSimple `json:"user"`
 
-	AiGenerated bool `json:"aiGenerated"`
-	AiLocalized bool `json:"aiLocalized"`
+	AiGenerated bool     `json:"aiGenerated"`
+	AiLocalized NullTime `json:"aiLocalized"`
 
 	UserLocale   string                        `json:"userLocale"`
 	Localization map[string]RecipeLocalization `json:"localization"`

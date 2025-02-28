@@ -1,5 +1,19 @@
 -- +migrate Up
-CREATE SQL SECURITY INVOKER VIEW `recipes_translationmissing` AS select `r`.`recipe_id` AS `recipe_id` from (((`recipes` `r` left join `recipe_ingredients` `i` on(`i`.`recipe_id` = `r`.`recipe_id`)) left join `recipe_pictures` `p` on(`p`.`recipe_id` = `r`.`recipe_id`)) left join `recipe_steps` `s` on(`s`.`recipe_id` = `r`.`recipe_id`)) where `r`.`locale` = 'de' and (`r`.`name_en` = '' or `r`.`name_fr` = '' or `r`.`description_en` = '' or `r`.`description_fr` = '' or `r`.`source_description_en` = '' or `r`.`source_description_fr` = '') or `r`.`locale` = 'en' and (`r`.`name_de` = '' or `r`.`name_fr` = '' or `r`.`description_de` = '' or `r`.`description_fr` = '' or `r`.`source_description_de` = '' or `r`.`source_description_fr` = '') or `r`.`locale` = 'fr' and (`r`.`name_de` = '' or `r`.`name_en` = '' or `r`.`description_de` = '' or `r`.`description_en` = '' or `r`.`source_description_de` = '' or `r`.`source_description_en` = '') or `r`.`locale` = 'de' and (`i`.`description_en` = '' or `i`.`description_fr` = '') or `r`.`locale` = 'en' and (`i`.`description_de` = '' or `i`.`description_fr` = '') or `r`.`locale` = 'fr' and (`i`.`description_de` = '' or `i`.`description_en` = '') or `r`.`locale` = 'de' and (`p`.`name_en` = '' or `p`.`name_fr` = '' or `p`.`description_en` = '' or `p`.`description_fr` = '') or `r`.`locale` = 'en' and (`p`.`name_de` = '' or `p`.`name_fr` = '' or `p`.`description_de` = '' or `p`.`description_fr` = '') or `r`.`locale` = 'fr' and (`p`.`name_de` = '' or `p`.`name_en` = '' or `p`.`description_de` = '' or `p`.`description_en` = '') or `r`.`locale` = 'de' and (`s`.`title_en` = '' or `s`.`title_fr` = '' or `s`.`instruct_en` = '' or `s`.`instruct_fr` = '') or `r`.`locale` = 'en' and (`s`.`title_de` = '' or `s`.`title_fr` = '' or `s`.`instruct_de` = '' or `s`.`instruct_fr` = '') or `r`.`locale` = 'fr' and (`s`.`title_de` = '' or `s`.`title_en` = '' or `s`.`instruct_de` = '' or `s`.`instruct_en` = '') group by `r`.`recipe_id`;
+CREATE SQL SECURITY INVOKER VIEW `recipes_translationmissing` AS select `recipes`.`recipe_id` AS `recipe_id` from `recipes` where `recipes`.`localized` is null or `recipes`.`localized` < `recipes`.`edited`;
+
+ALTER TABLE `recipes`
+	DROP COLUMN `localized`;
+
+ALTER TABLE `recipes`
+	ADD COLUMN `localized` DATETIME NULL DEFAULT NULL AFTER `published`;
+
+UPDATE `recipes` SET `edited` = `created` WHERE `edited` IS NULL;
 
 -- +migrate Down
 DROP VIEW IF EXISTS `recipes_translationmissing`;
+
+ALTER TABLE `recipes`
+	DROP COLUMN `localized`;
+
+ALTER TABLE `recipes`
+	ADD COLUMN `localized` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `aigenerated`;

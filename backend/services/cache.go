@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"errors"
 	"kochbuch-v2-backend/types"
 	"log"
@@ -54,7 +53,7 @@ type DbRecipe struct {
 	UserId                 types.NullInt32  `db:"user_id"`
 	EditUserId             types.NullInt32  `db:"edit_user_id"`
 	AiGenerated            bool             `db:"aigenerated"`
-	AiLocalized            bool             `db:"localized"`
+	AiLocalized            types.NullTime   `db:"localized"`
 	IsPlaceholder          bool             `db:"placeholder"`
 	SharedInternal         bool             `db:"shared_internal"`
 	SharedPublic           bool             `db:"shared_external"`
@@ -575,7 +574,7 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 	return types.Recipe{}, errors.New("not found")
 }
 
-func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTranslation, ai bool) (bool, error) {
+/* func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTranslation) (bool, error) {
 	log.Printf("Updating recipe localisation %v %v", recipe.Id, recipe.Localization[lang].Title)
 
 	tx, err := Db.Begin()
@@ -584,7 +583,7 @@ func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTran
 		return false, err
 	}
 
-	res, err := putRecipeLocalizationMetadata(tx, &recipe, lang, &locale, ai)
+	res, err := putRecipeLocalizationMetadata(tx, &recipe, lang, &locale)
 	if err != nil || !res {
 		_ = tx.Rollback()
 		return false, err
@@ -613,19 +612,15 @@ func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTran
 	return true, nil
 }
 
-func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation, ai bool) (bool, error) {
+func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
 	log.Printf("  > Patching general data")
-	stmt, err := tx.Prepare("UPDATE `recipes` SET `localized` = ?, `name_" + lang + "` = ?, `description_" + lang + "` = ?, `source_description_" + lang + "` = ? WHERE `recipe_id` = ?")
+	stmt, err := tx.Prepare("UPDATE `recipes` SET `localized` = current_timestamp(), `name_" + lang + "` = ?, `description_" + lang + "` = ?, `source_description_" + lang + "` = ? WHERE `recipe_id` = ?")
 	if err != nil {
 		log.Printf("  > Failed preparing stmt: %v", err)
 		return false, err
 	}
 
-	if !ai {
-		ai = recipe.AiLocalized
-	}
-
-	_, err = stmt.Exec(ai, locale.Title, locale.Description, locale.SourceDescription, recipe.Id)
+	_, err = stmt.Exec(locale.Title, locale.Description, locale.SourceDescription, recipe.Id)
 	if err != nil {
 		log.Printf("  > Failed executing stmt: %v", err)
 		return false, err
@@ -713,3 +708,4 @@ func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Prepara
 
 	return true, nil
 }
+*/

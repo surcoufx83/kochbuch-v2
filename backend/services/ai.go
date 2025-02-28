@@ -3,12 +3,14 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"kochbuch-v2-backend/types"
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"time"
 )
 
@@ -19,6 +21,8 @@ var (
 	aiTranslatorModel        string
 	aiTranslatorName         string
 	aiTranslatorInstructions string
+	aiTranslatorWaitInterval time.Duration
+	aiTranslatorWaitRetries  int
 	aiBaseUrl                string
 )
 
@@ -34,10 +38,11 @@ type getAssistantsRespListitem struct {
 }
 
 type createAssistantReq struct {
-	Name         string                   `json:"name"`
-	Tools        []createAssistantReqTool `json:"tools"`
-	Model        string                   `json:"model"`
-	Instructions string                   `json:"instructions"`
+	Name           string                   `json:"name"`
+	Tools          []createAssistantReqTool `json:"tools"`
+	Model          string                   `json:"model"`
+	Instructions   string                   `json:"instructions"`
+	ResponseFormat createAssistantReqTool   `json:"response_format"`
 }
 
 type createAssistantReqTool struct {
@@ -45,39 +50,9 @@ type createAssistantReqTool struct {
 }
 
 type recipeTranslationReq struct {
-	TargetLanguage string                         `json:"targetLang"`
-	Data           recipeTranslationReqRecipeData `json:"data"`
-	Error          types.NullString               `json:"error"`
-}
-
-type recipeTranslationReqRecipeData struct {
-	Recipe AiRecipeTranslation `json:"recipe"`
-}
-
-type AiRecipeTranslation struct {
-	Title             string                           `json:"title"`
-	Description       string                           `json:"description"`
-	SourceDescription string                           `json:"sourceDescription"`
-	Pictures          []AiRecipeTranslationPicture     `json:"pictures"`
-	Preparation       []AiRecipeTranslationPreparation `json:"preparation"`
-}
-
-type AiRecipeTranslationPicture struct {
-	Id          uint32 `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type AiRecipeTranslationPreparation struct {
-	Id           uint64                          `json:"id"`
-	Title        string                          `json:"title"`
-	Instructions string                          `json:"instruct"`
-	Ingredients  []AiRecipeTranslationIngredient `json:"ingredients"`
-}
-
-type AiRecipeTranslationIngredient struct {
-	Id    uint64 `json:"id"`
-	Title string `json:"title"`
+	From    string   `json:"from"`
+	To      string   `json:"to"`
+	Phrases []string `json:"phrases"`
 }
 
 type createThreadReq struct {
@@ -102,10 +77,17 @@ type getThreadMessagesResp struct {
 	Messages []types.AiMessage `json:"data"`
 }
 
+type getRunStatusResp struct {
+	Status string `json:"status"`
+}
+
 func AiConnect() (int, error) {
 	aiBaseUrl = "https://api.openai.com/v1/"
 	aiTranslatorName = "Kochbuch-v2 Recipe translator"
-	aiTranslatorInstructions = "You are a technical assistant specialized in translating cooking recipes. The input is a JSON object with the following structure: { \"targetLang\": \"<language code>\", \"data\": { ... } }. Your task is to translate all string values within the 'data' object into the language specified by 'targetLang'. IMPORTANT: Do not change any keys or the overall structure of the JSON. The 'data' object may represent a complete recipe—including picture descriptions, preparation instructions, and ingredients—or only parts of it. Use culturally appropriate expressions for the target language (e.g., British phrases for English, German phrases for German, and French phrases for French). Do not translate ids and picture file names if they appear as values. If any error occurs, return a JSON object with the format: { \"error\": \"message\" }."
+	aiTranslatorInstructions = "You will receive requests in the form of a JSON object containing the properties 'from' and 'to' to define the origin and target languages, along with an array of strings under the key 'phrases' that should be translated. Translate each phrase using culturally appropriate expressions for the target language (e.g., British English expressions for English, standard German for German, and common French idioms for French). Do not translate any content that represents IDs, file names, or clearly non-translatable keys/values (for example, strings that are identifiers or file references). If in doubt, leave the content unchanged. Output the result as a JSON array containing the translated phrases in the same order as provided, and nothing else. If the input format is invalid, return an appropriate error message in JSON format."
+
+	aiTranslatorWaitInterval = 3 * time.Second
+	aiTranslatorWaitRetries = 20
 
 	aiApiKey = os.Getenv("AI_APIKey")
 	aiTranslatorModel = os.Getenv("AI_APIModel")
@@ -193,6 +175,9 @@ func aiCreateAssistant() (int, error) {
 		Tools:        []createAssistantReqTool{},
 		Model:        aiTranslatorModel,
 		Instructions: aiTranslatorInstructions,
+		ResponseFormat: createAssistantReqTool{
+			Type: "json_object",
+		},
 	}
 
 	reqDataBytes, err := json.Marshal(reqData)
@@ -274,77 +259,96 @@ func aiTranslateRecipes() {
 
 		if recipe.Id == recipeid {
 			if recipe.UserLocale == "de" {
-				aiTranslateRecipe(recipe, recipe.UserLocale, "en")
-				aiTranslateRecipe(recipe, recipe.UserLocale, "fr")
+				translation, err := aiTranslateRecipe(&recipe, recipe.UserLocale, "en")
+				if err != nil {
+					log.Println("  > Cancelled translation for this recipe")
+					return
+				}
+
+				fmt.Printf("Translation strings: %v", translation)
 			}
 		}
 
 	}
 }
 
-func aiTranslateRecipe(recipe types.Recipe, from string, to string) {
-	log.Printf("  > %v > Creating translateble object from %v to %v", to, from, to)
+func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, error) {
+	log.Printf("  > Creating translation table %v to %v", from, to)
 
+	// Create a string array containing all strings to translate
+	// without any blank strings or duplicates
+	translationTable := aiRecipeFillTranslationTable([]string{}, recipe, from)
+
+	// Create message content
 	reqData := recipeTranslationReq{
-		TargetLanguage: to,
-		Data: recipeTranslationReqRecipeData{
-			Recipe: AiRecipeTranslation{
-				Title:             recipe.Localization[from].Title,
-				Description:       recipe.Localization[from].Description,
-				SourceDescription: recipe.Localization[from].SourceDescription,
-				Pictures:          []AiRecipeTranslationPicture{},
-				Preparation:       []AiRecipeTranslationPreparation{},
-			},
-		},
+		From:    from,
+		To:      to,
+		Phrases: translationTable,
 	}
 
-	for _, prep := range recipe.Preparation {
-		step := AiRecipeTranslationPreparation{
-			Id:           prep.Id,
-			Title:        prep.Localization[from].Title,
-			Instructions: prep.Localization[from].Instructions,
-			Ingredients:  []AiRecipeTranslationIngredient{},
-		}
-		for _, ing := range prep.Ingredients {
-			steping := AiRecipeTranslationIngredient{
-				Id:    ing.Id,
-				Title: ing.Localization[from].Title,
-			}
-			step.Ingredients = append(step.Ingredients, steping)
-		}
-		reqData.Data.Recipe.Preparation = append(reqData.Data.Recipe.Preparation, step)
-	}
-
-	for _, pic := range recipe.Pictures {
-		reqpic := AiRecipeTranslationPicture{
-			Id:          pic.Id,
-			Name:        pic.Localization[from].Name,
-			Description: pic.Localization[from].Description,
-		}
-		reqData.Data.Recipe.Pictures = append(reqData.Data.Recipe.Pictures, reqpic)
-	}
-
+	// Convert payload to JSON
 	reqJson, err := json.Marshal(reqData)
 	if err != nil {
 		log.Printf("  > %v > Failed to create JSON data: %v", to, err)
-		return
+		return []string{}, err
 	}
+	// fmt.Println(string(reqJson))
 
-	res, resp := aiCreateThread(reqJson, to)
+	// Send request to Open AI API to create and run a messaging thread
+	res, createdThread := aiCreateThread(reqJson)
 	if !res {
-		return
+		return []string{}, err
 	}
 
-	go aiFetchThreadResponse(resp, recipe, to)
+	// Wait for the completion which may take some seconds
+	res, err = aiWaitThread(createdThread)
+	if !res || err != nil {
+		return []string{}, err
+	}
+
+	msg, err := aiGetThreadMessage(createdThread)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return aiGetTranslationFromMessage(msg)
 
 }
 
-func aiCreateThread(message []byte, to string) (bool, createThreadResp) {
-	log.Printf("  > %v > Creating messaging thread at OpenAI API", to)
+func aiRecipeFillTranslationTable(table []string, recipe *types.Recipe, from string) []string {
+	table = aiRecipeFillTranslationTableItem(table, recipe.Localization[from].Title)
+	table = aiRecipeFillTranslationTableItem(table, recipe.Localization[from].Description)
+	table = aiRecipeFillTranslationTableItem(table, recipe.Localization[from].SourceDescription)
+
+	for _, p := range recipe.Pictures {
+		table = aiRecipeFillTranslationTableItem(table, p.Localization[from].Name)
+		table = aiRecipeFillTranslationTableItem(table, p.Localization[from].Description)
+	}
+
+	for _, p := range recipe.Preparation {
+		table = aiRecipeFillTranslationTableItem(table, p.Localization[from].Title)
+		table = aiRecipeFillTranslationTableItem(table, p.Localization[from].Instructions)
+		for _, i := range p.Ingredients {
+			table = aiRecipeFillTranslationTableItem(table, i.Localization[from].Title)
+		}
+	}
+
+	return table
+}
+
+func aiRecipeFillTranslationTableItem(table []string, phrase string) []string {
+	if phrase != "" && !slices.Contains(table, phrase) {
+		table = append(table, phrase)
+	}
+	return table
+}
+
+func aiCreateThread(message []byte) (bool, createThreadResp) {
+	log.Printf("  > Creating messaging thread")
 
 	msg := types.AiMessageRequest{
 		Role:    "user",
-		Content: string(message),
+		Content: "```json\n" + string(message) + "\n```",
 	}
 
 	threadReq := createThreadReq{
@@ -357,133 +361,172 @@ func aiCreateThread(message []byte, to string) (bool, createThreadResp) {
 
 	reqDataBytes, err := json.Marshal(threadReq)
 	if err != nil {
-		log.Printf("  > %v > Failed preparing request payload: %v", to, err)
+		log.Printf("  > > Failed preparing request payload: %v", err)
 		return false, createThreadResp{}
 	}
 
 	bodyReader := bytes.NewReader(reqDataBytes)
 	req, err := http.NewRequest("POST", aiBaseUrl+"threads/runs", bodyReader)
 	if err != nil {
-		log.Printf("  > %v > Failed preparing request to create thread: %v", to, err)
+		log.Printf("   > > Failed preparing request to create thread: %v", err)
 		return false, createThreadResp{}
 	}
 
-	// Set required headers
 	req.Header.Set("Authorization", "Bearer "+aiApiKey)
 	req.Header.Set("OpenAI-Beta", "assistants=v2")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("  > %v > Failed sending request to create thread: %v", to, err)
+		log.Printf("  > > Failed sending request to create thread: %v", err)
 		return false, createThreadResp{}
 	}
 	defer resp.Body.Close()
 
-	// Check for a successful HTTP status code.
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("  > %v > Unexpected status to create thread: %d  body = %s", to, resp.StatusCode, string(body))
+		log.Printf("  > > Unexpected status to create thread: %d  body = %s", resp.StatusCode, string(body))
 		return false, createThreadResp{}
 	}
 
 	var threadResp createThreadResp
 	if err := json.NewDecoder(resp.Body).Decode(&threadResp); err != nil {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("  > %v > Failed to parse response body = %s", to, string(body))
+		log.Printf("  > > Failed to parse response body = %s", string(body))
 		return false, createThreadResp{}
 	}
+
+	log.Printf("  > > Messaging thread created: %v", threadResp.RunID)
 
 	return true, threadResp
 }
 
-func aiFetchThreadResponse(thread createThreadResp, recipe types.Recipe, to string) {
-	log.Printf("  > %v > Waiting for translated recipe a few seconds", to)
+func aiWaitThread(createdThread createThreadResp) (bool, error) {
+	log.Println("  > Waiting for message thread finished")
 
-	time.Sleep(10 * time.Second)
-	log.Printf("  > %v > Querying translated recipe", to)
-	log.Printf("    > %v > thread_id %v", to, thread.ThreadID)
-	log.Printf("    > %v >    run_id %v", to, thread.RunID)
-
-	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+thread.ThreadID+"/messages", nil)
-	if err != nil {
-		log.Printf("  > %v > Failed preparing request to get messages: %v", to, err)
-		return
+	for i := 1; i <= aiTranslatorWaitRetries; i++ {
+		time.Sleep(aiTranslatorWaitInterval)
+		status, err := aiGetThreadStatus(createdThread)
+		if err != nil {
+			return false, err
+		}
+		log.Printf("  > > [%d/%d] %v", i, aiTranslatorWaitRetries, status.Status)
+		if status.Status == "completed" {
+			break
+		}
 	}
 
-	// Set required headers
+	return true, nil
+
+}
+
+func aiGetThreadStatus(createdThread createThreadResp) (getRunStatusResp, error) {
+	log.Println("  > Requesting thread status")
+
+	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+createdThread.ThreadID+"/runs/"+createdThread.RunID, nil)
+	if err != nil {
+		log.Printf("  > > Failed preparing request: %v", err)
+		return getRunStatusResp{}, err
+	}
+
 	req.Header.Set("Authorization", "Bearer "+aiApiKey)
 	req.Header.Set("OpenAI-Beta", "assistants=v2")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("  > %v > Failed sending request to get messages: %v", to, err)
-		return
+		log.Printf("  > > Failed sending request: %v", err)
+		return getRunStatusResp{}, err
 	}
 	defer resp.Body.Close()
 
-	// Check for a successful HTTP status code.
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("  > %v > Unexpected status to get messages: %d  body = %s", to, resp.StatusCode, string(body))
-		return
+		log.Printf("  > > Unexpected status: %d  body = %s", resp.StatusCode, string(body))
+		return getRunStatusResp{}, err
+	}
+
+	var payload getRunStatusResp
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > > Failed to parse response body = %s", string(body))
+		return getRunStatusResp{}, err
+	}
+
+	return payload, nil
+}
+
+func aiGetThreadMessage(createdThread createThreadResp) (types.AiMessage, error) {
+	log.Println("  > Requesting assistant message")
+
+	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+createdThread.ThreadID+"/messages", nil)
+	if err != nil {
+		log.Printf("  > > Failed preparing request: %v", err)
+		return types.AiMessage{}, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+aiApiKey)
+	req.Header.Set("OpenAI-Beta", "assistants=v2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("  > > Failed sending request: %v", err)
+		return types.AiMessage{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > > Unexpected status: %d  body = %s", resp.StatusCode, string(body))
+		return types.AiMessage{}, err
 	}
 
 	var msgResp getThreadMessagesResp
 	if err := json.NewDecoder(resp.Body).Decode(&msgResp); err != nil {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("  > %v > Failed to parse response body = %s", to, string(body))
-		return
-	}
-
-	msgBytes, err := json.Marshal(msgResp)
-	if err != nil {
-		log.Printf("  > %v > Failed to JSON decode response: %v", to, err)
-		return
+		log.Printf("  > > Failed to parse response body = %s", string(body))
+		return types.AiMessage{}, err
 	}
 
 	if len(msgResp.Messages) == 0 {
-		log.Printf("  > %v > Empty messages array: %v", to, err)
-		fmt.Println(string(msgBytes))
-		return
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("  > > Response does not contain any messages = %s", string(body))
+		return types.AiMessage{}, err
 	}
 
-	if msgResp.Messages[0].Role != "assistant" {
-		log.Printf("  > %v > Message 0 not of expected role assistant: %v", to, err)
-		fmt.Println(string(msgBytes))
-		return
+	for i, msg := range msgResp.Messages {
+		if i == 0 && msg.Role != "assistant" {
+			fmt.Printf("  > > First message not expected role assistant: %v", msg)
+		}
+		if msg.Role == "assistant" {
+			return msg, nil
+		}
+	}
+	fmt.Printf("  > > No message containing role assistant! %v", msgResp)
+
+	return types.AiMessage{}, errors.New("not found")
+}
+
+func aiGetTranslationFromMessage(msg types.AiMessage) ([]string, error) {
+	log.Println("  > Getting translation from message")
+
+	if len(msg.Content) == 0 {
+		fmt.Printf("  > > Message content is empty: %v", msg)
+		return []string{}, errors.New("content is empty")
 	}
 
-	if len(msgResp.Messages[0].Content) == 0 {
-		log.Printf("  > %v > Empty messages content array: %v", to, err)
-		fmt.Println(string(msgBytes))
-		return
+	if msg.Content[0].Text.Value == "" {
+		fmt.Printf("  > > Message content value is empty: %v", msg)
+		return []string{}, errors.New("content value is empty")
 	}
 
-	var reply recipeTranslationReq
-	if err = json.Unmarshal([]byte(msgResp.Messages[0].Content[0].Text.Value), &reply); err != nil {
-		log.Printf("  > %v > Failed to JSON decode first message content: %v", to, err)
-		fmt.Println(msgResp.Messages[0].Content[0].Text.Value)
-		return
+	var translatedStrings []string
+	if err := json.Unmarshal([]byte(msg.Content[0].Text.Value), &translatedStrings); err != nil {
+		fmt.Printf("  > > Failed to decode message content text value: %v", msg)
+		return []string{}, errors.New("failed to decode")
 	}
 
-	if reply.Error.Valid && reply.Error.String != "" {
-		log.Printf("  > %v > Reply contains error message: %v", to, reply.Error.String)
-		return
-	}
-
-	if reply.TargetLanguage != to {
-		log.Printf("  > %v > Reply language does not match expected one: %v !- %v", to, reply.TargetLanguage, to)
-		return
-	}
-
-	originRecipe, err := GetRecipeInternal(recipe.Id)
-	if err != nil {
-		log.Printf("  > %v > Failed getting Recipe from cache: %v", to, err)
-		return
-	}
-
-	PutRecipeLocalization(originRecipe, to, reply.Data.Recipe, true)
+	return translatedStrings, nil
 
 }

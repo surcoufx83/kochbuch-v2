@@ -25,7 +25,7 @@ export type Group = {
 
 export type Recipe = {
     aiGenerated: boolean,
-    aiLocalized: boolean,
+    aiLocalized: string | null,
     categories: RecipeCategoryitem[],
     created: string,
     difficulty: 0 | 1 | 2 | 3,

@@ -3,8 +3,6 @@ package types
 type AiMessage struct {
 	ID          string                 `json:"id"`
 	Object      string                 `json:"object"`
-	AssistantID string                 `json:"assistant_id"`
-	ThreadID    string                 `json:"thread_id"`
 	Role        string                 `json:"role"`
 	Content     []AiMessageContent     `json:"content"`
 	Attachments []interface{}          `json:"attachments"`
