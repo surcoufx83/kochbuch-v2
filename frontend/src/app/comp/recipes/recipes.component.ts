@@ -61,7 +61,7 @@ export class RecipesComponent implements OnDestroy, OnInit {
       this.Recipes.set(
         Object.values(items)
           .filter((a) => a.pictures.length > 0)
-          .sort((a, b) => (a.published ?? a.modified) > (b.published ?? b.modified) ? -1 : 1)
+          .sort((a, b) => (a.published ?? a.edited ?? a.modified) > (b.published ?? b.edited ?? b.modified) ? -1 : 1)
       );
     }));
   }

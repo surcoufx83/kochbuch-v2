@@ -81,6 +81,14 @@ export class L10nService {
     });
   }
 
+  public FormatNumber(n: number, o: Intl.NumberFormatOptions): string {
+    return n.toLocaleString(this.LangCode, o);
+  }
+
+  public FormatVote(n: number): string {
+    return this.FormatNumber(n, { maximumSignificantDigits: 2 });
+  }
+
   public get LangCode(): string {
     return this.userLocaleStr;
   }

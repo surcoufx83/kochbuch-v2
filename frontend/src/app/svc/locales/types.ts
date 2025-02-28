@@ -1,4 +1,7 @@
 export type L10nLocale = {
+    common: {
+        language: { [key: string]: string },
+    },
     errorPages: {
         loginToCreateRecipe: {
             title: string,
@@ -56,6 +59,7 @@ export type L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: string,
+        aiSourceLocale: string,
         difficulty: {
             0: string,
             1: string,

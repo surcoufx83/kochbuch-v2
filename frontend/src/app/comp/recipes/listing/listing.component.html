@@ -29,11 +29,8 @@
             </div>
 
             @if (item.aiLocalized && LangCode != item.userLocale && item.localization[LangCode].title) {
-            <div class="content text-warn">
-                <div>
-                    <fa-icon [icon]="Icons.ailocalized" class="me-1"></fa-icon>
-                    {{ Locale.recipe.aiLocalizedContent }}
-                </div>
+            <div class="content text-warn text-center py-0! fs-90%">
+                {{ replace(Locale.recipe.aiSourceLocale, [Locale.common.language[item.userLocale]]) }}
             </div>
             }
 
@@ -45,18 +42,21 @@
                 }
             </div>
 
-            <div class="footer justify-evenly">
+            <div class="footer">
                 <div>
-
                     @if (item.difficulty > 0) {
+                    <fa-icon [icon]="Icons.difficulty[item.difficulty]" class="me-1"></fa-icon>
                     {{ Locale.recipe.difficulty[item.difficulty] }}
                     }
                 </div>
                 <div>
-                    Cook
+                    @if (item.statistics.votes.count > 0) {
+                    <fa-icon [icon]="item.statistics.votes.avg > 2 ? Icons.like : Icons.like" class="me-1"></fa-icon>
+                    {{ formatVote(item.statistics.votes.avg) }}
+                    }
                 </div>
                 <div>
-                    {{ formatDate(item.published ?? item.modified, 'PP') }}
+                    {{ formatDate(item.published ?? item.edited ?? item.modified, 'PP') }}
                 </div>
             </div>
         </div>

@@ -1,6 +1,13 @@
 import { L10nLocale } from "./types";
 
 export const KB_Fr: L10nLocale = {
+    common: {
+        language: {
+            de: "Allemand",
+            en: "Anglais",
+            fr: "Français"
+        }
+    },
     errorPages: {
         loginToCreateRecipe: {
             title: "Faites-en votre propre livre de cuisine 🧑‍🍳",
@@ -58,6 +65,7 @@ export const KB_Fr: L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: "Cette recette ou certaines de ses parties ont été traduites automatiquement.",
+        aiSourceLocale: "Langue originale : [0]",
         difficulty: {
             0: "Aucune indication",
             1: "Facile",

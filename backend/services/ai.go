@@ -112,7 +112,7 @@ func AiConnect() (int, error) {
 		AiAvailable = true
 		log.Println("OpenAI API integration available")
 		log.Printf("  > Translator = %v", aiTranslatorId)
-		go AiAutoTranslation()
+		go aiAutoTranslation()
 	}
 
 	return code, err
@@ -226,9 +226,7 @@ func aiCreateAssistant() (int, error) {
 
 }
 
-func AiAutoTranslation() {
-	time.Sleep(10 * time.Second)
-
+func aiAutoTranslation() {
 	if !AiAvailable {
 		log.Println("Skipping AI auto translation.")
 		return
@@ -239,40 +237,66 @@ func AiAutoTranslation() {
 }
 
 func aiTranslateRecipes() {
+	for {
+		if aiTranslateRecipesLoop() {
+			time.Sleep(1 * time.Second)
+		} else {
+			log.Println("No recipes for translation")
+			time.Sleep(1 * time.Minute)
+		}
+	}
+}
+
+func aiTranslateRecipesLoop() bool {
 	query := "SELECT `recipe_id` FROM `recipes_translationmissing` LIMIT 1"
 	var recipeids []uint32
 
 	err := Db.Select(&recipeids, query)
 	if err != nil {
 		log.Printf("  > Failed to load recipes: %v", err)
-		return
+		return false
 	}
 
-	log.Printf("  > Query returned %v items", len(recipeids))
+	if len(recipeids) == 0 {
+		return false
+	}
+
+	// log.Printf("  > Query returned %v items", len(recipeids))
 	for _, recipeid := range recipeids {
 		recipe, err := GetRecipeInternal(recipeid)
 
 		if err != nil {
 			log.Printf("  > Failed to load recipe %d: %v", recipeid, err)
-			return
+			return false
 		}
+
+		translations := make(map[string][]string)
+		var source []string
+		var tl []string
 
 		if recipe.Id == recipeid {
-			if recipe.UserLocale == "de" {
-				translation, err := aiTranslateRecipe(&recipe, recipe.UserLocale, "en")
-				if err != nil {
-					log.Println("  > Cancelled translation for this recipe")
-					return
-				}
+			log.Printf("Translating recipe %v", recipe.Localization[recipe.UserLocale].Title)
 
-				fmt.Printf("Translation strings: %v", translation)
+			for _, l := range Locales {
+				if recipe.UserLocale != l {
+					source, tl, err = aiTranslateRecipe(&recipe, recipe.UserLocale, l)
+					if err != nil {
+						log.Println("  > Cancelled translation for this recipe")
+						return false
+					}
+
+					translations[l] = tl
+				}
 			}
+
 		}
 
+		aiApplyTranslations(recipe, source, translations)
 	}
+	return true
 }
 
-func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, error) {
+func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, []string, error) {
 	log.Printf("  > Creating translation table %v to %v", from, to)
 
 	// Create a string array containing all strings to translate
@@ -290,28 +314,29 @@ func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, 
 	reqJson, err := json.Marshal(reqData)
 	if err != nil {
 		log.Printf("  > %v > Failed to create JSON data: %v", to, err)
-		return []string{}, err
+		return []string{}, []string{}, err
 	}
 	// fmt.Println(string(reqJson))
 
 	// Send request to Open AI API to create and run a messaging thread
 	res, createdThread := aiCreateThread(reqJson)
 	if !res {
-		return []string{}, err
+		return []string{}, []string{}, err
 	}
 
 	// Wait for the completion which may take some seconds
 	res, err = aiWaitThread(createdThread)
 	if !res || err != nil {
-		return []string{}, err
+		return []string{}, []string{}, err
 	}
 
 	msg, err := aiGetThreadMessage(createdThread)
 	if err != nil {
-		return []string{}, err
+		return []string{}, []string{}, err
 	}
 
-	return aiGetTranslationFromMessage(msg)
+	translatedTable, err := aiGetTranslationFromMessage(msg)
+	return translationTable, translatedTable, err
 
 }
 
@@ -523,10 +548,65 @@ func aiGetTranslationFromMessage(msg types.AiMessage) ([]string, error) {
 
 	var translatedStrings []string
 	if err := json.Unmarshal([]byte(msg.Content[0].Text.Value), &translatedStrings); err != nil {
-		fmt.Printf("  > > Failed to decode message content text value: %v", msg)
+		fmt.Printf("  > > Failed to decode message content text value: %v", msg.Content[0].Text.Value)
 		return []string{}, errors.New("failed to decode")
 	}
 
 	return translatedStrings, nil
 
+}
+
+func aiApplyTranslations(recipe types.Recipe, sourcePhrases []string, translations map[string][]string) {
+	log.Println("  > Update recipe with new translations")
+	for _, l := range Locales {
+		if recipe.UserLocale == l || len(translations[l]) == 0 {
+			continue
+		}
+		if len(sourcePhrases) != len(translations[l]) {
+			log.Printf("  > Missmatch between requested phrases and translated phrases! %d != %d", len(sourcePhrases), len(translations[l]))
+			return
+		}
+		recipe = aiApplyTranslation(recipe, l, sourcePhrases, translations[l])
+	}
+	PutRecipeLocalization(recipe)
+}
+
+func aiApplyTranslation(recipe types.Recipe, l string, sourcePhrases []string, translations []string) types.Recipe {
+	log.Printf("  > Update recipe with new %v translations", l)
+	org := recipe.UserLocale
+
+	recipe.Localization[l] = types.RecipeLocalization{
+		Title:             aiApplyPhrase(recipe.Localization[org].Title, sourcePhrases, translations),
+		Description:       aiApplyPhrase(recipe.Localization[org].Description, sourcePhrases, translations),
+		SourceDescription: aiApplyPhrase(recipe.Localization[org].SourceDescription, sourcePhrases, translations),
+	}
+
+	for i, p := range recipe.Pictures {
+		recipe.Pictures[i].Localization[l] = types.PictureLocalization{
+			Name:        aiApplyPhrase(p.Localization[l].Name, sourcePhrases, translations),
+			Description: aiApplyPhrase(p.Localization[l].Description, sourcePhrases, translations),
+		}
+	}
+
+	for i, p := range recipe.Preparation {
+		recipe.Preparation[i].Localization[l] = types.PreparationLocalization{
+			Title:        aiApplyPhrase(p.Localization[l].Title, sourcePhrases, translations),
+			Instructions: aiApplyPhrase(p.Localization[l].Instructions, sourcePhrases, translations),
+		}
+		for j, g := range p.Ingredients {
+			recipe.Preparation[i].Ingredients[j].Localization[l] = types.IngredientLocalization{
+				Title: aiApplyPhrase(g.Localization[l].Title, sourcePhrases, translations),
+			}
+		}
+	}
+
+	return recipe
+}
+
+func aiApplyPhrase(orig string, sourcePhrases []string, translations []string) string {
+	i := slices.Index(sourcePhrases, orig)
+	if i > -1 {
+		return translations[i]
+	}
+	return orig
 }

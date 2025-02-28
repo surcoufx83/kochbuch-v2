@@ -25,6 +25,10 @@ export class ListingComponent {
     return this.l10nService.FormatDate(date, formatStr);
   }
 
+  public formatVote(n: number): string {
+    return this.l10nService.FormatVote(n);
+  }
+
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
   }

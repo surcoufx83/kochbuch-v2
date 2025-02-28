@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"kochbuch-v2-backend/types"
 	"log"
@@ -31,6 +32,8 @@ var (
 	unitsCache   map[uint8]types.Unit
 	unitsEtag    time.Time
 	unitsEtagStr string
+
+	Locales []string
 )
 
 type dbCategory struct {
@@ -53,7 +56,8 @@ type DbRecipe struct {
 	UserId                 types.NullInt32  `db:"user_id"`
 	EditUserId             types.NullInt32  `db:"edit_user_id"`
 	AiGenerated            bool             `db:"aigenerated"`
-	AiLocalized            types.NullTime   `db:"localized"`
+	AiTranslatedTime       types.NullTime   `db:"localized"`
+	EditedByUserTime       types.NullTime   `db:"edited"`
 	IsPlaceholder          bool             `db:"placeholder"`
 	SharedInternal         bool             `db:"shared_internal"`
 	SharedPublic           bool             `db:"shared_external"`
@@ -184,7 +188,7 @@ func LoadCategories(db *sqlx.DB) {
 	categoriesEtagStr = hash(categoriesEtag.Format(time.RFC3339) + strconv.Itoa(len(categories)))
 	categoriesMutex.Unlock()
 	log.Printf("Loaded %d categories into cache", len(categories))
-	log.Printf("Categories cache ETag: %v", categoriesEtagStr)
+	// log.Printf("Categories cache ETag: %v", categoriesEtagStr)
 }
 
 func GetCategories() (map[uint16]types.Category, string) {
@@ -239,7 +243,7 @@ func LoadUnits(db *sqlx.DB) {
 	unitsEtagStr = hash(categoriesEtag.Format(time.RFC3339) + strconv.Itoa(len(units)))
 	unitsMutex.Unlock()
 	log.Printf("Loaded %d units into cache", len(units))
-	log.Printf("Units cache ETag: %v", unitsEtagStr)
+	// log.Printf("Units cache ETag: %v", unitsEtagStr)
 }
 
 func GetUnits() (map[uint8]types.Unit, string) {
@@ -264,7 +268,7 @@ func LoadRecipes(db *sqlx.DB) {
 	publicRecipesCache = make(map[uint32]types.Recipe)
 	for _, recipe := range recipes {
 
-		log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
+		// log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
 
 		_, userobj := GetUser(int(recipe.PictureUserId.Int32))
 
@@ -279,7 +283,8 @@ func LoadRecipes(db *sqlx.DB) {
 			LastEditUserId:   recipe.EditUserId,
 			User:             userobj.SimpleProfile,
 			AiGenerated:      recipe.AiGenerated,
-			AiLocalized:      recipe.AiLocalized,
+			AiTranslatedTime: recipe.AiTranslatedTime,
+			EditedByUserTime: recipe.EditedByUserTime,
 			UserLocale:       recipe.Locale,
 			Localization: map[string]types.RecipeLocalization{
 				"de": {
@@ -377,12 +382,13 @@ func LoadRecipes(db *sqlx.DB) {
 
 	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
 	recipesMutex.Unlock()
-	log.Printf("Loaded %d recipes into cache", len(recipes))
-	log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
+	// log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
 
 	loadRecipesCategories(db)
 	loadRecipesIngredients(db)
 	loadRecipesPreparation(db)
+
+	log.Printf("Loaded %d recipes into cache", len(recipes))
 }
 
 func loadRecipesCategories(db *sqlx.DB) {
@@ -401,7 +407,7 @@ func loadRecipesCategories(db *sqlx.DB) {
 
 	recipesMutex.Lock()
 	for _, item := range items {
-		log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
+		// log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
 		_, user := GetUser(item.UserId)
 		recipe := recipesCache[uint32(item.RecipeId)]
 		recipe.Categories = append(recipe.Categories, types.RecipeCategoryitem{
@@ -413,7 +419,7 @@ func loadRecipesCategories(db *sqlx.DB) {
 	}
 
 	recipesMutex.Unlock()
-	log.Printf("Loaded %d recipes categories into cache", len(items))
+	// log.Printf("Loaded %d recipes categories into cache", len(items))
 }
 
 func loadRecipesIngredients(db *sqlx.DB) {
@@ -439,7 +445,7 @@ func loadRecipesIngredients(db *sqlx.DB) {
 
 	recipesMutex.Lock()
 	for _, item := range items {
-		log.Printf("  - %d < %d: %s", item.StepId, item.Id, item.DescriptionDe)
+		// log.Printf("  - %d < %d: %s", item.StepId, item.Id, item.DescriptionDe)
 		recipePreparationIngredients[item.StepId] = append(recipePreparationIngredients[item.StepId], types.Ingredient{
 			Id:        item.Id,
 			SortIndex: item.Index,
@@ -460,7 +466,7 @@ func loadRecipesIngredients(db *sqlx.DB) {
 	}
 
 	recipesMutex.Unlock()
-	log.Printf("Loaded %d recipes preparation steps into cache", len(items))
+	// log.Printf("Loaded %d recipes preparation steps into cache", len(items))
 }
 
 func loadRecipesPreparation(db *sqlx.DB) {
@@ -487,7 +493,7 @@ func loadRecipesPreparation(db *sqlx.DB) {
 
 	recipesMutex.Lock()
 	for _, step := range steps {
-		log.Printf("  - %d < %d: %s", step.RecipeId, step.Index, step.TitleDe)
+		// log.Printf("  - %d < %d: %s", step.RecipeId, step.Index, step.TitleDe)
 		recipe := recipesCache[uint32(step.RecipeId)]
 		recipe.Preparation = append(recipe.Preparation, types.Preparation{
 			Id:          step.Id,
@@ -517,7 +523,7 @@ func loadRecipesPreparation(db *sqlx.DB) {
 	}
 
 	recipesMutex.Unlock()
-	log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
+	// log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
 }
 
 func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
@@ -574,8 +580,8 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 	return types.Recipe{}, errors.New("not found")
 }
 
-/* func PutRecipeLocalization(recipe types.Recipe, lang string, locale AiRecipeTranslation) (bool, error) {
-	log.Printf("Updating recipe localisation %v %v", recipe.Id, recipe.Localization[lang].Title)
+func PutRecipeLocalization(recipe types.Recipe) (bool, error) {
+	log.Printf("Updating recipe localisation %v %v", recipe.Id, recipe.Localization[recipe.UserLocale].Title)
 
 	tx, err := Db.Begin()
 	if err != nil {
@@ -583,22 +589,29 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 		return false, err
 	}
 
-	res, err := putRecipeLocalizationMetadata(tx, &recipe, lang, &locale)
-	if err != nil || !res {
-		_ = tx.Rollback()
-		return false, err
-	}
+	for _, l := range Locales {
 
-	res, err = putRecipeLocalizationPictures(tx, &recipe, lang, &locale)
-	if err != nil || !res {
-		_ = tx.Rollback()
-		return false, err
-	}
+		if l == recipe.UserLocale {
+			continue
+		}
 
-	res, err = putRecipeLocalizationPreparation(tx, &recipe, lang, &locale)
-	if err != nil || !res {
-		_ = tx.Rollback()
-		return false, err
+		res, err := putRecipeLocalizationMetadata(tx, &recipe, l)
+		if err != nil || !res {
+			_ = tx.Rollback()
+			return false, err
+		}
+
+		res, err = putRecipeLocalizationPictures(tx, &recipe, l)
+		if err != nil || !res {
+			_ = tx.Rollback()
+			return false, err
+		}
+
+		res, err = putRecipeLocalizationPreparation(tx, &recipe, l)
+		if err != nil || !res {
+			_ = tx.Rollback()
+			return false, err
+		}
 	}
 
 	err = tx.Commit()
@@ -607,12 +620,13 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 		return false, err
 	}
 
+	log.Printf("  > Translation finished")
 	go LoadRecipes(Db)
 
 	return true, nil
 }
 
-func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
+func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string) (bool, error) {
 	log.Printf("  > Patching general data")
 	stmt, err := tx.Prepare("UPDATE `recipes` SET `localized` = current_timestamp(), `name_" + lang + "` = ?, `description_" + lang + "` = ?, `source_description_" + lang + "` = ? WHERE `recipe_id` = ?")
 	if err != nil {
@@ -620,7 +634,7 @@ func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string
 		return false, err
 	}
 
-	_, err = stmt.Exec(locale.Title, locale.Description, locale.SourceDescription, recipe.Id)
+	_, err = stmt.Exec(recipe.Localization[lang].Title, recipe.Localization[lang].Description, recipe.Localization[lang].SourceDescription, recipe.Id)
 	if err != nil {
 		log.Printf("  > Failed executing stmt: %v", err)
 		return false, err
@@ -629,7 +643,7 @@ func putRecipeLocalizationMetadata(tx *sql.Tx, recipe *types.Recipe, lang string
 	return true, nil
 }
 
-func putRecipeLocalizationPictures(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
+func putRecipeLocalizationPictures(tx *sql.Tx, recipe *types.Recipe, lang string) (bool, error) {
 	log.Printf("  > Patching pictures")
 	stmt, err := tx.Prepare("UPDATE `recipe_pictures` SET `name_" + lang + "` = ?, `description_" + lang + "` = ? WHERE `picture_id` = ?")
 	if err != nil {
@@ -638,24 +652,17 @@ func putRecipeLocalizationPictures(tx *sql.Tx, recipe *types.Recipe, lang string
 	}
 
 	for _, pic := range recipe.Pictures {
-		for _, langpic := range locale.Pictures {
-			if pic.Id != langpic.Id {
-				continue
-			}
-
-			_, err = stmt.Exec(langpic.Name, langpic.Description, pic.Id)
-			if err != nil {
-				log.Printf("  > Failed executing stmt: %v", err)
-				return false, err
-			}
-
+		_, err = stmt.Exec(pic.Localization[lang].Name, pic.Localization[lang].Description, pic.Id)
+		if err != nil {
+			log.Printf("  > Failed executing stmt: %v", err)
+			return false, err
 		}
 	}
 
 	return true, nil
 }
 
-func putRecipeLocalizationPreparation(tx *sql.Tx, recipe *types.Recipe, lang string, locale *AiRecipeTranslation) (bool, error) {
+func putRecipeLocalizationPreparation(tx *sql.Tx, recipe *types.Recipe, lang string) (bool, error) {
 	log.Printf("  > Patching preparation steps")
 	stmt, err := tx.Prepare("UPDATE `recipe_steps` SET `title_" + lang + "` = ?, `instruct_" + lang + "` = ? WHERE `step_id` = ?")
 	if err != nil {
@@ -664,26 +671,19 @@ func putRecipeLocalizationPreparation(tx *sql.Tx, recipe *types.Recipe, lang str
 	}
 
 	for _, prep := range recipe.Preparation {
-		for _, langprep := range locale.Preparation {
-			if prep.Id != langprep.Id {
-				continue
-			}
-
-			_, err = stmt.Exec(langprep.Title, langprep.Instructions, prep.Id)
-			if err != nil {
-				log.Printf("  > Failed executing stmt: %v", err)
-				return false, err
-			}
-
-			putRecipeLocalizationPreparationIngredients(tx, &prep, lang, &langprep)
-
+		_, err = stmt.Exec(prep.Localization[lang].Title, prep.Localization[lang].Instructions, prep.Id)
+		if err != nil {
+			log.Printf("  > Failed executing stmt: %v", err)
+			return false, err
 		}
+
+		putRecipeLocalizationPreparationIngredients(tx, &prep, lang)
 	}
 
 	return true, nil
 }
 
-func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Preparation, lang string, locale *AiRecipeTranslationPreparation) (bool, error) {
+func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Preparation, lang string) (bool, error) {
 	log.Printf("    > Patching ingredients for a step")
 	stmt, err := tx.Prepare("UPDATE `recipe_ingredients` SET `description_" + lang + "` = ? WHERE `ingredient_id` = ?")
 	if err != nil {
@@ -692,20 +692,12 @@ func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Prepara
 	}
 
 	for _, ing := range prep.Ingredients {
-		for _, langing := range locale.Ingredients {
-			if ing.Id != langing.Id {
-				continue
-			}
-
-			_, err = stmt.Exec(langing.Title, ing.Id)
-			if err != nil {
-				log.Printf("  > Failed executing stmt: %v", err)
-				return false, err
-			}
-
+		_, err = stmt.Exec(ing.Localization[lang].Title, ing.Id)
+		if err != nil {
+			log.Printf("  > Failed executing stmt: %v", err)
+			return false, err
 		}
 	}
 
 	return true, nil
 }
-*/

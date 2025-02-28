@@ -24,6 +24,8 @@ func main() {
 	// Check connection to Nextcloud API
 	services.NcConnect()
 
+	services.Locales = []string{"de", "en", "fr"}
+
 	// Check connection to AI assistant
 	go services.AiConnect()
 

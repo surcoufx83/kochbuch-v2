@@ -14,8 +14,7 @@ type Recipe struct {
 	LastEditUserId NullInt32             `json:"-"`
 	User           NullUserProfileSimple `json:"user"`
 
-	AiGenerated bool     `json:"aiGenerated"`
-	AiLocalized NullTime `json:"aiLocalized"`
+	AiGenerated bool `json:"aiGenerated"`
 
 	UserLocale   string                        `json:"userLocale"`
 	Localization map[string]RecipeLocalization `json:"localization"`
@@ -32,9 +31,11 @@ type Recipe struct {
 	SharedInternal bool `json:"sharedInternal"`
 	SharedPublic   bool `json:"sharedPublic"`
 
-	CreatedTime   time.Time `json:"created"`
-	ModifiedTime  time.Time `json:"modified"`
-	PublishedTime NullTime  `json:"published"`
+	AiTranslatedTime NullTime  `json:"localized"`
+	CreatedTime      time.Time `json:"created"`
+	EditedByUserTime NullTime  `json:"edited"`
+	ModifiedTime     time.Time `json:"modified"`
+	PublishedTime    NullTime  `json:"published"`
 }
 
 type RecipeCategoryitem struct {

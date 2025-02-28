@@ -227,9 +227,12 @@ p {
     >.footer {
         font-size: 90%;
         padding: calc(var(--spacing) * 2);
-        display: flex;
-        flex-direction: row;
-        align-items: center;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        >* {
+            text-align: center;
+        }
     }
 
 }
