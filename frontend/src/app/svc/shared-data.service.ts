@@ -83,10 +83,8 @@ export class SharedDataService {
 
   private loadCategoriesFromServer(): void {
     this.apiService.get('categories', this._categoriesEtag).subscribe((res) => {
-      console.log(res)
       if (res?.status === HttpStatusCode.Ok) {
         const categories = (res as CategoriesResponse).body.categories;
-        console.log(categories)
         let itemMapping: { [key: number]: number } = {};
         for (const cat of Object.values(categories)) {
           for (const item of Object.values(cat.items)) {
@@ -103,10 +101,8 @@ export class SharedDataService {
 
   private loadRecipesFromServer(): void {
     this.apiService.get('recipes', this._recipesEtag).subscribe((res) => {
-      console.log(res)
       if (res?.status === HttpStatusCode.Ok) {
         const recipes = (res as RecipesResponse).body.recipes;
-        console.log(recipes)
         this._recipes.next(Object.values(recipes));
         this._recipesEtag = res.headers.get('etag') ?? undefined;
         this.saveRecipesToCache();

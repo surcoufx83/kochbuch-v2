@@ -50,14 +50,11 @@ export class RecipesComponent implements OnDestroy, OnInit {
       this.User.set(this.apiService.User ?? false);
     }));
     this.subs.push(this.l10nService.userLocale.subscribe((l) => {
-      console.log(l)
       if (l !== this.LangCode()) {
         this.LangCode.set(l);
       }
     }));
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
-      console.log(items)
-      // return;
       this.Recipes.set(
         Object.values(items)
           .filter((a) => a.pictures.length > 0)

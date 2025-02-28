@@ -72,9 +72,6 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
         }
       }
     }));
-    this.subs.push(this.sharedDataService.SearchCategories.subscribe((cats) => {
-      console.log(cats)
-    }));
   }
 
   onCancelSearch(): void {
