@@ -57,7 +57,7 @@ export class RecipesComponent implements OnDestroy, OnInit {
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
       this.Recipes.set(
         Object.values(items)
-          .filter((a) => a.pictures.length > 0)
+          .filter((a) => a.pictures != null && a.pictures.length > 0)
           .sort((a, b) => (a.published ?? a.edited ?? a.modified) > (b.published ?? b.edited ?? b.modified) ? -1 : 1)
       );
     }));

@@ -2,16 +2,27 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
 	"kochbuch-v2-backend/types"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/nfnt/resize"
 )
 
 var (
@@ -24,7 +35,7 @@ var (
 	recipesCache       map[uint32]types.Recipe
 	recipesEtag        time.Time
 	recipesEtagStr     string
-	publicRecipesCache map[uint32]types.Recipe
+	publicRecipesCache map[uint32]*types.RecipeSimple
 
 	recipePreparationIngredients map[uint64][]types.Ingredient
 
@@ -34,6 +45,8 @@ var (
 	unitsEtagStr string
 
 	Locales []string
+
+	ThumbnailSizes []int
 )
 
 type dbCategory struct {
@@ -52,58 +65,66 @@ type dbCategory struct {
 }
 
 type DbRecipe struct {
-	Id                     uint32           `db:"recipe_id"`
-	UserId                 types.NullInt32  `db:"user_id"`
-	EditUserId             types.NullInt32  `db:"edit_user_id"`
-	AiGenerated            bool             `db:"aigenerated"`
-	AiTranslatedTime       types.NullTime   `db:"localized"`
-	EditedByUserTime       types.NullTime   `db:"edited"`
-	IsPlaceholder          bool             `db:"placeholder"`
-	SharedInternal         bool             `db:"shared_internal"`
-	SharedPublic           bool             `db:"shared_external"`
-	Locale                 string           `db:"locale"`
-	NameDe                 string           `db:"name_de"`
-	NameEn                 string           `db:"name_en"`
-	NameFr                 string           `db:"name_fr"`
-	DescriptionDe          string           `db:"description_de"`
-	DescriptionEn          string           `db:"description_en"`
-	DescriptionFr          string           `db:"description_fr"`
-	ServingsCount          uint8            `db:"servings_count"`
-	SourceDescriptionDe    string           `db:"source_description_de"`
-	SourceDescriptionEn    string           `db:"source_description_en"`
-	SourceDescriptionFr    string           `db:"source_description_fr"`
-	SourceUrl              string           `db:"source_url"`
-	Created                time.Time        `db:"created"`
-	Modified               time.Time        `db:"modified"`
-	Published              types.NullTime   `db:"published"`
-	Difficulty             uint8            `db:"difficulty"`
-	IngredientsGroupByStep bool             `db:"ingredientsGroupByStep"`
-	PictureId              types.NullInt32  `db:"picture_id"`
-	PictureUserId          types.NullInt32  `db:"picture_user_id"`
-	PictureIndex           types.NullInt32  `db:"picture_sortindex"`
-	PictureNameDe          types.NullString `db:"picture_name_de"`
-	PictureNameEn          types.NullString `db:"picture_name_en"`
-	PictureNameFr          types.NullString `db:"picture_name_fr"`
-	PictureDescriptionDe   types.NullString `db:"picture_description_de"`
-	PictureDescriptionEn   types.NullString `db:"picture_description_en"`
-	PictureDescriptionFr   types.NullString `db:"picture_description_fr"`
-	PictureFilename        types.NullString `db:"picture_filename"`
-	PictureFullPath        types.NullString `db:"picture_fullpath"`
-	PictureUploaded        types.NullTime   `db:"picture_uploaded"`
-	PictureWidth           types.NullInt32  `db:"picture_width"`
-	PictureHeight          types.NullInt32  `db:"picture_height"`
-	ViewsCount             uint32           `db:"views"`
-	CookedCount            uint32           `db:"cooked"`
-	VotesCount             uint32           `db:"votes"`
-	VotesSum               uint32           `db:"votesum"`
-	VotesAvg               float32          `db:"avgvotes"`
-	RatingsCount           uint32           `db:"ratings"`
-	RatingsSum             uint32           `db:"ratesum"`
-	RatingsAvg             float32          `db:"avgratings"`
-	StepsCount             uint8            `db:"stepscount"`
-	PreparingTime          types.NullInt32  `db:"preparing_time"`
-	CookingTime            types.NullInt32  `db:"cooking_time"`
-	WaitingTime            types.NullInt32  `db:"waiting_time"`
+	Id                     uint32          `db:"recipe_id"`
+	UserId                 types.NullInt32 `db:"user_id"`
+	EditUserId             types.NullInt32 `db:"edit_user_id"`
+	AiGenerated            bool            `db:"aigenerated"`
+	AiTranslatedTime       types.NullTime  `db:"localized"`
+	EditedByUserTime       types.NullTime  `db:"edited"`
+	IsPlaceholder          bool            `db:"placeholder"`
+	SharedInternal         bool            `db:"shared_internal"`
+	SharedPublic           bool            `db:"shared_external"`
+	Locale                 string          `db:"locale"`
+	NameDe                 string          `db:"name_de"`
+	NameEn                 string          `db:"name_en"`
+	NameFr                 string          `db:"name_fr"`
+	DescriptionDe          string          `db:"description_de"`
+	DescriptionEn          string          `db:"description_en"`
+	DescriptionFr          string          `db:"description_fr"`
+	ServingsCount          uint8           `db:"servings_count"`
+	SourceDescriptionDe    string          `db:"source_description_de"`
+	SourceDescriptionEn    string          `db:"source_description_en"`
+	SourceDescriptionFr    string          `db:"source_description_fr"`
+	SourceUrl              string          `db:"source_url"`
+	Created                time.Time       `db:"created"`
+	Modified               time.Time       `db:"modified"`
+	Published              types.NullTime  `db:"published"`
+	Difficulty             uint8           `db:"difficulty"`
+	IngredientsGroupByStep bool            `db:"ingredientsGroupByStep"`
+	ViewsCount             uint32          `db:"views"`
+	CookedCount            uint32          `db:"cooked"`
+	VotesCount             uint32          `db:"votes"`
+	VotesSum               uint32          `db:"votesum"`
+	VotesAvg               float32         `db:"avgvotes"`
+	RatingsCount           uint32          `db:"ratings"`
+	RatingsSum             uint32          `db:"ratesum"`
+	RatingsAvg             float32         `db:"avgratings"`
+	StepsCount             uint8           `db:"stepscount"`
+	PreparingTime          types.NullInt32 `db:"preparing_time"`
+	CookingTime            types.NullInt32 `db:"cooking_time"`
+	WaitingTime            types.NullInt32 `db:"waiting_time"`
+}
+
+type dbPicture struct {
+	PictureId     uint32           `db:"picture_id"`
+	RecipeId      uint32           `db:"recipe_id"`
+	UserId        sql.NullInt32    `db:"user_id"`
+	SortIndex     uint8            `db:"sortindex"`
+	NameDe        string           `db:"name_de"`
+	NameEn        string           `db:"name_en"`
+	NameFr        string           `db:"name_fr"`
+	DescriptionDe string           `db:"description_de"`
+	DescriptionEn string           `db:"description_en"`
+	DescriptionFr string           `db:"description_fr"`
+	Hash          string           `db:"hash"`
+	Filename      string           `db:"filename"`
+	Fullpath      string           `db:"fullpath"`
+	Uploaded      time.Time        `db:"uploaded"`
+	Deleted       types.NullTime   `db:"deleted"`
+	Width         uint16           `db:"width"`
+	Height        uint16           `db:"height"`
+	ThbSizes      types.NullString `db:"thb_sizes"`
+	ThbGenerated  types.NullTime   `db:"thb_generated"`
 }
 
 type dbUnit struct {
@@ -265,16 +286,16 @@ func LoadRecipes(db *sqlx.DB) {
 	// Build cache
 	recipesMutex.Lock()
 	recipesCache = make(map[uint32]types.Recipe)
-	publicRecipesCache = make(map[uint32]types.Recipe)
+	publicRecipesCache = make(map[uint32]*types.RecipeSimple)
 	for _, recipe := range recipes {
 
 		// log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
 
-		_, userobj := GetUser(int(recipe.PictureUserId.Int32))
+		_, userobj := GetUser(int(recipe.EditUserId.Int32))
 
 		recipeItem := types.Recipe{
 			Id:               recipe.Id,
-			SimpleStruct:     true,
+			SimpleStruct:     false,
 			IsFork:           false,
 			OriginalRecipeId: 0,
 			IsPlaceholder:    recipe.IsPlaceholder,
@@ -333,51 +354,18 @@ func LoadRecipes(db *sqlx.DB) {
 			},
 		}
 
-		if recipe.PictureId.Valid {
-
-			_, userobj := GetUser(int(recipe.PictureUserId.Int32))
-
-			picture := types.Picture{
-				Id:       uint32(recipe.PictureId.Int32),
-				RecipeId: recipe.Id,
-				User:     userobj.SimpleProfile,
-				Index:    uint8(recipe.PictureIndex.Int32),
-				Localization: map[string]types.PictureLocalization{
-					"de": {
-						Name:        recipe.PictureNameDe.String,
-						Description: recipe.PictureDescriptionDe.String,
-					},
-					"en": {
-						Name:        recipe.PictureNameEn.String,
-						Description: recipe.PictureDescriptionEn.String,
-					},
-					"fr": {
-						Name:        recipe.PictureNameFr.String,
-						Description: recipe.PictureDescriptionFr.String,
-					},
-				},
-				FileName: recipe.PictureFilename.String,
-				FullPath: recipe.PictureFullPath.String,
-				Uploaded: recipe.PictureUploaded,
-				Dimension: types.PictureDimension{
-					Height: recipe.PictureHeight.Int32,
-					Width:  recipe.PictureWidth.Int32,
-				},
-			}
-			recipeItem.Pictures = append(recipeItem.Pictures, picture)
-
-		}
-
 		if recipe.Modified.After(recipesEtag) {
 			recipesEtag = recipe.Modified
 		}
 
 		recipesCache[recipe.Id] = recipeItem
 
-		if recipe.SharedPublic {
-			publicRecipesCache[recipe.Id] = recipesCache[recipe.Id]
-		}
+	}
 
+	for _, recipe := range recipesCache {
+		if recipe.SharedPublic {
+			publicRecipesCache[recipe.Id] = ConvertToRecipeSimple(&recipe)
+		}
 	}
 
 	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
@@ -387,8 +375,35 @@ func LoadRecipes(db *sqlx.DB) {
 	loadRecipesCategories(db)
 	loadRecipesIngredients(db)
 	loadRecipesPreparation(db)
+	loadRecipesPictures(db)
 
 	log.Printf("Loaded %d recipes into cache", len(recipes))
+}
+
+func ConvertToRecipeSimple(r *types.Recipe) *types.RecipeSimple {
+	var firstPicture []types.Picture
+	if len(r.Pictures) > 0 {
+		firstPicture = []types.Picture{r.Pictures[0]}
+	}
+
+	return &types.RecipeSimple{
+		Id:               r.Id,
+		SimpleStruct:     true,
+		User:             r.User,
+		UserLocale:       r.UserLocale,
+		Localization:     r.Localization,
+		Categories:       r.Categories,
+		Pictures:         firstPicture,
+		ServingsCount:    r.ServingsCount,
+		Difficulty:       r.Difficulty,
+		Statistics:       r.Statistics,
+		Timing:           r.Timing,
+		AiTranslatedTime: r.AiTranslatedTime,
+		CreatedTime:      r.CreatedTime,
+		EditedByUserTime: r.EditedByUserTime,
+		ModifiedTime:     r.ModifiedTime,
+		PublishedTime:    r.PublishedTime,
+	}
 }
 
 func loadRecipesCategories(db *sqlx.DB) {
@@ -526,7 +541,100 @@ func loadRecipesPreparation(db *sqlx.DB) {
 	// log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
 }
 
-func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
+func loadRecipesPictures(db *sqlx.DB) {
+	query := "SELECT * FROM `recipe_pictures` WHERE `deleted` IS NULL ORDER BY `recipe_id`, `sortindex`"
+	var items []dbPicture
+
+	err := db.Select(&items, query)
+	if err != nil {
+		log.Fatalf("Failed to load recipes pictures: %v", err)
+	}
+
+	recipesMutex.Lock()
+	for _, item := range items {
+		// log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
+		_, user := GetUser(int(item.UserId.Int32))
+		thbsizes := []int{}
+
+		if item.ThbSizes.Valid {
+			if err = json.Unmarshal([]byte(item.ThbSizes.String), &thbsizes); err != nil {
+				item.ThbSizes = types.NullString{
+					Valid:  true,
+					String: "[]",
+				}
+				item.ThbGenerated = types.NullTime{
+					Valid: false,
+				}
+			}
+		}
+
+		recipe := recipesCache[uint32(item.RecipeId)]
+		basename, ext := GetBasenameAndExtension(item.Filename)
+
+		picture := types.Picture{
+			Id:       item.PictureId,
+			RecipeId: item.RecipeId,
+			User:     user.SimpleProfile,
+			Index:    uint8(len(recipe.Pictures)),
+			Localization: map[string]types.PictureLocalization{
+				"de": {
+					Name:        item.NameDe,
+					Description: item.DescriptionDe,
+				},
+				"en": {
+					Name:        item.NameEn,
+					Description: item.DescriptionEn,
+				},
+				"fr": {
+					Name:        item.NameFr,
+					Description: item.DescriptionFr,
+				},
+			},
+			FileName: item.Filename,
+			BaseName: basename,
+			Ext:      ext,
+			FullPath: item.Fullpath,
+			Uploaded: item.Uploaded,
+			Dimension: types.PictureDimension{
+				Height:         int(item.Height),
+				Width:          int(item.Width),
+				GeneratedSizes: thbsizes,
+				Generated:      item.ThbGenerated,
+			},
+		}
+		recipe.Pictures = append(recipe.Pictures, picture)
+		recipesCache[uint32(item.RecipeId)] = recipe
+
+		if item.ThbGenerated.Valid {
+			for _, size := range ThumbnailSizes {
+				if !slices.Contains(thbsizes, size) {
+					item.ThbSizes = types.NullString{
+						Valid:  true,
+						String: "[]",
+					}
+					item.ThbGenerated = types.NullTime{
+						Valid: false,
+					}
+				}
+			}
+		}
+
+		if !item.ThbGenerated.Valid {
+			ThumbnailGenerationRequests = append(ThumbnailGenerationRequests, PictureRequiresThumbnail{
+				RecipeId:  picture.RecipeId,
+				PictureId: picture.Id,
+				Picture:   &picture,
+				Index:     picture.Index,
+			})
+		}
+
+	}
+
+	recipesMutex.Unlock()
+	// log.Printf("Loaded %d recipes categories into cache", len(items))
+}
+
+func GetRecipes(c *gin.Context) (map[uint32]*types.RecipeSimple, string) {
 	code, _, user, err := GetSelf(c)
 
 	if err != nil || code != http.StatusOK || user.Id == 0 {
@@ -536,10 +644,10 @@ func GetRecipes(c *gin.Context) (map[uint32]types.Recipe, string) {
 	recipesMutex.RLock()
 	defer recipesMutex.RUnlock()
 
-	userRecipes := make(map[uint32]types.Recipe)
+	userRecipes := make(map[uint32]*types.RecipeSimple)
 	for _, recipe := range recipesCache {
 		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
-			userRecipes[recipe.Id] = recipe
+			userRecipes[recipe.Id] = ConvertToRecipeSimple(&recipe)
 		}
 	}
 	return userRecipes, recipesEtagStr
@@ -578,6 +686,15 @@ func GetRecipeInternal(id uint32) (types.Recipe, error) {
 		return recipe, nil
 	}
 	return types.Recipe{}, errors.New("not found")
+}
+
+func GetPicture(recipe *types.Recipe, pictureId uint32) (int, types.Picture, error) {
+	for i, p := range recipe.Pictures {
+		if p.Id == pictureId {
+			return i, p, nil
+		}
+	}
+	return -1, types.Picture{}, errors.New("not found")
 }
 
 func PutRecipeLocalization(recipe types.Recipe) (bool, error) {
@@ -700,4 +817,144 @@ func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Prepara
 	}
 
 	return true, nil
+}
+
+func touchRecipe(recipe *types.Recipe) {
+	log.Println("Updating recipe timestamp")
+	recipe.ModifiedTime = time.Now()
+	if recipe.ModifiedTime.After(recipesEtag) {
+		recipesEtag = recipe.ModifiedTime
+		recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipesCache)))
+	}
+}
+
+func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, error) {
+	log.Printf("Generating resized picture variants")
+
+	recipe, err := GetRecipeInternal(recipeId)
+	if err != nil {
+		return false, err
+	}
+
+	i, picture, err := GetPicture(&recipe, pictureId)
+	if err != nil || i == -1 || picture.Id == 0 {
+		return false, err
+	}
+
+	if v, err := getPictureExistsOnDisk(&picture); !v || err != nil {
+		return false, err
+	}
+
+	for _, size := range ThumbnailSizes {
+		res, err := generateResizedPictureVersion(&picture, size)
+		if !res || err != nil {
+			return false, err
+		}
+	}
+	log.Printf("  > %v thumbnails created", picture.FullPath)
+
+	sizesJson, err := json.Marshal(picture.Dimension.GeneratedSizes)
+	if err != nil {
+		log.Printf("  > %v failed marshaling sizes: %v", picture.FullPath, err)
+		return false, err
+	}
+
+	query := "UPDATE `recipe_pictures` SET `width` = ?, `height` = ?, `thb_sizes` = ?, `thb_generated` = current_timestamp() WHERE `picture_id` = ?"
+	stmt, err := Db.Prepare(query)
+	if err != nil {
+		log.Printf("  > %v failed preparing stmt: %v", picture.FullPath, err)
+		return false, err
+	}
+
+	_, err = stmt.Exec(picture.Dimension.Width, picture.Dimension.Height, string(sizesJson), picture.Id)
+	if err != nil {
+		log.Printf("  > Failed executing stmt: %v", err)
+		return false, err
+	}
+
+	recipe.Pictures[i] = picture
+	recipesMutex.Lock()
+	touchRecipe(&recipe)
+	recipesCache[recipe.Id] = recipe
+	recipesMutex.Unlock()
+	log.Printf("  > %v saved to database and updated in cache", picture.FullPath)
+
+	return false, err
+
+}
+
+func getPictureExistsOnDisk(picture *types.Picture) (bool, error) {
+	_, err := os.Stat(picture.FullPath)
+	if err != nil {
+		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		return false, err
+	}
+	return true, nil
+}
+
+func generateResizedPictureVersion(picture *types.Picture, size int) (bool, error) {
+	log.Printf("  > %v -> %d", picture.FullPath, size)
+
+	folder := filepath.Dir(picture.FullPath)
+	basename, ext := GetBasenameAndExtension(picture.FileName)
+
+	log.Printf("  >  > Folder = %v", folder)
+	log.Printf("  >  > Base name = %v", basename)
+	log.Printf("  >  > Extension = %v", ext)
+
+	// open image
+	imgFile, err := os.Open(picture.FullPath)
+	if err != nil {
+		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		return false, err
+	}
+	defer imgFile.Close()
+
+	// decode image to check dimensions
+	img, _, err := image.Decode(imgFile)
+	if err != nil {
+		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		return false, err
+	}
+
+	picture.Dimension = types.PictureDimension{
+		Height:         img.Bounds().Dy(),
+		Width:          img.Bounds().Dx(),
+		GeneratedSizes: picture.Dimension.GeneratedSizes,
+		Generated:      picture.Dimension.Generated,
+	}
+	log.Printf("  >  > Size = %dx%d", picture.Dimension.Width, picture.Dimension.Height)
+
+	// created resized copy
+	resizedImg := resize.Resize(uint(size), 0, img, resize.Lanczos3)
+
+	resizedFilename := filepath.Join(folder, fmt.Sprintf("%s_%d%s", basename, size, ext))
+	log.Printf("  >  > Save as = %v", resizedFilename)
+	resizedFile, err := os.Create(resizedFilename)
+	if err != nil {
+		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		return false, err
+	}
+	defer resizedFile.Close()
+
+	switch ext {
+	case ".jpg", ".jpeg":
+		err = jpeg.Encode(resizedFile, resizedImg, nil)
+	case ".png":
+		err = png.Encode(resizedFile, resizedImg)
+	}
+	if err != nil {
+		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		return false, err
+	}
+
+	picture.Dimension = types.PictureDimension{
+		Height:         picture.Dimension.Height,
+		Width:          picture.Dimension.Width,
+		GeneratedSizes: append(picture.Dimension.GeneratedSizes, size),
+		Generated:      picture.Dimension.Generated,
+	}
+
+	return true, nil
+
 }

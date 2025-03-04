@@ -25,6 +25,7 @@ func main() {
 	services.NcConnect()
 
 	services.Locales = []string{"de", "en", "fr"}
+	services.ThumbnailSizes = []int{300, 400, 500, 600, 800}
 
 	// Check connection to AI assistant
 	go services.AiConnect()
@@ -33,6 +34,9 @@ func main() {
 	services.LoadCategories(services.Db)
 	services.LoadUnits(services.Db)
 	services.LoadRecipes(services.Db)
+
+	// Run Image Thumbnail generator
+	go services.ThbAutoGenerator()
 
 	// Set up Gin router
 	router := gin.Default()
@@ -45,7 +49,6 @@ func main() {
 	router.POST("/login", api.PostOauth2Login)
 	router.POST("/logout", api.PostLogout)
 	router.GET("/me", api.GetMyProfile)
-	// router.GET("/media/uploads/:projectid/:pictureid/:filename", api.GetRecipePicture)
 	router.GET("/params", api.GetAppParams)
 	router.GET("/recipes", api.GetRecipes)
 	router.GET("/units", api.GetUnits)
@@ -53,6 +56,7 @@ func main() {
 	media := router.Group("/media", CacheMiddleware(2592000))
 	{
 		media.GET("/uploads/:projectid/:pictureid/:filename", api.GetRecipePicture)
+		media.GET("/uploads/:projectid/:pictureid/thb/:thbsize/:filename", api.GetRecipeThbPicture)
 	}
 
 	// Create HTTP server

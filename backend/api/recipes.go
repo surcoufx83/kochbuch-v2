@@ -1,8 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"kochbuch-v2-backend/services"
+	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -46,17 +49,66 @@ func GetRecipePicture(c *gin.Context) {
 
 	recipe, err := services.GetRecipe(uint32(projectid), c)
 	if err != nil || recipe.Id == 0 {
+		log.Printf("  a> Recipe not found: %v", err)
 		c.Status(http.StatusNotFound)
 		return
 	}
 
-	for _, pic := range recipe.Pictures {
-		if pic.Id == uint32(pictureid) && pic.FileName == c.Param("filename") {
-			c.File(pic.FullPath)
+	_, picture, err := services.GetPicture(&recipe, uint32(pictureid))
+	if err != nil || picture.Id == 0 || picture.FileName != c.Param("filename") {
+		log.Printf("  a> Picture not found: %v", err)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	c.File(picture.FullPath)
+
+}
+
+func GetRecipeThbPicture(c *gin.Context) {
+	projectid, err := strconv.Atoi(c.Param("projectid"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pictureid, err := strconv.Atoi(c.Param("pictureid"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	recipe, err := services.GetRecipe(uint32(projectid), c)
+	if err != nil || recipe.Id == 0 {
+		log.Printf("  a> Recipe not found: %v", err)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	_, picture, err := services.GetPicture(&recipe, uint32(pictureid))
+	if err != nil || picture.Id == 0 {
+		log.Printf("  b> Picture not found: %v", err)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	thbsize, err := strconv.Atoi(c.Param("thbsize"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	for _, size := range picture.Dimension.GeneratedSizes {
+		if size == thbsize {
+			folder := filepath.Dir(picture.FullPath)
+			basename, ext := services.GetBasenameAndExtension(picture.FileName)
+			resizedFilename := filepath.Join(folder, fmt.Sprintf("%s_%d%s", basename, size, ext))
+			c.File(resizedFilename)
 			return
 		}
 	}
 
+	log.Printf("  b> Size not found: %v", thbsize)
 	c.Status(http.StatusNotFound)
 
 }

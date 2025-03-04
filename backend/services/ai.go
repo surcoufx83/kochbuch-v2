@@ -219,7 +219,7 @@ func aiCreateAssistant() (int, error) {
 		return http.StatusServiceUnavailable, err
 	}
 
-	log.Printf("  > id = %s", assistantsResp.Id)
+	// log.Printf("  > id = %s", assistantsResp.Id)
 	aiTranslatorId = assistantsResp.Id
 
 	return http.StatusOK, nil
@@ -232,17 +232,16 @@ func aiAutoTranslation() {
 		return
 	}
 
-	log.Println("Checking for entities to translate...")
 	aiTranslateRecipes()
 }
 
 func aiTranslateRecipes() {
 	for {
 		if aiTranslateRecipesLoop() {
-			time.Sleep(1 * time.Second)
+			time.Sleep(5 * time.Second)
 		} else {
-			log.Println("No recipes for translation")
-			time.Sleep(1 * time.Minute)
+			// log.Println("No recipes for translation")
+			time.Sleep(5 * time.Minute)
 		}
 	}
 }

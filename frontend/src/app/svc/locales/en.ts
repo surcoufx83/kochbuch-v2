@@ -65,7 +65,7 @@ export const KB_En: L10nLocale = {
     },
     recipe: {
         aiLocalizedContent: "This recipe or parts of it have been automatically translated.",
-        aiSourceLocale: "Original language: [0]",
+        aiSourceLocale: "Original title: [0]",
         difficulty: {
             0: "No information",
             1: "Easy",

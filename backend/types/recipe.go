@@ -3,39 +3,51 @@ package types
 import "time"
 
 type Recipe struct {
-	Id               uint32 `json:"id"`
-	SimpleStruct     bool   `json:"simple"`
-	IsFork           bool   `json:"isFork"`
-	OriginalRecipeId uint32 `json:"originalRecipeId"`
-	IsPlaceholder    bool   `json:"isPlaceholder"`
-	SourceUrl        string `json:"sourceUrl"`
+	Id               uint32                        `json:"id"`
+	SimpleStruct     bool                          `json:"simple"`
+	IsFork           bool                          `json:"isFork"`
+	OriginalRecipeId uint32                        `json:"originalRecipeId"`
+	IsPlaceholder    bool                          `json:"isPlaceholder"`
+	SourceUrl        string                        `json:"sourceUrl"`
+	OwnerUserId      NullInt32                     `json:"-"`
+	LastEditUserId   NullInt32                     `json:"-"`
+	User             NullUserProfileSimple         `json:"user"`
+	AiGenerated      bool                          `json:"aiGenerated"`
+	UserLocale       string                        `json:"userLocale"`
+	Localization     map[string]RecipeLocalization `json:"localization"`
+	Categories       []RecipeCategoryitem          `json:"categories"`
+	Pictures         []Picture                     `json:"pictures"`
+	Preparation      []Preparation                 `json:"preparation"`
+	ServingsCount    uint8                         `json:"servingsCount"`
+	Difficulty       uint8                         `json:"difficulty"`
+	Statistics       RecipeStatistics              `json:"statistics"`
+	Timing           PreparationTiming             `json:"timing"`
+	SharedInternal   bool                          `json:"sharedInternal"`
+	SharedPublic     bool                          `json:"sharedPublic"`
+	AiTranslatedTime NullTime                      `json:"localized"`
+	CreatedTime      time.Time                     `json:"created"`
+	EditedByUserTime NullTime                      `json:"edited"`
+	ModifiedTime     time.Time                     `json:"modified"`
+	PublishedTime    NullTime                      `json:"published"`
+}
 
-	OwnerUserId    NullInt32             `json:"-"`
-	LastEditUserId NullInt32             `json:"-"`
-	User           NullUserProfileSimple `json:"user"`
-
-	AiGenerated bool `json:"aiGenerated"`
-
-	UserLocale   string                        `json:"userLocale"`
-	Localization map[string]RecipeLocalization `json:"localization"`
-
-	Categories  []RecipeCategoryitem `json:"categories"`
-	Pictures    []Picture            `json:"pictures"`
-	Preparation []Preparation        `json:"preparation"`
-
-	ServingsCount uint8             `json:"servingsCount"`
-	Difficulty    uint8             `json:"difficulty"`
-	Statistics    RecipeStatistics  `json:"statistics"`
-	Timing        PreparationTiming `json:"timing"`
-
-	SharedInternal bool `json:"sharedInternal"`
-	SharedPublic   bool `json:"sharedPublic"`
-
-	AiTranslatedTime NullTime  `json:"localized"`
-	CreatedTime      time.Time `json:"created"`
-	EditedByUserTime NullTime  `json:"edited"`
-	ModifiedTime     time.Time `json:"modified"`
-	PublishedTime    NullTime  `json:"published"`
+type RecipeSimple struct {
+	Id               uint32                        `json:"id"`
+	SimpleStruct     bool                          `json:"simple"`
+	User             NullUserProfileSimple         `json:"user"`
+	UserLocale       string                        `json:"userLocale"`
+	Localization     map[string]RecipeLocalization `json:"localization"`
+	Categories       []RecipeCategoryitem          `json:"categories"`
+	Pictures         []Picture                     `json:"pictures"`
+	ServingsCount    uint8                         `json:"servingsCount"`
+	Difficulty       uint8                         `json:"difficulty"`
+	Statistics       RecipeStatistics              `json:"statistics"`
+	Timing           PreparationTiming             `json:"timing"`
+	AiTranslatedTime NullTime                      `json:"localized"`
+	CreatedTime      time.Time                     `json:"created"`
+	EditedByUserTime NullTime                      `json:"edited"`
+	ModifiedTime     time.Time                     `json:"modified"`
+	PublishedTime    NullTime                      `json:"published"`
 }
 
 type RecipeCategoryitem struct {
@@ -82,14 +94,18 @@ type Picture struct {
 	Index        uint8                          `json:"index"`
 	Localization map[string]PictureLocalization `json:"localization"`
 	FileName     string                         `json:"filename"`
+	BaseName     string                         `json:"-"`
+	Ext          string                         `json:"-"`
 	FullPath     string                         `json:"-"`
-	Uploaded     NullTime                       `json:"uploaded"`
+	Uploaded     time.Time                      `json:"uploaded"`
 	Dimension    PictureDimension               `json:"size"`
 }
 
 type PictureDimension struct {
-	Height int32 `json:"height"`
-	Width  int32 `json:"width"`
+	Height         int      `json:"height"`
+	Width          int      `json:"width"`
+	GeneratedSizes []int    `json:"thbSizes"`
+	Generated      NullTime `json:"thbGenerated"`
 }
 
 type PictureLocalization struct {

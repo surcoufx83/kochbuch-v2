@@ -25,7 +25,6 @@ export type Group = {
 
 export type Recipe = {
     aiGenerated: boolean,
-    aiLocalized: string | null,
     categories: RecipeCategoryitem[],
     created: string,
     difficulty: 0 | 1 | 2 | 3,
@@ -87,6 +86,9 @@ export type RecipePicture = {
     uploaded: string,
     user: User,
     filename: string,
+    htmlSrc?: string,
+    htmlSrcSet?: string,
+    htmlSizes?: string,
 }
 
 export type RecipePictureLocalization = {
@@ -99,6 +101,8 @@ export type RecipePictureLocalization = {
 export type RecipePictureSize = {
     height: number,
     width: number,
+    thbSizes: number[],
+    thbGenerated: string | null,
 }
 
 export type RecipePreparation = {

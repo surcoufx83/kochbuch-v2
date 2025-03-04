@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ApiService } from './api.service';
-import { Category, Recipe } from '../types';
+import { Category, Recipe, RecipePicture } from '../types';
 import { HttpStatusCode } from '@angular/common/http';
 
 @Injectable({
@@ -76,7 +76,9 @@ export class SharedDataService {
     let recipesData: string | null = localStorage.getItem('kbRecipes');
     if (recipesData !== null) {
       const recipes = JSON.parse(recipesData) as RecipesCache;
-      this._recipes.next(recipes.recipes);
+      this._recipes.next(
+        this.loadRecipes_GeneratePictureSets(recipes.recipes)
+      );
       this._recipesEtag = recipes.etag;
     }
   }
@@ -102,12 +104,48 @@ export class SharedDataService {
   private loadRecipesFromServer(): void {
     this.apiService.get('recipes', this._recipesEtag).subscribe((res) => {
       if (res?.status === HttpStatusCode.Ok) {
-        const recipes = (res as RecipesResponse).body.recipes;
+        const recipes =
+          this.loadRecipes_GeneratePictureSets((res as RecipesResponse).body.recipes);
         this._recipes.next(Object.values(recipes));
         this._recipesEtag = res.headers.get('etag') ?? undefined;
         this.saveRecipesToCache();
       }
     });
+  }
+
+  private loadRecipes_GeneratePictureSets(recipes: { [key: number]: Recipe }): { [key: number]: Recipe } {
+    for (const key of Object.keys(recipes)) {
+      const recipe = recipes[+key];
+      if (!recipe.pictures || !Array.isArray(recipe.pictures)) {
+        continue;
+      }
+      for (let i = 0; i < recipe.pictures.length; i++) {
+        recipe.pictures[i] = this.loadRecipes_GeneratePictureSet(recipe.id, recipe.pictures[i]);
+      }
+    }
+    return recipes;
+  }
+
+  private loadRecipes_GeneratePictureSet(recipeid: number, picture: RecipePicture): RecipePicture {
+    picture.htmlSrc = `/api/media/uploads/${recipeid}/${picture.id}/${picture.filename}`;
+    if (picture.size.thbSizes.length > 0) {
+      let srcset: string[] = [];
+      let sizes: string[] = [];
+      const sizear = picture.size.thbSizes.sort((a, b) => a - b);
+      for (let i = 0; i < sizear.length; i++) {
+        srcset.push(`/api/media/uploads/${recipeid}/${picture.id}/thb/${sizear[i]}/${picture.filename} ${sizear[i]}w`);
+        if (sizear[i + 1]) {
+          const maxw = sizear[i] + Math.floor((sizear[i + 1] - sizear[i]) * .66);
+          sizes.push(`(max-width: ${maxw}px) ${sizear[i]}px`);
+        }
+        else {
+          sizes.push(`${sizear[i]}px`);
+        }
+      }
+      picture.htmlSrcSet = srcset.join(", ")
+      picture.htmlSizes = sizes.join(", ")
+    }
+    return picture
   }
 
   private reloadEntitiesFromServer(): void {
