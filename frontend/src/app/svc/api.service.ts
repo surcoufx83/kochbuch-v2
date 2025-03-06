@@ -13,19 +13,21 @@ export class ApiService {
   private _isLoggedIn = new BehaviorSubject<'unknown' | boolean>('unknown');
   public isLoggedIn = this._isLoggedIn.asObservable();
 
+  private _isInitialized = new BehaviorSubject<boolean>(false);
+  public isInitialized = this._isInitialized.asObservable();
+
   private _user?: UserSelf;
 
   constructor(
     private http: HttpClient,
   ) {
     this.loadAppParams();
-    const sub = this.loadUser().pipe(first()).subscribe(() => {
-      sub.unsubscribe();
-    });
   }
 
   public get(urlfragment: string, etag?: string): Subject<HttpResponse<unknown> | HttpErrorResponse | null> {
-
+    if (!this._isInitialized.value && urlfragment != 'params') {
+      throw {}
+    }
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | null>();
 
     this.http.get<unknown>(`/api/${urlfragment}`, { observe: 'response', headers: etag ? { 'If-None-Match': etag } : undefined })
@@ -44,17 +46,25 @@ export class ApiService {
     const cache = localStorage.getItem('kbParams');
     if (cache !== null)
       this.appParams = JSON.parse(cache) as ApiParams;
+
+    if (this.appParams)
+      this._isInitialized.next(true);
+
     this.get('params').pipe(first()).subscribe((r) => {
       if (r?.status === HttpStatusCode.Ok) {
         this.appParams = (r as HttpResponse<ApiParams>).body || undefined;
         if (this.appParams)
           localStorage.setItem('kbParams', JSON.stringify(this.appParams))
+        this._isInitialized.next(true);
+
+        const sub = this.loadUser().pipe(first()).subscribe(() => {
+          sub.unsubscribe();
+        });
       }
     });
   }
 
   public loadUser(): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
-
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null>();
 
     this.get('me').pipe(first()).subscribe((r) => {
@@ -78,7 +88,6 @@ export class ApiService {
 
   public logout(): void {
     const sub = this.post('logout', {}).pipe(first()).subscribe((reply) => {
-      console.log(reply);
       this.setCookie('session', '', -1);
       localStorage.removeItem('kbParams');
       location.replace('/');
@@ -86,7 +95,6 @@ export class ApiService {
   }
 
   public oauth2Callback(state: string, code: string): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
-
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null>();
 
     this.post('login', {
@@ -101,7 +109,9 @@ export class ApiService {
   }
 
   public post(urlfragment: string, payload: any): Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> {
-
+    if (!this._isInitialized.value && urlfragment != 'params') {
+      throw {}
+    }
     let reply: Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null> = new Subject<HttpResponse<unknown> | HttpErrorResponse | unknown | null>();
 
     this.http.post<unknown>(`/api/${urlfragment}`, payload, { observe: 'response' })
@@ -120,6 +130,10 @@ export class ApiService {
     this.post('errorreport', report).pipe(first()).subscribe(() => { });
   }
 
+  public get Session(): string | undefined {
+    return this.appParams?.session;
+  }
+
   private setCookie(name: string, value: string, expireDays: number, path: string = '') {
     let d: Date = new Date();
     d.setTime(d.getTime() + expireDays * 24 * 60 * 60 * 1000);
@@ -136,6 +150,7 @@ export class ApiService {
 
 type ApiParams = {
   loginUrl: string,
+  session: string,
 }
 
 export type PageErrorReport = {

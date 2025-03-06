@@ -1,13 +1,6 @@
 package api
 
-import (
-	"kochbuch-v2-backend/services"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-)
-
-// GetUnits handles the /units endpoint
+/* // GetUnits handles the /units endpoint
 func GetUnits(c *gin.Context) {
 
 	// Get units from cache
@@ -27,4 +20,4 @@ func GetUnits(c *gin.Context) {
 			"units": units,
 		})
 	}
-}
+} */

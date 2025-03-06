@@ -22,6 +22,7 @@ import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
 import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth2-login-callback.component';
 import { WelcomeHeaderComponent } from './comp/recipes/welcome-header/welcome-header.component';
 import { ListingComponent } from './comp/recipes/listing/listing.component';
+import { WebSocketService } from './svc/web-socket.service';
 
 @NgModule({
   declarations: [
@@ -51,6 +52,7 @@ import { ListingComponent } from './comp/recipes/listing/listing.component';
     provideHttpClient(),
     ApiService,
     L10nService,
+    WebSocketService,
     SharedDataService,
   ],
   bootstrap: [AppComponent]

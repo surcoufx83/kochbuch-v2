@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetRecipes(c *gin.Context) {
+/* func GetRecipes(c *gin.Context) {
 
 	etag := services.GetRecipesEtag()
 
@@ -32,7 +32,7 @@ func GetRecipes(c *gin.Context) {
 			"recipes": recipes,
 		})
 	}
-}
+} */
 
 func GetRecipePicture(c *gin.Context) {
 	projectid, err := strconv.Atoi(c.Param("projectid"))

@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { ApiService } from './api.service';
 import { Category, Recipe, RecipePicture } from '../types';
 import { HttpStatusCode } from '@angular/common/http';
+import { WebSocketService, WsMessage } from './web-socket.service';
 
 @Injectable({
   providedIn: 'root'
@@ -35,10 +36,29 @@ export class SharedDataService {
 
   constructor(
     private apiService: ApiService,
+    private wsService: WebSocketService,
   ) {
+    /* const sub = this.apiService.isInitialized.subscribe((state) => {
+      if (!state)
+        return;
+      setTimeout(() => {
+        this.loadFromBrowserCache();
+        // this.reloadEntitiesFromServer();
+        sub?.unsubscribe();
+      }, 0);
+    }); */
+    this.initialize();
+  }
+
+  private initialize(): void {
+    this.loadFromBrowserCache();
+
     this.apiService.isLoggedIn.subscribe((state) => {
       if (state === 'unknown')
         return;
+      setTimeout(() => {
+        this.wsService.connect();
+      }, 0);
       if (!this.initialized) {
         this.lastloginstate = state;
         this.initialized = true;
@@ -46,15 +66,25 @@ export class SharedDataService {
       }
       if (this.lastloginstate !== state) {
         console.warn('Login state changed!')
-        const localecache = localStorage.getItem('kbLocale');
-        localStorage.clear();
-        if (localecache)
-          localStorage.setItem('kbLocale', localecache);
-        this.reloadEntitiesFromServer();
+        this.clear();
       }
     });
-    this.loadFromBrowserCache();
-    this.reloadEntitiesFromServer();
+
+    this.wsService.events.subscribe((event) => {
+      if (!event || event.type === 'none')
+        return;
+      this.wsMessageReceived(event);
+    });
+
+  }
+
+  private clear(): void {
+    const localecache = localStorage.getItem('kbLocale');
+    localStorage.clear();
+    if (localecache)
+      localStorage.setItem('kbLocale', localecache);
+    this._recipes.next({});
+    this._recipesEtag = '';
   }
 
   private loadFromBrowserCache(): void {
@@ -83,8 +113,8 @@ export class SharedDataService {
     }
   }
 
-  private loadCategoriesFromServer(): void {
-    this.apiService.get('categories', this._categoriesEtag).subscribe((res) => {
+  /*private loadCategoriesFromServer(): void {
+     this.apiService.get('categories', this._categoriesEtag).subscribe((res) => {
       if (res?.status === HttpStatusCode.Ok) {
         const categories = (res as CategoriesResponse).body.categories;
         let itemMapping: { [key: number]: number } = {};
@@ -98,20 +128,22 @@ export class SharedDataService {
         this._categoriesEtag = res.headers.get('etag') ?? undefined;
         this.saveCategoriesToCache();
       }
-    });
-  }
+    }); 
+  }*/
 
-  private loadRecipesFromServer(): void {
-    this.apiService.get('recipes', this._recipesEtag).subscribe((res) => {
-      if (res?.status === HttpStatusCode.Ok) {
-        const recipes =
-          this.loadRecipes_GeneratePictureSets((res as RecipesResponse).body.recipes);
-        this._recipes.next(Object.values(recipes));
-        this._recipesEtag = res.headers.get('etag') ?? undefined;
-        this.saveRecipesToCache();
-      }
-    });
-  }
+  /*  private loadRecipesFromServer(): void {
+     this.apiService.get('recipes', this._recipesEtag).subscribe((res) => {
+       if (res?.status === HttpStatusCode.Ok) {
+         const recipes =
+           this.loadRecipes_GeneratePictureSets((res as RecipesResponse).body.recipes);
+         this._recipes.next(Object.values(recipes));
+         this._recipesEtag = res.headers.get('etag') ?? undefined;
+         this.saveRecipesToCache();
+       }
+     });
+     console.log('loadRecipesFromServer')
+ 
+   } */
 
   private loadRecipes_GeneratePictureSets(recipes: { [key: number]: Recipe }): { [key: number]: Recipe } {
     for (const key of Object.keys(recipes)) {
@@ -152,10 +184,10 @@ export class SharedDataService {
     console.log(`PreloadRecipeToCache(${recipeId})`)
   }
 
-  private reloadEntitiesFromServer(): void {
+  /* private reloadEntitiesFromServer(): void {
     this.loadCategoriesFromServer();
     this.loadRecipesFromServer();
-  }
+  } */
 
   private saveCategoriesToCache(): void {
     const cache: CategoriesCache = {
@@ -181,6 +213,29 @@ export class SharedDataService {
   public SetSearchState(newstate: boolean): void {
     if (newstate !== this._searchIsActive.value)
       this._searchIsActive.next(newstate);
+  }
+
+  private wsMessageReceived(msg: WsMessage): void {
+    console.log('wsMessageReceived', msg)
+    switch (msg.type) {
+
+      case 'recipes_etag':
+        if (this._recipesEtag !== <string>msg.content) {
+          this.wsService.SendMessage({
+            type: 'recipes_get_all',
+            content: JSON.stringify({})
+          });
+        }
+        break;
+
+      case 'recipes':
+        const data = JSON.parse(msg.content) as RecipesCache;
+        this._recipesEtag = data.etag;
+        this._recipes.next(this.loadRecipes_GeneratePictureSets(data.recipes));
+        this.saveRecipesToCache();
+        break;
+
+    }
   }
 
 }

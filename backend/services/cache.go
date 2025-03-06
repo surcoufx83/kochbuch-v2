@@ -10,7 +10,6 @@ import (
 	"image/png"
 	"kochbuch-v2-backend/types"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -634,10 +633,8 @@ func loadRecipesPictures(db *sqlx.DB) {
 	// log.Printf("Loaded %d recipes categories into cache", len(items))
 }
 
-func GetRecipes(c *gin.Context) (map[uint32]*types.RecipeSimple, string) {
-	code, _, user, err := GetSelf(c)
-
-	if err != nil || code != http.StatusOK || user.Id == 0 {
+func GetRecipes(user *types.UserProfile) (map[uint32]*types.RecipeSimple, string) {
+	if user.Id == 0 {
 		return publicRecipesCache, recipesEtagStr
 	}
 

@@ -43,6 +43,17 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
+    const sub = this.apiService.isInitialized.subscribe((state) => {
+      if (!state)
+        return;
+      setTimeout(() => {
+        this.init();
+        sub.unsubscribe();
+      }, 0);
+    });
+  }
+
+  private init(): void {
     this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
       if (state === true)
         this.router.navigate(['/']);

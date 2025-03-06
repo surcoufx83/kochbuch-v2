@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"kochbuch-v2-backend/types"
 	"log"
@@ -40,6 +41,7 @@ var (
 
 type AppParams struct {
 	LoginUrl string `json:"loginUrl"`
+	Session  string `json:"session"`
 }
 
 type NextcloudStatus struct {
@@ -163,6 +165,7 @@ func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, er
 
 	value := AppParams{
 		LoginUrl: strings.Replace(ncAuthEndpoint, "_state_", state, -1),
+		Session:  state,
 	}
 	return state, value, nil
 }
@@ -705,6 +708,15 @@ func GetSelf(c *gin.Context) (int, string, types.UserProfile, error) {
 		return http.StatusBadRequest, "", types.UserProfile{}, err
 	}
 
+	return GetSelfByState(state)
+}
+
+func GetSelfByState(state string) (int, string, types.UserProfile, error) {
+	if state == "" {
+		// No session cookie
+		return http.StatusBadRequest, "", types.UserProfile{}, errors.New("invalid request")
+	}
+
 	statesMutex.RLock()
 	clientstate, exists := statesCache[state]
 	statesMutex.RUnlock()
@@ -719,7 +731,6 @@ func GetSelf(c *gin.Context) (int, string, types.UserProfile, error) {
 	}
 
 	return http.StatusOK, state, userCache[int(clientstate.UserId.Int32)], nil
-
 }
 
 func GetUser(id int) (int, types.UserProfile) {

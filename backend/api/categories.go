@@ -1,13 +1,6 @@
 package api
 
-import (
-	"kochbuch-v2-backend/services"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-)
-
-// GetCategories handles the /categories endpoint
+/* // GetCategories handles the /categories endpoint
 func GetCategories(c *gin.Context) {
 
 	// Get categories from cache
@@ -27,4 +20,4 @@ func GetCategories(c *gin.Context) {
 			"categories": categories,
 		})
 	}
-}
+} */

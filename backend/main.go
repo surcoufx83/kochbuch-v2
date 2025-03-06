@@ -14,7 +14,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/websocket"
 )
+
+var wsUpgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins, adjust this for production
+	},
+}
 
 func main() {
 
@@ -44,14 +51,15 @@ func main() {
 
 	// Set up routes
 	router.GET("/", api.GetIndex)
-	router.GET("/categories", api.GetCategories)
+	// router.GET("/categories", api.GetCategories)
 	router.POST("/errorreport", api.PostErrorReport)
 	router.POST("/login", api.PostOauth2Login)
 	router.POST("/logout", api.PostLogout)
 	router.GET("/me", api.GetMyProfile)
 	router.GET("/params", api.GetAppParams)
-	router.GET("/recipes", api.GetRecipes)
-	router.GET("/units", api.GetUnits)
+	// router.GET("/recipes", api.GetRecipes)
+	// router.GET("/units", api.GetUnits)
+	router.GET("/ws", services.OnWebsocketConnect)
 
 	media := router.Group("/media", CacheMiddleware(2592000))
 	{
