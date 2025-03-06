@@ -148,6 +148,10 @@ export class SharedDataService {
     return picture
   }
 
+  public PreloadRecipeToCache(recipeId: number): void {
+    console.log(`PreloadRecipeToCache(${recipeId})`)
+  }
+
   private reloadEntitiesFromServer(): void {
     this.loadCategoriesFromServer();
     this.loadRecipesFromServer();

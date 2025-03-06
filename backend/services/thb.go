@@ -17,13 +17,14 @@ type PictureRequiresThumbnail struct {
 }
 
 func ThbAutoGenerator() {
+	time.Sleep(5 * time.Second)
 	for {
 		if len(ThumbnailGenerationRequests) == 0 {
 			// log.Println("No picture require thumbnails")
 			time.Sleep(5 * time.Minute)
 		} else {
 			resizePictures()
-			time.Sleep(5 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

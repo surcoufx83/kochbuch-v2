@@ -3,6 +3,7 @@ import { Recipe } from '../../../types';
 import { IconLib } from '../../../icons';
 import { L10nService } from '../../../svc/l10n.service';
 import { L10nLocale } from '../../../svc/locales/types';
+import { SharedDataService } from '../../../svc/shared-data.service';
 
 @Component({
   selector: 'kb-recipes-listing',
@@ -19,6 +20,7 @@ export class ListingComponent {
 
   constructor(
     private l10nService: L10nService,
+    private sharedDataService: SharedDataService,
   ) { }
 
   public formatDate(date: string | number | Date, formatStr: string): string {
@@ -31,6 +33,10 @@ export class ListingComponent {
 
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
+  }
+
+  public hover(recipeId: number): void {
+    this.sharedDataService.PreloadRecipeToCache(recipeId);
   }
 
   public replace(content: string, replacements: any[]): string {

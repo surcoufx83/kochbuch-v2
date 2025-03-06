@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	_ "image/jpeg"
 	"image/png"
-	_ "image/png"
 	"kochbuch-v2-backend/types"
 	"log"
 	"net/http"
@@ -20,9 +18,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/nfnt/resize"
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 var (
@@ -820,7 +820,7 @@ func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Prepara
 }
 
 func touchRecipe(recipe *types.Recipe) {
-	log.Println("Updating recipe timestamp")
+	// log.Println("Updating recipe timestamp")
 	recipe.ModifiedTime = time.Now()
 	if recipe.ModifiedTime.After(recipesEtag) {
 		recipesEtag = recipe.ModifiedTime
@@ -829,7 +829,7 @@ func touchRecipe(recipe *types.Recipe) {
 }
 
 func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, error) {
-	log.Printf("Generating resized picture variants")
+	// log.Printf("Generating resized picture variants")
 
 	recipe, err := GetRecipeInternal(recipeId)
 	if err != nil {
@@ -851,7 +851,7 @@ func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, er
 			return false, err
 		}
 	}
-	log.Printf("  > %v thumbnails created", picture.FullPath)
+	// log.Printf("  > %v thumbnails created", picture.FullPath)
 
 	sizesJson, err := json.Marshal(picture.Dimension.GeneratedSizes)
 	if err != nil {
@@ -893,14 +893,14 @@ func getPictureExistsOnDisk(picture *types.Picture) (bool, error) {
 }
 
 func generateResizedPictureVersion(picture *types.Picture, size int) (bool, error) {
-	log.Printf("  > %v -> %d", picture.FullPath, size)
+	// log.Printf("  > %v -> %d", picture.FullPath, size)
 
 	folder := filepath.Dir(picture.FullPath)
 	basename, ext := GetBasenameAndExtension(picture.FileName)
 
-	log.Printf("  >  > Folder = %v", folder)
-	log.Printf("  >  > Base name = %v", basename)
-	log.Printf("  >  > Extension = %v", ext)
+	// log.Printf("  >  > Folder = %v", folder)
+	// log.Printf("  >  > Base name = %v", basename)
+	// log.Printf("  >  > Extension = %v", ext)
 
 	// open image
 	imgFile, err := os.Open(picture.FullPath)
@@ -910,10 +910,17 @@ func generateResizedPictureVersion(picture *types.Picture, size int) (bool, erro
 	}
 	defer imgFile.Close()
 
+	// get picture exif data
+	exifData, err := exif.Decode(imgFile)
+	if err != nil {
+		log.Printf("  > %v failed reading Exif data: %v", picture.FullPath, err)
+	}
+	imgFile.Seek(0, 0)
+
 	// decode image to check dimensions
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
-		log.Printf("  > %v failed: %v", picture.FullPath, err)
+		log.Printf("  > %v failed reading image: %v", picture.FullPath, err)
 		return false, err
 	}
 
@@ -923,13 +930,25 @@ func generateResizedPictureVersion(picture *types.Picture, size int) (bool, erro
 		GeneratedSizes: picture.Dimension.GeneratedSizes,
 		Generated:      picture.Dimension.Generated,
 	}
-	log.Printf("  >  > Size = %dx%d", picture.Dimension.Width, picture.Dimension.Height)
+	// log.Printf("  >  > Size = %dx%d", picture.Dimension.Width, picture.Dimension.Height)
+
+	// Apply EXIF orientation if available
+	if exifData != nil {
+		orientation, err := exifData.Get(exif.Orientation)
+		if err == nil {
+			orientationVal, err := orientation.Int(0)
+			if err == nil {
+				// log.Printf("  >  > Exif Orientation: %d", orientationVal)
+				img = applyExifOrientation(img, orientationVal)
+			}
+		}
+	}
 
 	// created resized copy
 	resizedImg := resize.Resize(uint(size), 0, img, resize.Lanczos3)
 
 	resizedFilename := filepath.Join(folder, fmt.Sprintf("%s_%d%s", basename, size, ext))
-	log.Printf("  >  > Save as = %v", resizedFilename)
+	// log.Printf("  >  > Save as = %v", resizedFilename)
 	resizedFile, err := os.Create(resizedFilename)
 	if err != nil {
 		log.Printf("  > %v failed: %v", picture.FullPath, err)
@@ -957,4 +976,36 @@ func generateResizedPictureVersion(picture *types.Picture, size int) (bool, erro
 
 	return true, nil
 
+}
+
+// applyExifOrientation applies the EXIF orientation to the image.
+func applyExifOrientation(img image.Image, orientation int) image.Image {
+	switch orientation {
+	case 3:
+		return rotate180(img)
+	case 6:
+		return rotate90(img)
+	case 8:
+		return rotate270(img)
+	default:
+		return img
+	}
+}
+
+// rotate90 rotates the image 90 degrees clockwise.
+func rotate90(img image.Image) image.Image {
+	// Rotate 90 degrees clockwise
+	return imaging.Rotate270(img)
+}
+
+// rotate180 rotates the image 180 degrees.
+func rotate180(img image.Image) image.Image {
+	// Rotate 180 degrees
+	return imaging.Rotate180(img)
+}
+
+// rotate270 rotates the image 270 degrees clockwise.
+func rotate270(img image.Image) image.Image {
+	// Rotate 270 degrees clockwise
+	return imaging.Rotate90(img)
 }
