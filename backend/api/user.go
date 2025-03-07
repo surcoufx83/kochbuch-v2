@@ -1,19 +1,11 @@
 package api
 
-import (
-	"kochbuch-v2-backend/services"
-	"log"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-)
-
 type loginCallbackObject struct {
 	State string `json:"state" binding:"required"`
 	Code  string `json:"code" binding:"required"`
 }
 
-// Handles the /me endpoint to query own users profile
+/* // Handles the /me endpoint to query own users profile
 func GetMyProfile(c *gin.Context) {
 	code, _, profile, _ := services.GetSelf(c)
 	if code != http.StatusOK {
@@ -64,4 +56,4 @@ func PostOauth2Login(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "")
 	}
 
-}
+} */

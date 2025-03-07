@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal } fro
 import { IconLib } from '../../../icons';
 import { L10nService } from '../../../svc/l10n.service';
 import { L10nLocale } from '../../../svc/locales/types';
-import { ApiService } from '../../../svc/api.service';
 import { UserSelf } from '../../../types';
 import { SharedDataService } from '../../../svc/shared-data.service';
 import { Subscription } from 'rxjs';
@@ -19,13 +18,10 @@ export class PrimaryComponent implements OnInit, OnDestroy {
   ActiveLocale = signal<string>('');
   ShownLocales: { flag: string, key: string }[];
   ShowLanguageSelector = signal<boolean>(false);
-  LoggedIn = signal<boolean>(false);
-  User = signal<UserSelf | false>(false);
 
   private subs: Subscription[] = [];
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
     private sharedDataService: SharedDataService,
   ) {
@@ -42,12 +38,6 @@ export class PrimaryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
-      if (state === 'unknown')
-        return;
-      this.LoggedIn.set(state);
-      this.User.set(this.apiService.User ?? false);
-    }));
     this.subs.push(this.l10nService.userLocale.subscribe((l) => this.ActiveLocale.set(l)));
   }
 

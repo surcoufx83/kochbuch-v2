@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { L10nService } from '../../svc/l10n.service';
 import { L10nLocale } from '../../svc/locales/types';
 import { IconLib } from '../../icons';
-import { ApiService } from '../../svc/api.service';
+import { WebSocketService } from '../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-navbar',
@@ -17,10 +17,10 @@ export class NavbarComponent {
   SecondaryNavbar = signal<boolean>(false);
 
   constructor(
-    apiService: ApiService,
     private l10nService: L10nService,
+    private wsService: WebSocketService,
   ) {
-    apiService.isLoggedIn.subscribe((state) => {
+    wsService.isLoggedIn.subscribe((state) => {
       if (state === 'unknown')
         return;
       this.LoggedIn.set(state)

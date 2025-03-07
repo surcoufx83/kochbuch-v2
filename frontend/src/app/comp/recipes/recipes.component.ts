@@ -2,11 +2,11 @@ import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { SharedDataService } from '../../svc/shared-data.service';
 import { Router } from '@angular/router';
 import { L10nService } from '../../svc/l10n.service';
-import { ApiService } from '../../svc/api.service';
 import { Subscription } from 'rxjs';
 import { IconLib } from '../../icons';
 import { L10nLocale } from '../../svc/locales/types';
 import { Recipe, UserSelf } from '../../types';
+import { WebSocketService } from '../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-recipes',
@@ -25,10 +25,10 @@ export class RecipesComponent implements OnDestroy, OnInit {
   private subs: Subscription[] = [];
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
     private router: Router,
     private sharedDataService: SharedDataService,
+    private wsService: WebSocketService,
   ) {
     this.LangCode.set(this.l10nService.LangCode);
   }
@@ -43,11 +43,11 @@ export class RecipesComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+    this.subs.push(this.wsService.isLoggedIn.subscribe((state) => {
       if (state === 'unknown')
         return;
       this.LoggedIn.set(state);
-      this.User.set(this.apiService.User ?? false);
+      this.User.set(this.wsService.GetUser() ?? false);
     }));
     this.subs.push(this.l10nService.userLocale.subscribe((l) => {
       if (l !== this.LangCode()) {

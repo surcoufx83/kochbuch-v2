@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -138,12 +139,11 @@ func generateState(remoteAddr string, userAgent string) (state string, err error
 	return "", nil
 }
 
-func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, err error) {
-	state, err := c.Cookie("session")
+func GetApplicationParams(conn *websocket.Conn, state string) (newstate string, params AppParams, err error) {
 
-	if state == "" || err != nil {
+	if state == "" {
 		// No session cookie
-		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
+		state, err = generateState(conn.RemoteAddr().String(), "wss://")
 		if err != nil {
 			return "", AppParams{}, err
 		}
@@ -157,7 +157,7 @@ func GetApplicationParams(c *gin.Context) (newstate string, params AppParams, er
 		state = clientstate.State
 	} else {
 		log.Println("Cookie state not in cache")
-		state, err = generateState(c.Request.RemoteAddr, c.Request.Header.Get("user-agent"))
+		state, err = generateState(conn.RemoteAddr().String(), "wss://")
 		if err != nil {
 			return "", AppParams{}, err
 		}
@@ -602,6 +602,7 @@ func loadUserProfile(state dbNextcloudState) (types.UserProfile, error) {
 	}
 
 	log.Printf("User profile: %v", userProfile)
+	go OnUserProfileUpdated(state.State, userProfile)
 
 	return userProfile, nil
 
@@ -740,8 +741,8 @@ func GetUser(id int) (int, types.UserProfile) {
 	return http.StatusNotFound, types.UserProfile{}
 }
 
-func Logout(c *gin.Context) (int, error) {
-	code, state, _, err := GetSelf(c)
+func Logout(conn *wsConnection) (int, error) {
+	code, state, _, err := GetSelfByState(conn.ConnectionParams.Session)
 	if err != nil || code != http.StatusOK || state == "" {
 		return http.StatusAccepted, nil
 	}

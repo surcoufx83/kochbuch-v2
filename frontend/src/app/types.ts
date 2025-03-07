@@ -139,6 +139,25 @@ export type RecipeTiming = {
     waiting: number | null,
 }
 
+export type Unit = {
+    id: number,
+    localization: UnitLocalization,
+    created: string,
+    modified: string,
+    replacedBy: number,
+    savedAs: number,
+    savedAsFactor: number,
+    decimalPlaces: number,
+    showAsFraction: boolean,
+}
+
+export type UnitLocalization = {
+    [languageCode: string]: {
+        plural: string,
+        singular: string,
+    },
+}
+
 export type UserSelf = {
     admin: boolean,
     created: string,
@@ -150,9 +169,9 @@ export type UserSelf = {
     id: number,
     lastname: string,
     username: string,
-};
+}
 
 export type User = {
     displayname: string,
     id: number,
-};
+}

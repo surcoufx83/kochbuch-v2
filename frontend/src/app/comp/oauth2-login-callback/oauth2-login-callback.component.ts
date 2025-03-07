@@ -2,12 +2,12 @@ import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { first, Subscription } from 'rxjs';
 import { IconLib } from '../../icons';
-import { ApiService } from '../../svc/api.service';
 import { L10nService } from '../../svc/l10n.service';
 import { L10nLocale } from '../../svc/locales/types';
 import { SharedDataService } from '../../svc/shared-data.service';
 import { UserSelf } from '../../types';
 import { HttpResponse, HttpStatusCode } from '@angular/common/http';
+import { WebSocketService } from '../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-oauth2-login-callback',
@@ -26,11 +26,11 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
   private subs: Subscription[] = [];
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
     private route: ActivatedRoute,
     private router: Router,
     private sharedDataService: SharedDataService,
+    private wsService: WebSocketService,
   ) { }
 
   get Locale(): L10nLocale {
@@ -43,7 +43,7 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    const sub = this.apiService.isInitialized.subscribe((state) => {
+    const sub = this.wsService.isConnected.subscribe((state) => {
       if (!state)
         return;
       setTimeout(() => {
@@ -54,7 +54,7 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
   }
 
   private init(): void {
-    this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+    this.subs.push(this.wsService.isLoggedIn.subscribe((state) => {
       if (state === true)
         this.router.navigate(['/']);
     }));
@@ -74,43 +74,17 @@ export class Oauth2LoginCallbackComponent implements OnDestroy, OnInit {
         return;
       }
 
-      const sub = this.apiService.oauth2Callback(state, code).pipe(first()).subscribe((response) => {
-        sub.unsubscribe();
-        console.log('=====', response)
-        if (response instanceof HttpResponse) {
-          this.Busy.set(2);
-          setTimeout(() => {
-            this.postLoginQeryProfile();
-          }, 500);
-        }
-        else {
+      const sub = this.wsService.Login(state, code).subscribe((state) => {
+        if (state === 'wait')
+          return;
+        if (state === false) {
           this.Failed.set(true);
           this.Busy.set(false);
+        } else {
+          this.Busy.set(2);
         }
       });
-
     }));
-  }
-
-  private profileQueryCount = 0;
-  postLoginQeryProfile(): void {
-    if (this.profileQueryCount > 10) {
-      this.Failed.set(true);
-      this.Busy.set(false);
-      return;
-    }
-
-    this.profileQueryCount++;
-
-    const sub = this.apiService.loadUser().pipe(first()).subscribe((reply) => {
-      sub.unsubscribe();
-      if (!(reply instanceof HttpResponse && reply.status === HttpStatusCode.Ok)) {
-        setTimeout(() => {
-          this.postLoginQeryProfile();
-        }, 1000);
-      }
-    });
-
   }
 
 }

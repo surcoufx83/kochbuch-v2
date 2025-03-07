@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { L10nService } from '../../../svc/l10n.service';
 import { L10nLocale } from '../../../svc/locales/types';
 import { IconLib } from '../../../icons';
-import { ApiService } from '../../../svc/api.service';
+import { WebSocketService } from '../../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-me-no-user',
@@ -19,10 +19,10 @@ export class MeNoUserComponent {
   LoginUrl?: string;
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
+    private wsService: WebSocketService,
   ) {
-    this.LoginUrl = this.apiService.LoginUrl;
+    this.LoginUrl = this.wsService.GetLoginUrl();
   }
 
   get Locale(): L10nLocale {

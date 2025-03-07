@@ -5,11 +5,11 @@ import { L10nService } from '../../svc/l10n.service';
 import { SharedDataService } from '../../svc/shared-data.service';
 import { UserSelf } from '../../types';
 import { Subscription } from 'rxjs';
-import { ApiService } from '../../svc/api.service';
 import { L10nLocale } from '../../svc/locales/types';
 import { format } from "date-fns";
 import { enGB } from "date-fns/locale";
 import { FormControl, FormGroup } from '@angular/forms';
+import { WebSocketService } from '../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-mobile-menu',
@@ -35,10 +35,10 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
   private subs: Subscription[] = [];
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
     private router: Router,
     private sharedDataService: SharedDataService,
+    private wsService: WebSocketService,
   ) {
     const month = format(Date.now(), 'LLL', { locale: enGB }).toLowerCase();
     const templocale = this.Locale.floatingMenu.searchButton.searchInput.placeholder as { [key: string]: string };
@@ -55,11 +55,11 @@ export class MobileMenuComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    this.subs.push(this.apiService.isLoggedIn.subscribe((state) => {
+    this.subs.push(this.wsService.isLoggedIn.subscribe((state) => {
       if (state === 'unknown')
         return;
       this.LoggedIn.set(state);
-      this.User.set(this.apiService.User ?? false);
+      this.User.set(this.wsService.GetUser() ?? false);
     }));
     this.subs.push(this.router.events.subscribe((e) => {
       if (e instanceof NavigationEnd) {

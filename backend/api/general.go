@@ -3,7 +3,6 @@ package api
 import (
 	"kochbuch-v2-backend/services"
 	"net/http"
-	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +17,7 @@ func CheckValidHostnames() gin.HandlerFunc {
 	}
 }
 
-// GetAppParams handles the /api/params endpoint
+/* // GetAppParams handles the /api/params endpoint
 func GetAppParams(c *gin.Context) {
 	state, params, err := services.GetApplicationParams(c)
 	if err != nil {
@@ -32,7 +31,7 @@ func GetAppParams(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, params)
-}
+} */
 
 // GetIndex handles the root endpoint
 func GetIndex(c *gin.Context) {

@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { IconLib } from '../../icons';
 import { L10nService } from '../../svc/l10n.service';
 import { L10nLocale } from '../../svc/locales/types';
-import { ApiService } from '../../svc/api.service';
 import { Router } from '@angular/router';
+import { WebSocketService } from '../../svc/web-socket.service';
 
 @Component({
   selector: 'kb-missing-link',
@@ -16,9 +16,9 @@ export class MissingLinkComponent implements OnInit {
   Icons = IconLib;
 
   constructor(
-    private apiService: ApiService,
     private l10nService: L10nService,
     private router: Router,
+    private wsService: WebSocketService,
   ) { }
 
   get Locale(): L10nLocale {
@@ -26,11 +26,11 @@ export class MissingLinkComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.apiService.reportError({
+    /* this.wsService.reportError({
       url: this.router.url,
       error: 'Route not configured',
       severity: 'E'
-    });
+    }); */
   }
 
 }
