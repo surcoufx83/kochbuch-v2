@@ -672,6 +672,24 @@ func GetRecipe(id uint32, c *gin.Context) (types.Recipe, error) {
 	return types.Recipe{}, errors.New("not found")
 }
 
+func GetRecipeWs(id uint32, conn *wsConnection) (types.Recipe, error) {
+	_, _, user, _ := GetSelfByState(conn.ConnectionParams.Session)
+
+	recipesMutex.RLock()
+	defer recipesMutex.RUnlock()
+
+	for _, recipe := range recipesCache {
+		if recipe.Id != id {
+			continue
+		}
+
+		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
+			return recipe, nil
+		}
+	}
+	return types.Recipe{}, errors.New("not found")
+}
+
 func GetRecipeInternal(id uint32) (types.Recipe, error) {
 	recipesMutex.RLock()
 	defer recipesMutex.RUnlock()

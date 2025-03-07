@@ -50,7 +50,6 @@ export class WebSocketService {
       const message = JSON.parse(event.data) as WsMessage;
       if (message.type === 'hello') {
         this.appParams = JSON.parse(message.content) as WsHelloMessageContent;
-        console.log(this.appParams)
         this.saveSession();
         this._isLoggedIn.next(this.appParams.loggedIn);
         this._user.next(this.appParams.user && this.appParams.loggedIn ? this.appParams.user : null);
@@ -127,7 +126,6 @@ export class WebSocketService {
   }
 
   private saveSession(): void {
-    console.log('saveSession', this.appParams)
     if (!this.appParams)
       return;
     localStorage.setItem('kbSession', JSON.stringify(this.appParams));

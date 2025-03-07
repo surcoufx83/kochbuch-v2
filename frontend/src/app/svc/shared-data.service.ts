@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Category, Recipe, RecipePicture, Unit } from '../types';
 import { HttpStatusCode } from '@angular/common/http';
 import { WebSocketService, WsMessage } from './web-socket.service';
+import { IdbService } from './idb.service';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +24,7 @@ export class SharedDataService {
   private _recipes = new BehaviorSubject<{ [key: number]: Recipe }>({});
   private _recipesEtag?: string;
   public Recipes = this._recipes.asObservable();
+  private _recipePreloadRequests: { [key: number]: number } = {};
 
   private _units = new BehaviorSubject<{ [key: number]: Unit }>({});
   private _unitsEtag?: string;
@@ -38,17 +40,9 @@ export class SharedDataService {
   public SearchCategories = this._searchCategories.asObservable();
 
   constructor(
+    private indexDbService: IdbService,
     private wsService: WebSocketService,
   ) {
-    /* const sub = this.apiService.isInitialized.subscribe((state) => {
-      if (!state)
-        return;
-      setTimeout(() => {
-        this.loadFromBrowserCache();
-        // this.reloadEntitiesFromServer();
-        sub?.unsubscribe();
-      }, 0);
-    }); */
     this.initialize();
   }
 
@@ -158,7 +152,32 @@ export class SharedDataService {
   }
 
   public PreloadRecipeToCache(recipeId: number): void {
-    console.log(`PreloadRecipeToCache(${recipeId})`)
+    if (this._recipePreloadRequests[recipeId]) {
+      if ((Date.now() - this._recipePreloadRequests[recipeId]) > 60000)
+        delete this._recipePreloadRequests[recipeId];
+      else
+        return;
+    }
+    this._recipePreloadRequests[recipeId] = Date.now();
+    this.indexDbService.GetRecipe(recipeId)
+      .then((data: { id: number, etag: string, data: Recipe }) => {
+        this.wsService.SendMessage({
+          type: 'recipe_get',
+          content: JSON.stringify({
+            id: recipeId,
+            etag: data.etag
+          })
+        });
+      })
+      .catch(() => {
+        this.wsService.SendMessage({
+          type: 'recipe_get',
+          content: JSON.stringify({
+            id: recipeId
+          })
+        });
+      });
+
   }
 
   private saveCategoriesToCache(): void {
@@ -197,6 +216,7 @@ export class SharedDataService {
 
   private wsMessageReceived(msg: WsMessage): void {
     console.log('wsMessageReceived', msg)
+
     switch (msg.type) {
 
       case 'categories_etag':
@@ -220,6 +240,16 @@ export class SharedDataService {
         this._categoriesEtag = cdata.etag;
         this._categories.next(cdata.categories);
         this.saveCategoriesToCache();
+        break;
+
+      case 'recipe_get':
+        const recipedata = JSON.parse(msg.content) as Recipe | ErrorResponse;
+        if (Object.hasOwn(recipedata, 'error')) {
+          if ((recipedata as ErrorResponse).error === 304)
+            return;
+          return;
+        }
+        this.indexDbService.PutRecipe(recipedata as Recipe);
         break;
 
       case 'recipes_etag':
@@ -259,22 +289,15 @@ export class SharedDataService {
 
 }
 
-type CategoriesResponse = {
-  body: {
-    categories: { [key: number]: Category };
-  }
-}
-
 type CategoriesCache = {
   categories: { [key: number]: Category };
   categoryItemsMapping: { [key: number]: number };
   etag?: string;
 }
 
-type RecipesResponse = {
-  body: {
-    recipes: { [key: number]: Recipe };
-  }
+type ErrorResponse = {
+  error: number,
+  message: string,
 }
 
 type RecipesCache = {

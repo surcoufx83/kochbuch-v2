@@ -47,16 +47,14 @@ export class RecipesComponent implements OnDestroy, OnInit {
       if (state === 'unknown')
         return;
       this.LoggedIn.set(state);
-      this.User.set(this.wsService.GetUser() ?? false);
     }));
+    this.subs.push(this.wsService.User.subscribe((u) => this.User.set(u ?? false)));
     this.subs.push(this.l10nService.userLocale.subscribe((l) => {
       if (l !== this.LangCode()) {
         this.LangCode.set(l);
       }
     }));
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
-      console.log('RecipesComponent::sharedDataService.Recipes.subscribe')
-      console.log(items)
       if (Object.keys(items).length == 0)
         return;
       this.Recipes.set(
@@ -64,7 +62,6 @@ export class RecipesComponent implements OnDestroy, OnInit {
           .filter((a) => a.pictures != null && a.pictures.length > 0)
           .sort((a, b) => (a.published ?? a.edited ?? a.modified) > (b.published ?? b.edited ?? b.modified) ? -1 : 1)
       );
-      console.log(this.Recipes())
     }));
   }
 

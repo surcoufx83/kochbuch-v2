@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -33,14 +34,25 @@ type wsConnection struct {
 type wsIncomingAuthMessage struct {
 	Token string `json:"token"`
 }
+
 type wsIncomingAuthCallbackMessage struct {
 	State string `json:"state" binding:"required"`
 	Code  string `json:"code" binding:"required"`
 }
 
+type wsIncomingIdMessage struct {
+	Id   int       `json:"id" binding:"required"`
+	Etag time.Time `json:"etag"`
+}
+
 type wsMessage struct {
-	MsgType string `json:"type"`
-	Content string `json:"content"`
+	MsgType string `json:"type" binding:"required"`
+	Content string `json:"content" binding:"required"`
+}
+
+type wsErrorContent struct {
+	Code    int    `json:"error"`
+	Message string `json:"message"`
 }
 
 type wsHelloContent struct {
@@ -171,6 +183,10 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 		wsOAuth2Callback(conn, msg)
 		return
 
+	case "recipe_get":
+		wsGetRecipe(conn, msg)
+		return
+
 	case "recipes_get_all":
 		wsGetRecipes(conn)
 		return
@@ -197,6 +213,37 @@ func wsGetCategories(conn *wsConnection) {
 		MsgType: "categories",
 		Content: string(jsoncontent),
 	})
+}
+
+func wsGetRecipe(conn *wsConnection, msg wsMessage) {
+	var data wsIncomingIdMessage
+	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
+		log.Println("Error unmarshalling recipe request message:", err)
+		wsWrite400BadRequest(conn, "recipe_get")
+		return
+	}
+
+	recipe, err := GetRecipeWs(uint32(data.Id), conn)
+	if err != nil {
+		wsWrite403Forbidden(conn, "recipe_get")
+		return
+	}
+
+	if data.Etag.Equal(recipe.ModifiedTime) {
+		wsWrite304NotModified(conn, "recipe_get")
+		return
+	}
+
+	jsoncontent, err := json.Marshal(recipe)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: "recipe_get",
+		Content: string(jsoncontent),
+	})
+
 }
 
 func wsGetRecipes(conn *wsConnection) {
@@ -328,4 +375,84 @@ func wsWriteMessage(conn *wsConnection, message *wsMessage) {
 	if err := conn.Connection.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 		log.Println("Write failed:", err)
 	}
+}
+
+func wsWrite304NotModified(conn *wsConnection, msgType string) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    304,
+		Message: "NotModified",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+	})
+}
+
+func wsWrite400BadRequest(conn *wsConnection, msgType string) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    400,
+		Message: "Bad request",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+	})
+}
+
+func wsWrite403Forbidden(conn *wsConnection, msgType string) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    403,
+		Message: "Forbidden",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+	})
+}
+
+func wsWrite404NotFound(conn *wsConnection, msgType string) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    404,
+		Message: "Not Found",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+	})
+}
+
+func wsWrite500InternalServerError(conn *wsConnection, msgType string) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    500,
+		Message: "Internal Server Error",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+	})
 }
