@@ -361,12 +361,6 @@ func LoadRecipes(db *sqlx.DB) {
 
 	}
 
-	for _, recipe := range recipesCache {
-		if recipe.SharedPublic {
-			publicRecipesCache[recipe.Id] = ConvertToRecipeSimple(&recipe)
-		}
-	}
-
 	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
 	recipesMutex.Unlock()
 	// log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
@@ -375,6 +369,12 @@ func LoadRecipes(db *sqlx.DB) {
 	loadRecipesIngredients(db)
 	loadRecipesPreparation(db)
 	loadRecipesPictures(db)
+
+	for _, recipe := range recipesCache {
+		if recipe.SharedPublic {
+			publicRecipesCache[recipe.Id] = ConvertToRecipeSimple(&recipe)
+		}
+	}
 
 	log.Printf("Loaded %d recipes into cache", len(recipes))
 }
