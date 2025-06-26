@@ -138,8 +138,7 @@ export class SharedDataService {
       for (let i = 0; i < sizear.length; i++) {
         srcset.push(`/api/media/uploads/${recipeid}/${picture.id}/thb/${sizear[i]}/${picture.filename} ${sizear[i]}w`);
         if (sizear[i + 1]) {
-          const maxw = sizear[i] + Math.floor((sizear[i + 1] - sizear[i]) * .66);
-          sizes.push(`(max-width: ${maxw}px) ${sizear[i]}px`);
+          sizes.push(`(max-width: ${sizear[i]}px) ${sizear[i]}px`);
         }
         else {
           sizes.push(`${sizear[i]}px`);
