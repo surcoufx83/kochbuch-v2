@@ -27,6 +27,10 @@ export class ListingComponent {
     return this.l10nService.FormatDate(date, formatStr);
   }
 
+  public formatDuration(minutes: number): string {
+    return this.l10nService.FormatDuration(minutes);
+  }
+
   public formatVote(n: number): string {
     return this.l10nService.FormatVote(n);
   }

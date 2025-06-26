@@ -290,6 +290,15 @@ func wsGetUnits(conn *wsConnection) {
 	})
 }
 
+func wsNotifyRecipesChanged() {
+	for _, conn := range connections {
+		wsWriteMessage(conn, &wsMessage{
+			MsgType: "recipes_etag",
+			Content: recipesEtagStr,
+		})
+	}
+}
+
 func wsOAuth2Callback(conn *wsConnection, msg wsMessage) {
 	var data wsIncomingAuthCallbackMessage
 	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {

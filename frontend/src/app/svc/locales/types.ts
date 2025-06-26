@@ -58,7 +58,10 @@ export type L10nLocale = {
         }
     },
     recipe: {
+        aiLocalizationSwitch: string[],
         aiLocalizedContent: string,
+        aiLocalizedContentWithSourceLocale: string,
+        aiLocalizedContentSourceLocale: { [key: string]: string },
         aiSourceLocale: string,
         difficulty: {
             0: string,
@@ -69,5 +72,14 @@ export type L10nLocale = {
         isLoading: string,
         loadingFailed: string,
         submittedBy: string,
+    },
+    recipePreparationTime: {
+        title: string,
+        items: {
+            cooking: string[],
+            preparing: string[],
+            total: string,
+            waiting: string[],
+        },
     }
 }

@@ -129,6 +129,7 @@ type PreparationLocalization struct {
 type PreparationTiming struct {
 	Cooking   NullInt32 `json:"cooking"`
 	Preparing NullInt32 `json:"preparing"`
+	Total     NullInt32 `json:"total"`
 	Waiting   NullInt32 `json:"waiting"`
 }
 

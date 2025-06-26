@@ -347,11 +347,13 @@ func LoadRecipes(db *sqlx.DB) {
 				},
 			},
 			Timing: types.PreparationTiming{
-				Preparing: recipe.PreparingTime,
-				Cooking:   recipe.CookingTime,
-				Waiting:   recipe.WaitingTime,
+				Preparing: ConvertTimingValue(recipe.PreparingTime),
+				Cooking:   ConvertTimingValue(recipe.CookingTime),
+				Waiting:   ConvertTimingValue(recipe.WaitingTime),
 			},
 		}
+
+		recipeItem.Timing.Total = ConvertTotalTimingValue(recipeItem.Timing)
 
 		if recipe.Modified.After(recipesEtag) {
 			recipesEtag = recipe.Modified
@@ -377,6 +379,39 @@ func LoadRecipes(db *sqlx.DB) {
 	}
 
 	log.Printf("Loaded %d recipes into cache", len(recipes))
+	wsNotifyRecipesChanged()
+}
+
+func ConvertTimingValue(dbvalue types.NullInt32) types.NullInt32 {
+	if !dbvalue.Valid {
+		return dbvalue
+	}
+	if dbvalue.Int32 < 0 {
+		return types.NullInt32{
+			Valid: false,
+		}
+	}
+	return dbvalue
+}
+
+func ConvertTotalTimingValue(dbvalue types.PreparationTiming) types.NullInt32 {
+	if !dbvalue.Cooking.Valid && !dbvalue.Preparing.Valid && !dbvalue.Waiting.Valid {
+		return dbvalue.Cooking
+	}
+	result := types.NullInt32{
+		Valid: true,
+		Int32: 0,
+	}
+	if dbvalue.Cooking.Valid && dbvalue.Cooking.Int32 > 0 {
+		result.Int32 += dbvalue.Cooking.Int32
+	}
+	if dbvalue.Preparing.Valid && dbvalue.Preparing.Int32 > 0 {
+		result.Int32 += dbvalue.Preparing.Int32
+	}
+	if dbvalue.Waiting.Valid && dbvalue.Waiting.Int32 > 0 {
+		result.Int32 += dbvalue.Waiting.Int32
+	}
+	return result
 }
 
 func ConvertToRecipeSimple(r *types.Recipe) *types.RecipeSimple {

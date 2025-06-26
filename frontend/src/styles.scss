@@ -249,6 +249,10 @@ p {
     border-radius: calc(var(--spacing) * 2);
 }
 
+.text-link {
+    color: var(--kb-link-color);
+}
+
 .text-warn {
     color: var(--kb-warn-color);
 }

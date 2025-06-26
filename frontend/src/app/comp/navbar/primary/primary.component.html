@@ -23,7 +23,7 @@
             @for (item of ShownLocales; track $index) {
             <button type="button" class="btn m-0 px-2" [ngClass]="{ active: ActiveLocale() === item.key }"
                 (click)="setLocale(item.key)">
-                <span class="fi" [ngClass]="[ ActiveLocale() !== item.key ? 'opacity-50' : '', item.flag ]"></span>
+                <span class="fi" [ngClass]="[ item.flag ]"></span>
             </button>
             }
         </div>

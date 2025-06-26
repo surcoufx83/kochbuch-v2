@@ -136,6 +136,7 @@ export type RecipeStatisticsItem = {
 export type RecipeTiming = {
     cooking: number | null,
     preparing: number | null,
+    total: number | null,
     waiting: number | null,
 }
 

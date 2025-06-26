@@ -64,7 +64,17 @@ export const KB_En: L10nLocale = {
         }
     },
     recipe: {
-        aiLocalizedContent: "This recipe or parts of it have been automatically translated.",
+        aiLocalizationSwitch: [
+            "Show original recipe",
+            "Show translation"
+        ],
+        aiLocalizedContent: "This recipe has been automatically translated.",
+        aiLocalizedContentWithSourceLocale: "This recipe has been automatically translated from [0].",
+        aiLocalizedContentSourceLocale: {
+            de: "German",
+            en: "English",
+            fr: "French"
+        },
         aiSourceLocale: "Original title: [0]",
         difficulty: {
             0: "No information",
@@ -75,5 +85,14 @@ export const KB_En: L10nLocale = {
         isLoading: "Recipe data is currently loading...",
         loadingFailed: "The recipe could not be loaded. You will be automatically redirected to the homepage...",
         submittedBy: "Submitted by [0]"
+    },
+    recipePreparationTime: {
+        title: "Preparation Time",
+        items: {
+            cooking: ["Cooking/Baking Time", "Cooking/Baking"],
+            preparing: ["Preparation Time", "Preparing"],
+            total: "Total Time",
+            waiting: ["Resting Time", "Resting"]
+        }
     }
 }

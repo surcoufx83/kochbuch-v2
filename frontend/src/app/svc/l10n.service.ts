@@ -5,7 +5,7 @@ import { KB_De } from './locales/de';
 import { KB_En } from './locales/en';
 import { KB_Fr } from './locales/fr';
 import { enUS as FNS_En, de as FNS_De, fr as FNS_Fr, Locale } from 'date-fns/locale';
-import { format, formatDate, parseISO } from 'date-fns';
+import { Duration, format, formatDate, formatDuration, parseISO } from 'date-fns';
 
 @Injectable({
   providedIn: 'root'
@@ -37,6 +37,8 @@ export class L10nService {
   private _userLocale$: BehaviorSubject<string> = new BehaviorSubject<string>(this.fallbackLocale);
   public userLocale = this._userLocale$.asObservable();
   private userLocaleStr: string = '';
+
+  private minutesToDurationCache: { [key: number]: { duration: Duration, uivalue: string } } = {};
 
   constructor() {
 
@@ -83,6 +85,44 @@ export class L10nService {
 
   public FormatNumber(n: number, o: Intl.NumberFormatOptions): string {
     return n.toLocaleString(this.LangCode, o);
+  }
+
+  public FormatDuration(inMinutes: number): string {
+    if (this.minutesToDurationCache[inMinutes])
+      return this.minutesToDurationCache[inMinutes].uivalue;
+
+    let m = inMinutes;
+    let d = 0;
+    let h = 0;
+
+    while (m > 1440) {
+      d++;
+      m -= 1440;
+    }
+    while (m > 60) {
+      h++;
+      m -= 60;
+    }
+
+    const strvalue = formatDuration({
+      minutes: m,
+      hours: h,
+      days: d,
+    }, {
+      locale: this.availableLocales[this.LangCode].datefns ?? FNS_De,
+      format: ['days', 'hours', 'minutes']
+    });
+
+    this.minutesToDurationCache[inMinutes] = {
+      duration: {
+        minutes: m,
+        hours: h,
+        days: d,
+      },
+      uivalue: strvalue
+    };
+
+    return strvalue;
   }
 
   public FormatVote(n: number): string {

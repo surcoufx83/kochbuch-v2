@@ -253,7 +253,7 @@ func aiTranslateRecipesLoop() bool {
 	err := Db.Select(&recipeids, query)
 	if err != nil {
 		log.Printf("  > Failed to load recipes: %v", err)
-		return false
+		return true
 	}
 
 	if len(recipeids) == 0 {
@@ -266,7 +266,7 @@ func aiTranslateRecipesLoop() bool {
 
 		if err != nil {
 			log.Printf("  > Failed to load recipe %d: %v", recipeid, err)
-			return false
+			return true
 		}
 
 		translations := make(map[string][]string)
@@ -281,7 +281,7 @@ func aiTranslateRecipesLoop() bool {
 					source, tl, err = aiTranslateRecipe(&recipe, recipe.UserLocale, l)
 					if err != nil {
 						log.Println("  > Cancelled translation for this recipe")
-						return false
+						return true
 					}
 
 					translations[l] = tl
@@ -582,19 +582,19 @@ func aiApplyTranslation(recipe types.Recipe, l string, sourcePhrases []string, t
 
 	for i, p := range recipe.Pictures {
 		recipe.Pictures[i].Localization[l] = types.PictureLocalization{
-			Name:        aiApplyPhrase(p.Localization[l].Name, sourcePhrases, translations),
-			Description: aiApplyPhrase(p.Localization[l].Description, sourcePhrases, translations),
+			Name:        aiApplyPhrase(p.Localization[org].Name, sourcePhrases, translations),
+			Description: aiApplyPhrase(p.Localization[org].Description, sourcePhrases, translations),
 		}
 	}
 
 	for i, p := range recipe.Preparation {
 		recipe.Preparation[i].Localization[l] = types.PreparationLocalization{
-			Title:        aiApplyPhrase(p.Localization[l].Title, sourcePhrases, translations),
-			Instructions: aiApplyPhrase(p.Localization[l].Instructions, sourcePhrases, translations),
+			Title:        aiApplyPhrase(p.Localization[org].Title, sourcePhrases, translations),
+			Instructions: aiApplyPhrase(p.Localization[org].Instructions, sourcePhrases, translations),
 		}
 		for j, g := range p.Ingredients {
 			recipe.Preparation[i].Ingredients[j].Localization[l] = types.IngredientLocalization{
-				Title: aiApplyPhrase(g.Localization[l].Title, sourcePhrases, translations),
+				Title: aiApplyPhrase(g.Localization[org].Title, sourcePhrases, translations),
 			}
 		}
 	}

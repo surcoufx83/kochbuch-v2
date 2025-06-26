@@ -1,5 +1,5 @@
 @if (!recipe) {
-<div class="container">
+<div class="container mx-auto">
     @if (loadingFailed()) {
     {{ Locale.recipe.loadingFailed }}
     }
@@ -9,7 +9,34 @@
 </div>
 }
 @else {
-<div class="lg:container">
-
+<div class="lg:container mx-auto">
+    <h3 class="pb-3">
+        {{ recipe.localization[langCodeVisible()].title }}
+    </h3>
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
+        <div>
+            @if (langCode() !== recipe.userLocale) {
+            <div class="flex flex-row pb-3">
+                <div>
+                    <span class="fi me-2"
+                        [ngClass]="recipe.userLocale === 'en' ? 'fi-eu' : 'fi-'+recipe.userLocale"></span>
+                </div>
+                <div>
+                    {{ LocaleReplace(Locale.recipe.aiLocalizedContentWithSourceLocale, [
+                    Locale.recipe.aiLocalizedContentSourceLocale[recipe.userLocale]]) }}
+                    <button class="text-link" (click)="onToggleLocalization(!localized())">
+                        {{ Locale.recipe.aiLocalizationSwitch[localized() ? 0 : 1] }}
+                    </button>
+                </div>
+            </div>
+            }
+            <p>
+                {{ recipe.localization[langCodeVisible()].description }}
+            </p>
+        </div>
+        <div>
+            gallery goes here....
+        </div>
+    </div>
 </div>
 }

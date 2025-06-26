@@ -50,9 +50,9 @@
 
             <div class="footer">
                 <div>
-                    @if (item.difficulty > 0) {
-                    <fa-icon [icon]="Icons.difficulty[item.difficulty]" class="me-1"></fa-icon>
-                    {{ Locale.recipe.difficulty[item.difficulty] }}
+                    @if (item.timing.total && item.timing.total > 0) {
+                    <fa-icon [icon]="Icons.clock" class="me-1"></fa-icon>
+                    {{ formatDuration(item.timing.total) }}
                     }
                 </div>
                 <div>
