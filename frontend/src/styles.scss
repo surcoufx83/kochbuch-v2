@@ -211,6 +211,10 @@ p {
     border-radius: calc(var(--spacing) * 2);
     word-wrap: break-word;
 
+    &:hover {
+        border-color: var(--kb-link-color);
+    }
+
     >.header {
         border-bottom: 1px solid var(--kb-border-color);
 
