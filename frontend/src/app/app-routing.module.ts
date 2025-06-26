@@ -16,9 +16,9 @@ const routes: Routes = [
   { path: 'create', component: EditorComponent },
   { path: 'cat/:id/:name', component: RecipesComponent },
   { path: 'login/oauth2', component: Oauth2LoginCallbackComponent, pathMatch: 'full' },
-  { path: 'r', component: RecipesComponent, pathMatch: 'full' },
-  { path: 'r/:id', component: RecipeComponent, pathMatch: 'full' },
-  { path: 'r/:id/edit', component: EditorComponent, pathMatch: 'full' },
+  { path: 'recipes', redirectTo: '', pathMatch: 'full' },
+  { path: 'recipe/:id', component: RecipeComponent, pathMatch: 'full' },
+  { path: 'recipe/:id/edit', component: EditorComponent, pathMatch: 'full' },
   { path: '', component: RecipesComponent, pathMatch: 'full' },
   { path: '**', component: MissingLinkComponent }
 ];
