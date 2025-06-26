@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -29,9 +30,9 @@ func DbConnect() {
 		tz = "UTC"
 	}
 
-	log.Println("Connecting to database with " + dbuser + ":........@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz)
+	log.Println("Connecting to database with " + dbuser + ":........@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + strings.ReplaceAll(tz, "/", "%2F"))
 
-	dsn := dbuser + ":" + dbpassword + "@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + tz
+	dsn := dbuser + ":" + dbpassword + "@tcp(" + dbhost + ":" + dbport + ")/" + dbname + "?parseTime=true&loc=" + strings.ReplaceAll(tz, "/", "%2F")
 	var err error
 
 	Db, err = sqlx.Connect("mysql", dsn)
