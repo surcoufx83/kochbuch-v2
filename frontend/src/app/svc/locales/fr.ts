@@ -72,6 +72,8 @@ export const KB_Fr: L10nLocale = {
             2: "Moyen",
             3: "Difficile"
         },
+        isLoading: "Chargement des données de recette en cours...",
+        loadingFailed: "La recette n'a pas pu être chargée. Vous serez automatiquement redirigé vers la page d'accueil...",
         submittedBy: "Ajouté par [0]"
     }
 }

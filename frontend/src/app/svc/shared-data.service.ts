@@ -25,6 +25,8 @@ export class SharedDataService {
   private _recipesEtag?: string;
   public Recipes = this._recipes.asObservable();
   private _recipePreloadRequests: { [key: number]: number } = {};
+  private _recipeUpdated = new BehaviorSubject<RecipeUpdatedEvent | false>(false);
+  public RecipeEvents = this._recipeUpdated.asObservable();
 
   private _units = new BehaviorSubject<{ [key: number]: Unit }>({});
   private _unitsEtag?: string;
@@ -78,6 +80,15 @@ export class SharedDataService {
     localStorage.removeItem('kbRecipes');
     localStorage.removeItem('kbCategories');
     localStorage.removeItem('kbUnits');
+  }
+
+  public getRecipe(id: number, reload: boolean = true): Promise<any> {
+    if (reload) {
+      setTimeout(() => {
+        this.reloadRecipe(id);
+      }, 10);
+    }
+    return this.indexDbService.GetRecipe(id);
   }
 
   private loadFromBrowserCache(): void {
@@ -158,6 +169,10 @@ export class SharedDataService {
         return;
     }
     this._recipePreloadRequests[recipeId] = Date.now();
+    this.reloadRecipe(recipeId);
+  }
+
+  private reloadRecipe(recipeId: number): void {
     this.indexDbService.GetRecipe(recipeId)
       .then((data: { id: number, etag: string, data: Recipe }) => {
         this.wsService.SendMessage({
@@ -176,7 +191,6 @@ export class SharedDataService {
           })
         });
       });
-
   }
 
   private saveCategoriesToCache(): void {
@@ -194,6 +208,13 @@ export class SharedDataService {
       etag: this._recipesEtag,
     };
     localStorage.setItem('kbRecipes', JSON.stringify(cache));
+    Object.values(this._recipes.value).forEach((recipe) => {
+      this._recipeUpdated.next({
+        id: recipe.id,
+        etag: recipe.modified,
+        recipe: recipe,
+      });
+    });
   }
 
   private saveUnitsToCache(): void {
@@ -244,11 +265,14 @@ export class SharedDataService {
       case 'recipe_get':
         const recipedata = JSON.parse(msg.content) as Recipe | ErrorResponse;
         if (Object.hasOwn(recipedata, 'error')) {
-          if ((recipedata as ErrorResponse).error === 304)
-            return;
           return;
         }
         this.indexDbService.PutRecipe(recipedata as Recipe);
+        this._recipeUpdated.next({
+          id: (recipedata as Recipe).id,
+          etag: (recipedata as Recipe).modified,
+          recipe: (recipedata as Recipe),
+        });
         break;
 
       case 'recipes_etag':
@@ -295,13 +319,19 @@ type CategoriesCache = {
 }
 
 type ErrorResponse = {
-  error: number,
-  message: string,
+  error: number;
+  message: string;
 }
 
 type RecipesCache = {
   recipes: { [key: number]: Recipe };
   etag?: string;
+}
+
+type RecipeUpdatedEvent = {
+  id: number;
+  etag?: string;
+  recipe: Recipe;
 }
 
 type UnitsCache = {

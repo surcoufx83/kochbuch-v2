@@ -3,71 +3,71 @@ package types
 import "time"
 
 type Recipe struct {
-	Id               uint32                        `json:"id"`
-	SimpleStruct     bool                          `json:"simple"`
-	IsFork           bool                          `json:"isFork"`
-	OriginalRecipeId uint32                        `json:"originalRecipeId"`
-	IsPlaceholder    bool                          `json:"isPlaceholder"`
-	SourceUrl        string                        `json:"sourceUrl"`
-	OwnerUserId      NullInt32                     `json:"-"`
-	LastEditUserId   NullInt32                     `json:"-"`
-	User             NullUserProfileSimple         `json:"user"`
 	AiGenerated      bool                          `json:"aiGenerated"`
-	UserLocale       string                        `json:"userLocale"`
-	Localization     map[string]RecipeLocalization `json:"localization"`
+	AiTranslatedTime NullTime                      `json:"localized"`
 	Categories       []RecipeCategoryitem          `json:"categories"`
+	CreatedTime      time.Time                     `json:"created"`
+	Difficulty       uint8                         `json:"difficulty"`
+	EditedByUserTime NullTime                      `json:"edited"`
+	Id               uint32                        `json:"id"`
+	IsFork           bool                          `json:"isFork"`
+	IsPlaceholder    bool                          `json:"isPlaceholder"`
+	LastEditUserId   NullInt32                     `json:"-"`
+	Localization     map[string]RecipeLocalization `json:"localization"`
+	ModifiedTime     time.Time                     `json:"modified"`
+	OriginalRecipeId uint32                        `json:"originalRecipeId"`
+	OwnerUserId      NullInt32                     `json:"-"`
 	Pictures         []Picture                     `json:"pictures"`
 	Preparation      []Preparation                 `json:"preparation"`
+	PublishedTime    NullTime                      `json:"published"`
 	ServingsCount    uint8                         `json:"servingsCount"`
-	Difficulty       uint8                         `json:"difficulty"`
-	Statistics       RecipeStatistics              `json:"statistics"`
-	Timing           PreparationTiming             `json:"timing"`
 	SharedInternal   bool                          `json:"sharedInternal"`
 	SharedPublic     bool                          `json:"sharedPublic"`
-	AiTranslatedTime NullTime                      `json:"localized"`
-	CreatedTime      time.Time                     `json:"created"`
-	EditedByUserTime NullTime                      `json:"edited"`
-	ModifiedTime     time.Time                     `json:"modified"`
-	PublishedTime    NullTime                      `json:"published"`
+	SimpleStruct     bool                          `json:"simple"`
+	SourceUrl        string                        `json:"sourceUrl"`
+	Statistics       RecipeStatistics              `json:"statistics"`
+	Timing           PreparationTiming             `json:"timing"`
+	User             NullUserProfileSimple         `json:"user"`
+	UserLocale       string                        `json:"userLocale"`
 }
 
 type RecipeSimple struct {
-	Id               uint32                        `json:"id"`
-	SimpleStruct     bool                          `json:"simple"`
-	User             NullUserProfileSimple         `json:"user"`
-	UserLocale       string                        `json:"userLocale"`
-	Localization     map[string]RecipeLocalization `json:"localization"`
+	AiTranslatedTime NullTime                      `json:"localized"`
 	Categories       []RecipeCategoryitem          `json:"categories"`
-	Pictures         []Picture                     `json:"pictures"`
-	ServingsCount    uint8                         `json:"servingsCount"`
+	CreatedTime      time.Time                     `json:"created"`
 	Difficulty       uint8                         `json:"difficulty"`
+	EditedByUserTime NullTime                      `json:"edited"`
+	Id               uint32                        `json:"id"`
+	Localization     map[string]RecipeLocalization `json:"localization"`
+	ModifiedTime     time.Time                     `json:"modified"`
+	Pictures         []Picture                     `json:"pictures"`
+	PublishedTime    NullTime                      `json:"published"`
+	ServingsCount    uint8                         `json:"servingsCount"`
+	SimpleStruct     bool                          `json:"simple"`
 	Statistics       RecipeStatistics              `json:"statistics"`
 	Timing           PreparationTiming             `json:"timing"`
-	AiTranslatedTime NullTime                      `json:"localized"`
-	CreatedTime      time.Time                     `json:"created"`
-	EditedByUserTime NullTime                      `json:"edited"`
-	ModifiedTime     time.Time                     `json:"modified"`
-	PublishedTime    NullTime                      `json:"published"`
+	User             NullUserProfileSimple         `json:"user"`
+	UserLocale       string                        `json:"userLocale"`
 }
 
 type RecipeCategoryitem struct {
+	Created time.Time             `json:"created"`
 	ItemId  uint16                `json:"categoryitem"`
 	UserId  NullUserProfileSimple `json:"user"`
-	Created time.Time             `json:"created"`
 }
 
 type RecipeLocalization struct {
-	Title             string `json:"title"`
 	Description       string `json:"description"`
 	SourceDescription string `json:"sourceDescription"`
+	Title             string `json:"title"`
 }
 
 type RecipeStatistics struct {
+	Cooked  uint32               `json:"cooked"`
+	Ratings RecipeStatisticsItem `json:"ratings"`
 	Steps   uint8                `json:"steps"`
 	Views   uint32               `json:"views"`
-	Cooked  uint32               `json:"cooked"`
 	Votes   RecipeStatisticsItem `json:"votes"`
-	Ratings RecipeStatisticsItem `json:"ratings"`
 }
 
 type RecipeStatisticsItem struct {
@@ -77,10 +77,10 @@ type RecipeStatisticsItem struct {
 
 type Ingredient struct {
 	Id           uint64                            `json:"id"`
-	SortIndex    uint16                            `json:"index"`
-	Quantity     NullFloat64                       `json:"quantity"`
-	UnitId       NullInt32                         `json:"unitId"`
 	Localization map[string]IngredientLocalization `json:"localization"`
+	Quantity     NullFloat64                       `json:"quantity"`
+	SortIndex    uint16                            `json:"index"`
+	UnitId       NullInt32                         `json:"unitId"`
 }
 
 type IngredientLocalization struct {
@@ -88,29 +88,29 @@ type IngredientLocalization struct {
 }
 
 type Picture struct {
+	BaseName     string                         `json:"-"`
+	Dimension    PictureDimension               `json:"size"`
+	Ext          string                         `json:"-"`
+	FileName     string                         `json:"filename"`
+	FullPath     string                         `json:"-"`
 	Id           uint32                         `json:"id"`
-	RecipeId     uint32                         `json:"-"`
-	User         NullUserProfileSimple          `json:"user"`
 	Index        uint8                          `json:"index"`
 	Localization map[string]PictureLocalization `json:"localization"`
-	FileName     string                         `json:"filename"`
-	BaseName     string                         `json:"-"`
-	Ext          string                         `json:"-"`
-	FullPath     string                         `json:"-"`
+	RecipeId     uint32                         `json:"-"`
 	Uploaded     time.Time                      `json:"uploaded"`
-	Dimension    PictureDimension               `json:"size"`
+	User         NullUserProfileSimple          `json:"user"`
 }
 
 type PictureDimension struct {
+	Generated      NullTime `json:"thbGenerated"`
+	GeneratedSizes []int    `json:"thbSizes"`
 	Height         int      `json:"height"`
 	Width          int      `json:"width"`
-	GeneratedSizes []int    `json:"thbSizes"`
-	Generated      NullTime `json:"thbGenerated"`
 }
 
 type PictureLocalization struct {
-	Name        string `json:"name"`
 	Description string `json:"description"`
+	Name        string `json:"name"`
 }
 
 type Preparation struct {
@@ -122,25 +122,25 @@ type Preparation struct {
 }
 
 type PreparationLocalization struct {
-	Title        string `json:"title"`
 	Instructions string `json:"instruct"`
+	Title        string `json:"title"`
 }
 
 type PreparationTiming struct {
-	Preparing NullInt32 `json:"preparing"`
 	Cooking   NullInt32 `json:"cooking"`
+	Preparing NullInt32 `json:"preparing"`
 	Waiting   NullInt32 `json:"waiting"`
 }
 
 type Unit struct {
+	CreatedTime    time.Time                   `json:"created"`
+	DecimalPlaces  uint8                       `json:"decimalPlaces"`
 	Id             uint8                       `json:"id"`
 	Localization   map[string]UnitLocalization `json:"localization"`
-	CreatedTime    time.Time                   `json:"created"`
 	ModifiedTime   time.Time                   `json:"modified"`
 	ReplacedById   uint8                       `json:"replacedBy"`
-	SavedAsId      uint8                       `json:"savedAs"`
 	SavedAsFactor  float32                     `json:"savedAsFactor"`
-	DecimalPlaces  uint8                       `json:"decimalPlaces"`
+	SavedAsId      uint8                       `json:"savedAs"`
 	ShowAsFraction bool                        `json:"showAsFraction"`
 }
 
@@ -150,22 +150,22 @@ type UnitLocalization struct {
 }
 
 type UserProfile struct {
-	Id                    int                   `json:"id" db:"user_id"`
-	UserName              string                `json:"username" db:"cloudid"`
-	DisplayName           string                `json:"displayname" db:"clouddisplayname"`
-	NcEnabled             bool                  `json:"-" db:"cloudenabled"`
-	FirstName             string                `json:"firstname" db:"firstname"`
-	LastName              string                `json:"lastname" db:"lastname"`
-	Enabled               bool                  `json:"enabled" db:"enabled"`
 	Admin                 bool                  `json:"admin" db:"admin"`
-	Email                 NullString            `json:"email" db:"email"`
-	EmailValidationPhrase NullString            `json:"-" db:"email_validationphrase"`
-	EmailValidated        NullTime              `json:"-" db:"email_validated"`
-	NcSyncTime            NullTime              `json:"-" db:"cloudsync"`
-	NcSyncStatus          int16                 `json:"-" db:"cloudsync_status"`
 	Created               time.Time             `json:"created" db:"created"`
-	Modified              NullTime              `json:"-" db:"modified"`
+	DisplayName           string                `json:"displayname" db:"clouddisplayname"`
+	Email                 NullString            `json:"email" db:"email"`
+	EmailValidated        NullTime              `json:"-" db:"email_validated"`
+	EmailValidationPhrase NullString            `json:"-" db:"email_validationphrase"`
+	Enabled               bool                  `json:"enabled" db:"enabled"`
+	FirstName             string                `json:"firstname" db:"firstname"`
 	Groups                []Group               `json:"groups"`
+	Id                    int                   `json:"id" db:"user_id"`
+	LastName              string                `json:"lastname" db:"lastname"`
+	Modified              NullTime              `json:"-" db:"modified"`
+	NcEnabled             bool                  `json:"-" db:"cloudenabled"`
+	NcSyncStatus          int16                 `json:"-" db:"cloudsync_status"`
+	NcSyncTime            NullTime              `json:"-" db:"cloudsync"`
+	UserName              string                `json:"username" db:"cloudid"`
 	SimpleProfile         NullUserProfileSimple `json:"-"`
 }
 
@@ -175,11 +175,11 @@ type UserProfileSimple struct {
 }
 
 type Group struct {
-	Id          int       `json:"id" db:"id"`
+	Created     time.Time `json:"-" db:"created"`
 	DisplayName string    `json:"displayname" db:"displayname"`
-	Name        string    `json:"name" db:"ncname"`
 	GrantAccess bool      `json:"-" db:"access_granted"`
 	GrantAdmin  string    `json:"-" db:"is_admin"`
-	Created     time.Time `json:"-" db:"created"`
+	Id          int       `json:"id" db:"id"`
 	Modified    NullTime  `json:"-" db:"modified"`
+	Name        string    `json:"name" db:"ncname"`
 }

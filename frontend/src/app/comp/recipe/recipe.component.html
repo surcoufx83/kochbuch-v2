@@ -1,1 +1,15 @@
-<p>recipe works!</p>
+@if (!recipe) {
+<div class="container">
+    @if (loadingFailed()) {
+    {{ Locale.recipe.loadingFailed }}
+    }
+    @else {
+    {{ Locale.recipe.isLoading }}
+    }
+</div>
+}
+@else {
+<div class="lg:container">
+
+</div>
+}

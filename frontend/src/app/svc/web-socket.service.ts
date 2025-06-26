@@ -13,6 +13,8 @@ export class WebSocketService {
   private _events = new BehaviorSubject<WsMessage | null>(null);
   public events = this._events.asObservable();
 
+  private msgQueue: WsMessage[] = [];
+
   private _isLoggedIn = new BehaviorSubject<'unknown' | boolean>('unknown');
   public isLoggedIn = this._isLoggedIn.asObservable();
 
@@ -54,6 +56,7 @@ export class WebSocketService {
         this._isLoggedIn.next(this.appParams.loggedIn);
         this._user.next(this.appParams.user && this.appParams.loggedIn ? this.appParams.user : null);
         this._isConnected.next(true);
+        this.ResendFromQueue();
       }
       else
         this._events.next(message);
@@ -125,17 +128,47 @@ export class WebSocketService {
     }, 1000);
   }
 
+  ReportError(data: {
+    url: string,
+    error: string,
+    severity: 'I' | 'E' | 'W',
+  }): void {
+    this.SendMessage({
+      type: 'error_report',
+      content: data
+    });
+  }
+
   private saveSession(): void {
     if (!this.appParams)
       return;
     localStorage.setItem('kbSession', JSON.stringify(this.appParams));
   }
 
-  SendMessage(msg: WsMessage) {
+  SendMessage(msg: WsMessage): boolean {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      if (typeof msg.content !== 'string') {
+        msg.content = JSON.stringify(msg.content);
+      }
       this.socket.send(JSON.stringify(msg));
+      return true;
     } else {
-      console.error('WebSocket is not open');
+      // console.warn('WebSocket is not open => continue after reconnect');
+      this.msgQueue.push(msg);
+      return false;
+    }
+  }
+
+  ResendFromQueue(): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN)
+      return;
+    const datacopy = [...this.msgQueue];
+    while (datacopy.length > 0) {
+      const msg = datacopy.splice(0, 1);
+      if (msg.length === 1) {
+        if (!this.SendMessage(msg[0]))
+          return;
+      }
     }
   }
 

@@ -96,6 +96,7 @@ func main() {
 	}
 
 	log.Println("Server stopped gracefully")
+	services.DbCloseStmts()
 	services.Db.Close()
 	log.Println("Database connection closed")
 

@@ -1,7 +1,10 @@
 package services
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -9,8 +12,25 @@ import (
 )
 
 var (
-	Db *sqlx.DB
+	Db    *sqlx.DB
+	Stmts map[string]*sql.Stmt = make(map[string]*sql.Stmt)
 )
+
+func DbCloseStmts() {
+	fn := "CloseStmts"
+
+	slog.Debug(fmt.Sprintf("%v: Closing statements", fn))
+
+	for key, stmt := range Stmts {
+		err := stmt.Close()
+		if err != nil {
+			slog.Error(fmt.Sprintf("%v: Failed closing statement %s: %v", fn, key, err))
+		}
+	}
+
+	Stmts = make(map[string]*sql.Stmt)
+	slog.Debug(fmt.Sprintf("%v: Closing statements completed", fn))
+}
 
 func DbConnect() {
 	dbuser := os.Getenv("DB_User")
@@ -42,4 +62,24 @@ func DbConnect() {
 
 	log.Println("Connected to database!")
 	log.Println("")
+}
+
+func dbPrepareStmt(key string, query string) (*sql.Stmt, error) {
+	fn := fmt.Sprintf("dbPrepareStmt(%s)", key)
+
+	stmt, found := Stmts[key]
+	if found {
+		log.Printf("%v: Already prepared", fn)
+		return stmt, nil
+	}
+
+	stmt, err := Db.Prepare(query)
+	if err != nil {
+		log.Printf("%v: Failed preparing stmt %s: %v", fn, key, err)
+		return nil, err
+	}
+	Stmts[key] = stmt
+
+	log.Printf("%v: prepared", fn)
+	return stmt, nil
 }

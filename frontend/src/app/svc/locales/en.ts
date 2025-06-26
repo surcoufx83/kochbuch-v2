@@ -72,6 +72,8 @@ export const KB_En: L10nLocale = {
             2: "Medium",
             3: "Difficult"
         },
+        isLoading: "Recipe data is currently loading...",
+        loadingFailed: "The recipe could not be loaded. You will be automatically redirected to the homepage...",
         submittedBy: "Submitted by [0]"
     }
 }

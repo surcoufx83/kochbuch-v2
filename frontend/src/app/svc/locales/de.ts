@@ -72,6 +72,8 @@ export const KB_De: L10nLocale = {
             2: "Mittelschwer",
             3: "Schwierig"
         },
+        isLoading: "Rezeptdaten werden gerade geladen ...",
+        loadingFailed: "Das Rezept konnte nicht geladen werden. Du wirst automatisch auf die Startseite umgeleitet...",
         submittedBy: "Eingetragen von [0]"
     }
 }

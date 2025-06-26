@@ -45,6 +45,12 @@ type wsIncomingIdMessage struct {
 	Etag time.Time `json:"etag"`
 }
 
+type wsIncomingErrorReport struct {
+	Url      string `json:"url" binding:"required"`
+	Severity string `json:"severity" binding:"required"`
+	Message  string `json:"error" binding:"required"`
+}
+
 type wsMessage struct {
 	MsgType string `json:"type" binding:"required"`
 	Content string `json:"content" binding:"required"`
@@ -177,6 +183,10 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 
 	case "categories_get_all":
 		wsGetCategories(conn)
+		return
+
+	case "error_report":
+		wsReportError(conn, msg)
 		return
 
 	case "oauth2_callback":
@@ -329,6 +339,28 @@ func wsReadMessage(msg []byte) (wsMessage, error) {
 		return wsMessage{}, err
 	}
 	return message, nil
+}
+
+func wsReportError(conn *wsConnection, msg wsMessage) {
+	fn := "wsReportError()"
+	var data wsIncomingErrorReport
+	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
+		log.Printf("%v: Error unmarshalling recipe request message: %v", fn, err)
+		wsWrite400BadRequest(conn, "error_report")
+		return
+	}
+
+	if data.Severity != "I" && data.Severity != "E" && data.Severity != "W" {
+		log.Printf("%v: Severity != I|E|W: %v", fn, data.Severity)
+		data.Severity = "E"
+	}
+
+	stmt, err := dbPrepareStmt("wsReportError", "INSERT INTO `apilog`(`severity`, `reporter`, `host`, `agent`, `request_type`, `request_uri`, `request_length`, `message`) VALUES(?, 'Client', '', '', 'wss://', ?, 0, ?)")
+	if err != nil {
+		return
+	}
+
+	_, _ = stmt.Exec(data.Severity, data.Url, data.Message)
 }
 
 func wsWelcome(conn *wsConnection) {

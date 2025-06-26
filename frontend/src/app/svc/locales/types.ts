@@ -66,6 +66,8 @@ export type L10nLocale = {
             2: string,
             3: string,
         },
+        isLoading: string,
+        loadingFailed: string,
         submittedBy: string,
     }
 }

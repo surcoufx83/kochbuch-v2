@@ -26,11 +26,11 @@ export class MissingLinkComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    /* this.wsService.reportError({
+    this.wsService.ReportError({
       url: this.router.url,
       error: 'Route not configured',
       severity: 'E'
-    }); */
+    });
   }
 
 }
