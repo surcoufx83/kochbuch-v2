@@ -94,5 +94,24 @@ export const KB_En: L10nLocale = {
             total: "Total Time",
             waiting: ["Resting Time", "Resting"]
         }
-    }
+    },
+    recipeIngredients: {
+        title: "Ingredients List",
+        description: [
+            "This recipe is intended for 1 serving.",
+            "This recipe is intended for [0] servings.",
+        ],
+        calculator: {
+            servings: [
+                "Serving",
+                "Servings",
+            ],
+            title: "Quantity Calculator",
+            description: "You can recalculate the quantities for a different number of servings. The conversion also applies to the preparation steps below.",
+        },
+        table: {
+            quantityHeader: "Quantity",
+            nameHeader: "Ingredient Description",
+        },
+    },
 }

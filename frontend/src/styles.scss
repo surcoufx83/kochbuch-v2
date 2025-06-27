@@ -24,6 +24,9 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
         --kb-link-color: #a2c672;
         --kb-warn-color: #ef787a;
+        --kb-bg-green: #589014;
+        --kb-border-green: #589014;
+        --kb-text-ongreen: #f8f9fa;
     }
 
 }
@@ -45,6 +48,9 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
         --kb-link-color: #375a0c;
         --kb-warn-color: #bb4430;
+        --kb-bg-green: #589014;
+        --kb-border-green: #589014;
+        --kb-text-ongreen: #f8f9fa;
     }
 
 }
@@ -107,6 +113,13 @@ button,
             border: 1px solid var(--kb-border-color);
         }
 
+    }
+
+    &.btn-green {
+        background-color: var(--kb-bg-green);
+        border: 1px solid var(--kb-border-green);
+        color: var(--kb-text-ongreen);
+        padding: .375rem .75rem;
     }
 
     &.no-style {
@@ -251,6 +264,10 @@ p {
 
 .text-link {
     color: var(--kb-link-color);
+}
+
+.text-navbar {
+    color: var(--kb-navbar-text-color);
 }
 
 .text-warn {

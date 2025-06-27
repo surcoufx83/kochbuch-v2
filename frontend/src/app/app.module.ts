@@ -15,7 +15,7 @@ import { RecipeComponent } from './comp/recipe/recipe.component';
 import { MobileMenuComponent } from './comp/mobile-menu/mobile-menu.component';
 import { MeComponent } from './comp/me/me.component';
 import { EditorComponent } from './comp/editor/editor.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MissingLinkComponent } from './comp/missing-link/missing-link.component';
 import { MeNoUserComponent } from './comp/me/no-user/no-user.component';
 import { Oauth2LoginCallbackComponent } from './comp/oauth2-login-callback/oauth2-login-callback.component';
@@ -45,7 +45,8 @@ import { WebSocketService } from './svc/web-socket.service';
     BrowserModule,
     AppRoutingModule,
     FontAwesomeModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    FormsModule,
   ],
   providers: [
     provideHttpClient(),

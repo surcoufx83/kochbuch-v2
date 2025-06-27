@@ -81,5 +81,18 @@ export type L10nLocale = {
             total: string,
             waiting: string[],
         },
-    }
+    },
+    recipeIngredients: {
+        title: string,
+        description: string[],
+        calculator: {
+            title: string,
+            servings: string[],
+            description: string,
+        },
+        table: {
+            quantityHeader: string,
+            nameHeader: string,
+        },
+    },
 }

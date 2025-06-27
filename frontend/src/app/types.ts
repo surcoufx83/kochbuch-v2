@@ -53,15 +53,15 @@ export type Recipe = {
 export type RecipeCategoryitem = {
     categoryitem: number,
     created: string,
-    user: User
+    user: User,
 }
 
 export type RecipeIngredient = {
     id: number,
     index: number,
     localization: RecipeIngredientLocalization,
-    quantity: number | null
-    unitId: number | null
+    quantity: number | null,
+    unitId: number | null,
 }
 
 export type RecipeIngredientLocalization = {

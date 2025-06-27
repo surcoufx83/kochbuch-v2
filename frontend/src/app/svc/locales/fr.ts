@@ -94,5 +94,24 @@ export const KB_Fr: L10nLocale = {
             total: "Temps total",
             waiting: ["Temps de repos", "Repos"]
         }
-    }
+    },
+    recipeIngredients: {
+        title: "Liste des ingrédients",
+        description: [
+            "Cette recette est prévue pour 1 portion.",
+            "Cette recette est prévue pour [0] portions.",
+        ],
+        calculator: {
+            servings: [
+                "Portion",
+                "Portions",
+            ],
+            title: "Calculateur de quantités",
+            description: "Vous pouvez recalculer les quantités pour un autre nombre de portions. La conversion s’appliquera également aux étapes de préparation ci-dessous.",
+        },
+        table: {
+            quantityHeader: "Quantité",
+            nameHeader: "Description de l’ingrédient",
+        },
+    },
 }

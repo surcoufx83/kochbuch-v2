@@ -7,6 +7,7 @@ import { Recipe } from '../../types';
 import { L10nLocale } from '../../svc/locales/types';
 import { WebSocketService } from '../../svc/web-socket.service';
 import { IconLib } from '../../icons';
+import { IngredientsCalculator } from '../../svc/ingredients-calculator';
 
 @Component({
   selector: 'kb-recipe',
@@ -18,10 +19,12 @@ export class RecipeComponent implements OnDestroy, OnInit {
 
   localized = signal<boolean>(true);
   icons = IconLib;
+  ingredientsCalc?: IngredientsCalculator;
   langCode = signal<string>('de');
   langCodeVisible = signal<string>('de');
   loadingFailed = signal<boolean>(false);
   recipe?: Recipe;
+  calculatorServings = 0;
   private routeRecipeId?: number;
   private subs: Subscription[] = [];
 
@@ -78,6 +81,10 @@ export class RecipeComponent implements OnDestroy, OnInit {
       .then((data: { id: number, etag: string, data: Recipe }) => {
         if (!this.recipe || this.recipe.id !== data.data.id || this.recipe.modified !== data.data.modified) {
           this.recipe = data.data;
+          console.log(this.recipe)
+          this.calculatorServings = this.recipe.servingsCount;
+          this.ingredientsCalc = new IngredientsCalculator(this.recipe, this.sharedDataService);
+          console.log(this.ingredientsCalc)
         }
       })
       .catch((err) => {
@@ -93,6 +100,14 @@ export class RecipeComponent implements OnDestroy, OnInit {
         }, 1000);
       });
 
+  }
+
+  onSetServingsCount(value: number): void {
+    if (value < 1)
+      value = 1;
+    if (value > 100)
+      value = 100;
+    this.calculatorServings = value;
   }
 
   onToggleLocalization(to: boolean): void {

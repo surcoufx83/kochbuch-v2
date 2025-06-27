@@ -94,5 +94,24 @@ export const KB_De: L10nLocale = {
             total: "Gesamtzeit",
             waiting: ["Ruhezeit", "Ruhen"],
         }
-    }
+    },
+    recipeIngredients: {
+        title: "Zutatenliste",
+        description: [
+            "Das Rezept ist für 1 Portion ausgelegt.",
+            "Das Rezept ist für [0] Portionen ausgelegt.",
+        ],
+        calculator: {
+            servings: [
+                "Portion",
+                "Portionen",
+            ],
+            title: "Mengenrechner",
+            description: "Du kannst dir die Mengen auf eine andere Anzahl von Portionen umrechnen lassen. Die Umrechnung wird auch auf die Zubereitungsschritte weiter unten angewendet.",
+        },
+        table: {
+            quantityHeader: "Mengenangabe",
+            nameHeader: "Zutatenbeschreibung",
+        },
+    },
 }

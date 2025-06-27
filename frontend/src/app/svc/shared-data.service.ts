@@ -30,6 +30,7 @@ export class SharedDataService {
   private _units = new BehaviorSubject<{ [key: number]: Unit }>({});
   private _unitsEtag?: string;
   public Units = this._units.asObservable();
+  private _unitsConversion: UnitsConversion[] = [];
 
   private _searchIsActive = new BehaviorSubject<boolean>(false);
   public SearchIsActive = this._searchIsActive.asObservable();
@@ -97,8 +98,10 @@ export class SharedDataService {
             etag: rec.etag ?? rec.recipe.modified,
             data: rec.recipe
           });
-          sub?.unsubscribe();
-          sub = undefined;
+          setTimeout(() => {
+            sub?.unsubscribe();
+            sub = undefined;
+          }, 1);
         });
         this.reloadRecipe(id);
         setTimeout(() => {
@@ -109,6 +112,14 @@ export class SharedDataService {
         }, 3500);
       });
     });
+  }
+
+  public get UnitConversions(): UnitsConversion[] {
+    return this._unitsConversion;
+  }
+
+  public getUnits(): { [key: number]: Unit } {
+    return this._units.value;
   }
 
   private loadFromBrowserCache(): void {
@@ -144,6 +155,28 @@ export class SharedDataService {
       const units = JSON.parse(unitsData) as UnitsCache;
       this._unitsEtag = units.etag;
       this._units.next(units.units);
+
+      this._unitsConversion = [];
+      Object.values(units.units).forEach((unit) => {
+        if (unit.savedAs > 0 && units.units[unit.savedAs] !== undefined) {
+          this._unitsConversion.push({
+            from: unit,
+            to: units.units[unit.savedAs],
+            fromId: unit.id,
+            toId: units.units[unit.savedAs].id,
+            fromQuantity: 1,
+            toQuantity: unit.savedAsFactor
+          });
+          this._unitsConversion.push({
+            from: units.units[unit.savedAs],
+            to: unit,
+            fromId: units.units[unit.savedAs].id,
+            toId: unit.id,
+            fromQuantity: unit.savedAsFactor,
+            toQuantity: 1
+          });
+        }
+      });
     }
   }
 
@@ -357,4 +390,13 @@ type RecipeUpdatedEvent = {
 type UnitsCache = {
   units: { [key: number]: Unit };
   etag?: string;
+}
+
+export type UnitsConversion = {
+  from: Unit;
+  to: Unit;
+  fromId: number;
+  toId: number;
+  fromQuantity: number;
+  toQuantity: number;
 }

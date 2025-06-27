@@ -13,7 +13,9 @@
     <h3 class="pb-3">
         {{ recipe.localization[langCodeVisible()].title }}
     </h3>
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
+
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 pb-3">
+        <!-- Header div with description and pictures -->
         <div>
             @if (langCode() !== recipe.userLocale) {
             <div class="flex flex-row pb-3">
@@ -37,6 +39,54 @@
         <div>
             gallery goes here....
         </div>
+        <!-- Header div with description and pictures -->
+    </div>
+
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 pb-3">
+        <!-- Div with ingredients and preparation steps -->
+        <div>
+            <h4>
+                <fa-icon [icon]="icons.ingredients" class="me-2"></fa-icon>
+                {{ Locale.recipeIngredients.title }}
+            </h4>
+            <p>{{ LocaleReplace(Locale.recipeIngredients.description[recipe.servingsCount === 1 ? 0 : 1],
+                [recipe.servingsCount]) }}</p>
+
+            <div class="bg-navbar-back text-navbar rounded-md p-2 text-sm">
+                <h5 class="text-lg!">
+                    <fa-icon [icon]="icons.calc" class="me-2"></fa-icon>
+                    {{ Locale.recipeIngredients.calculator.title }}
+                </h5>
+                <p>{{ Locale.recipeIngredients.calculator.description }}</p>
+                <div class="flex row items-center justify-center text-base!">
+                    <button class="btn-green me-5" [ngClass]="{ invisible: calculatorServings === recipe.servingsCount}"
+                        (click)="onSetServingsCount(recipe.servingsCount)">
+                        <fa-icon [icon]="icons.reset"></fa-icon>
+                    </button>
+
+                    <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings - 1)">
+                        <fa-icon [icon]="icons.calcMinus"></fa-icon>
+                    </button>
+
+                    <input class="self-stretch" type="number" min="1" max="100" step="1"
+                        [(ngModel)]="calculatorServings" />
+
+                    <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings + 1)">
+                        <fa-icon [icon]="icons.calcPlus"></fa-icon>
+                    </button>
+
+                    <div>
+                        {{ Locale.recipeIngredients.calculator.servings[calculatorServings === 1 ? 0 : 1] }}
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+        <div>
+
+        </div>
+        <!-- Div with ingredients and preparation steps -->
     </div>
 </div>
 }
