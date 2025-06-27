@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Category, Recipe, RecipePicture, Unit } from '../types';
-import { HttpStatusCode } from '@angular/common/http';
+import { IdbRecipe, IdbService } from './idb.service';
 import { WebSocketService, WsMessage } from './web-socket.service';
-import { IdbService } from './idb.service';
 
 @Injectable({
   providedIn: 'root'
@@ -82,13 +81,34 @@ export class SharedDataService {
     localStorage.removeItem('kbUnits');
   }
 
-  public getRecipe(id: number, reload: boolean = true): Promise<any> {
-    if (reload) {
-      setTimeout(() => {
+  public getRecipe(id: number, reload: boolean = true): Promise<IdbRecipe> {
+    return new Promise((resolve, reject) => {
+      this.indexDbService.GetRecipe(id).then((recipe) => {
+        setTimeout(() => {
+          this.reloadRecipe(id);
+        }, 10);
+        resolve(recipe);
+      }).catch((err) => {
+        let sub: Subscription | undefined = this.RecipeEvents.subscribe((rec) => {
+          if (!rec || rec.id !== id)
+            return;
+          resolve({
+            id: rec.id,
+            etag: rec.etag ?? rec.recipe.modified,
+            data: rec.recipe
+          });
+          sub?.unsubscribe();
+          sub = undefined;
+        });
         this.reloadRecipe(id);
-      }, 10);
-    }
-    return this.indexDbService.GetRecipe(id);
+        setTimeout(() => {
+          if (sub) {
+            reject('Timeout loading recipe');
+            sub.unsubscribe();
+          }
+        }, 3500);
+      });
+    });
   }
 
   private loadFromBrowserCache(): void {

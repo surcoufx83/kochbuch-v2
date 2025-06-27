@@ -51,7 +51,6 @@ export class RecipeComponent implements OnDestroy, OnInit {
   ngOnInit(): void {
 
     this.subs.push(this.route.params.subscribe((params) => {
-      console.log(params)
       this.routeRecipeId = params['id'] ? +params['id'] : undefined;
       if (this.routeRecipeId === undefined) {
         this.router.navigate(['/']);
@@ -63,7 +62,7 @@ export class RecipeComponent implements OnDestroy, OnInit {
     this.subs.push(this.sharedDataService.RecipeEvents.subscribe((event) => {
       if (event === false || event.id !== this.routeRecipeId || !this.recipe || event.id !== this.recipe.id || event.etag !== this.recipe.modified)
         return;
-      console.log(event)
+
       this.loadRecipeById(this.routeRecipeId);
     }));
 
@@ -75,13 +74,10 @@ export class RecipeComponent implements OnDestroy, OnInit {
   }
 
   loadRecipeById(id: number) {
-    console.log(`RecipeComponent::loadRecipeById(${id})`);
-
     this.sharedDataService.getRecipe(id)
       .then((data: { id: number, etag: string, data: Recipe }) => {
         if (!this.recipe || this.recipe.id !== data.data.id || this.recipe.modified !== data.data.modified) {
           this.recipe = data.data;
-          console.log(this.recipe);
         }
       })
       .catch((err) => {

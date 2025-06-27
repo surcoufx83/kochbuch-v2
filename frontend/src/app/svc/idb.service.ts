@@ -20,7 +20,7 @@ export class IdbService {
     }, 0);
   }
 
-  public GetRecipe(id: number): Promise<any> {
+  public GetRecipe(id: number): Promise<IdbRecipe> {
     return new Promise((resolve, reject) => {
       const dbRequest = indexedDB.open(this.dbname);
 
@@ -104,4 +104,10 @@ export class IdbService {
     }
   }
 
+}
+
+export type IdbRecipe = {
+  id: number;
+  etag: string;
+  data: Recipe;
 }
