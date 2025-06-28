@@ -110,13 +110,23 @@ export const KB_De: L10nLocale = {
         description: "Dieses Rezept wurde von dir selbst erstellt. Du kannst es jederzeit bearbeiten oder die Sichtbarkeit anpassen. Die entsprechenden Optionen findest du weiter unten nach den Zubereitungsschritten.",
         gothereLink: "Dahin springen"
     },
+    recipePreparation: {
+        title: "Zubereitung",
+        stepFormat: "[0]. [1]",
+        stepFallback: "Schritt",
+    },
     recipePreparationTime: {
         title: "Zubereitungsdauer",
         items: {
-            cooking: ["Koch-/Backzeit", "Kochen/Backen"],
-            preparing: ["Vorbereitungszeit", "Vorbereiten"],
+            cooking: ["Koch-/Backzeit", "[0] Kochen/Backen"],
+            preparing: ["Vorbereitungszeit", "[0] Zubereitung"],
             total: "Gesamtzeit",
-            waiting: ["Ruhezeit", "Ruhen"],
-        }
+            waiting: ["Ruhezeit", "[0] Ruhe"],
+        },
+        units: {
+            days: ['1 Tag', '[0] Tage'],
+            hours: ['1 Std.', '[0] Std.'],
+            minutes: ['1 Min.', '[0] Min.'],
+        },
     },
 }

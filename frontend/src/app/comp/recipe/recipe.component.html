@@ -28,7 +28,7 @@
     </div>
     }
 
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 mb-5">
         <!-- Header div with description and pictures -->
 
         <div class="md:order-last">
@@ -56,7 +56,8 @@
 
         <div class="md:order-first">
 
-            <p><!-- recipe description -->
+            <p class="striped rounded-md px-3"><!-- recipe description -->
+                <fa-icon [icon]="icons.quote" class="me-2"></fa-icon>
                 {{ recipe.localization[langCodeVisible()].description }}
             </p><!-- recipe description -->
 
@@ -149,8 +150,63 @@
         <!-- Header div with description and pictures -->
     </div>
 
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
+    <div class="">
         <!-- Div with ingredients and preparation steps -->
+
+        <section>
+            <h4>
+                <fa-icon [icon]="icons.preparation" class="me-2"></fa-icon>
+                {{ Locale.recipePreparation.title }}
+            </h4>
+
+            @for (item of steps(); track $index) {
+
+            <section class="striped rounded-md px-3">
+                <h5>
+                    {{ LocaleReplace(Locale.recipePreparation.stepFormat, [ $index + 1,
+                    item.localization[langCode()].title ? item.localization[langCode()].title :
+                    item.localization['de'].title ? item.localization['de'].title :
+                    Locale.recipePreparation.stepFallback]) }}
+                </h5>
+
+                @if (item.timing.total !== null && item.timing.total > 0) {
+                <p class="text-sm" [ngClass]="{ 'mb-1!': (item.ingredients?.length ?? 0 > 0) }">
+                    <fa-icon [icon]="icons.clock" class="me-1"></fa-icon>
+                    @if (item.timing.preparing !== null && item.timing.preparing > 0) {
+                    {{ LocaleReplace(Locale.recipePreparationTime.items.preparing[1],
+                    [FormatDuration(item.timing.preparing)]) }}
+                    }
+                    @if (item.timing.waiting !== null && item.timing.waiting > 0) {
+                    {{ LocaleReplace(Locale.recipePreparationTime.items.waiting[1],
+                    [FormatDuration(item.timing.waiting)]) }}
+                    }
+                    @if (item.timing.cooking !== null && item.timing.cooking > 0) {
+                    {{ LocaleReplace(Locale.recipePreparationTime.items.cooking[1],
+                    [FormatDuration(item.timing.cooking)]) }}
+                    }
+                </p>
+                }
+
+                @if ((item.ingredients?.length ?? 0) > 0) {
+                <p class="text-sm">
+                    <fa-icon [icon]="icons.ingredients" class="me-1"></fa-icon>
+                    @for (ingitem of item.ingredients; track $index) {
+                    {{ ingitem.displayStr }} {{ ingitem.localization[langCode()].title ?
+                    ingitem.localization[langCode()].title :
+                    ingitem.localization[recipe.userLocale].title }}{{ ($index < item.ingredients!.length - 1) ? ';'
+                        : '' }} } </p>
+                        }
+
+                        <p>
+                            {{ item.localization[langCode()].instruct ? item.localization[langCode()].instruct :
+                            item.localization[recipe.userLocale].instruct }}
+                        </p>
+
+            </section>
+
+            }
+
+        </section>
 
         <!-- Div with ingredients and preparation steps -->
     </div>

@@ -96,23 +96,19 @@ export class L10nService {
     let d = 0;
     let h = 0;
 
-    while (m > 1440) {
+    while (m >= 1440) {
       d++;
       m -= 1440;
     }
-    while (m > 60) {
+    while (m >= 60) {
       h++;
       m -= 60;
     }
 
-    const strvalue = formatDuration({
-      minutes: m,
-      hours: h,
-      days: d,
-    }, {
-      locale: this.availableLocales[this.LangCode].datefns ?? FNS_De,
-      format: ['days', 'hours', 'minutes']
-    });
+    let strvalue =
+      d > 0 ? this.Replace(this.Locale.recipePreparationTime.units.days[d === 1 ? 0 : 1], [d]) :
+        h > 0 ? this.Replace(this.Locale.recipePreparationTime.units.hours[h === 1 ? 0 : 1], [h]) :
+          this.Replace(this.Locale.recipePreparationTime.units.minutes[m === 1 ? 0 : 1], [m]);
 
     this.minutesToDurationCache[inMinutes] = {
       duration: {

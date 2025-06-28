@@ -91,6 +91,11 @@ export type L10nLocale = {
         description: string,
         gothereLink: string,
     },
+    recipePreparation: {
+        title: string,
+        stepFormat: string,
+        stepFallback: string,
+    },
     recipePreparationTime: {
         title: string,
         items: {
@@ -99,5 +104,10 @@ export type L10nLocale = {
             total: string,
             waiting: string[],
         },
+        units: {
+            days: string[],
+            hours: string[],
+            minutes: string[],
+        }
     },
 }

@@ -1,5 +1,5 @@
 import { faCloudversify } from '@fortawesome/free-brands-svg-icons';
-import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faCalculator, faCaretLeft, faCaretRight, faCheck, faHeart, faHome, faHurricane, faLanguage, faMinus, faO, faPen, faPenAlt, faPepperHot, faPlus, faPrint, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faCalculator, faCaretLeft, faCaretRight, faCheck, faFireBurner, faHeart, faHome, faHurricane, faLanguage, faMinus, faO, faPen, faPenAlt, faPepperHot, faPlus, faPrint, faQuoteLeft, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
 
 export const IconLib = {
@@ -28,7 +28,9 @@ export const IconLib = {
     menu: faBars,
     menuOpened: faBarsStaggered,
     nextcloud: faCloudversify,
+    preparation: faFireBurner,
     print: faPrint,
+    quote: faQuoteRight,
     recipeNew: faPlus,
     reset: faRotateLeft,
     search: faSearch,

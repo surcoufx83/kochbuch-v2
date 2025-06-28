@@ -324,9 +324,9 @@ func LoadRecipes(db *sqlx.DB) {
 					SourceDescription: recipe.SourceDescriptionFr,
 				},
 			},
-			Categories:     []types.RecipeCategoryitem{},
-			Preparation:    []types.Preparation{},
-			Pictures:       []types.Picture{},
+			Categories:     []*types.RecipeCategoryitem{},
+			Preparation:    []*types.Preparation{},
+			Pictures:       []*types.Picture{},
 			ServingsCount:  recipe.ServingsCount,
 			Difficulty:     recipe.Difficulty,
 			SharedInternal: recipe.SharedInternal,
@@ -366,7 +366,7 @@ func LoadRecipes(db *sqlx.DB) {
 			Id:               &recipeItem.Id,
 			Localization:     &recipeItem.Localization,
 			ModifiedTime:     &recipeItem.ModifiedTime,
-			Pictures:         []types.Picture{},
+			Pictures:         []*types.Picture{},
 			PublishedTime:    &recipeItem.PublishedTime,
 			ServingsCount:    &recipeItem.ServingsCount,
 			SimpleStruct:     true,
@@ -481,7 +481,7 @@ func loadRecipesCategories(db *sqlx.DB) {
 			continue
 		}
 
-		recipe.Categories = append(recipe.Categories, types.RecipeCategoryitem{
+		recipe.Categories = append(recipe.Categories, &types.RecipeCategoryitem{
 			ItemId:  uint16(item.ItemId),
 			UserId:  user.SimpleProfile,
 			Created: item.Created,
@@ -581,7 +581,7 @@ func loadRecipesPreparation(db *sqlx.DB) {
 			recipePreparationIngredients[int32(step.Id)] = recipePreparationIngredients[tempid]
 		}
 
-		recipe.Preparation = append(recipe.Preparation, types.Preparation{
+		step := types.Preparation{
 			Id:          step.Id,
 			Index:       step.Index,
 			Ingredients: recipePreparationIngredients[int32(step.Id)],
@@ -600,11 +600,15 @@ func loadRecipesPreparation(db *sqlx.DB) {
 				},
 			},
 			Timing: types.PreparationTiming{
-				Preparing: step.Preparing,
-				Cooking:   step.Cooking,
-				Waiting:   step.Waiting,
+				Preparing: ConvertTimingValue(step.Preparing),
+				Cooking:   ConvertTimingValue(step.Cooking),
+				Waiting:   ConvertTimingValue(step.Waiting),
 			},
-		})
+		}
+
+		step.Timing.Total = ConvertTotalTimingValue(step.Timing)
+
+		recipe.Preparation = append(recipe.Preparation, &step)
 	}
 
 	// log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
@@ -674,10 +678,10 @@ func loadRecipesPictures(db *sqlx.DB) {
 				Generated:      item.ThbGenerated,
 			},
 		}
-		recipe.Pictures = append(recipe.Pictures, picture)
+		recipe.Pictures = append(recipe.Pictures, &picture)
 
 		if len(recipe.Pictures) == 1 {
-			recipe.SimpleRecipe.Pictures = append(recipe.SimpleRecipe.Pictures, picture)
+			recipe.SimpleRecipe.Pictures = append(recipe.SimpleRecipe.Pictures, &picture)
 		}
 
 		if item.ThbGenerated.Valid {
@@ -791,7 +795,7 @@ func GetRecipeInternal(id uint32) (*types.Recipe, error) {
 func GetPicture(recipe *types.Recipe, pictureId uint32) (int, types.Picture, error) {
 	for i, p := range recipe.Pictures {
 		if p.Id == pictureId {
-			return i, p, nil
+			return i, *p, nil
 		}
 	}
 	return -1, types.Picture{}, errors.New("not found")
@@ -894,7 +898,7 @@ func putRecipeLocalizationPreparation(tx *sql.Tx, recipe *types.Recipe, lang str
 			return false, err
 		}
 
-		putRecipeLocalizationPreparationIngredients(tx, &prep, lang)
+		putRecipeLocalizationPreparationIngredients(tx, prep, lang)
 	}
 
 	return true, nil
@@ -972,7 +976,7 @@ func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, er
 		return false, err
 	}
 
-	recipe.Pictures[i] = picture
+	recipe.Pictures[i] = &picture
 	recipesMutex.Lock()
 	touchRecipe(recipe)
 	recipesCache[recipe.Id] = recipe

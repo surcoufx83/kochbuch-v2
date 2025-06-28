@@ -29,6 +29,16 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-text-ongreen: #f8f9fa;
     }
 
+    .striped {
+        &:nth-of-type(odd) {
+            background-color: rgba($color: #f5eae1, $alpha: 0.05);
+        }
+
+        &:hover {
+            background-color: rgba($color: #f5eae1, $alpha: 0.1);
+        }
+    }
+
     .table>.table-row-group>.table-row {
         &:nth-of-type(odd) {
             background-color: rgba($color: #f5eae1, $alpha: 0.05);
@@ -61,6 +71,16 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-green: #589014;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
+    }
+
+    .striped {
+        &:nth-of-type(odd) {
+            background-color: rgba($color: #141514, $alpha: 0.1);
+        }
+
+        &:hover {
+            background-color: rgba($color: #141514, $alpha: 0.15);
+        }
     }
 
     .table>.table-row-group>.table-row {
@@ -183,6 +203,17 @@ h3,
 
     &:not(.mb-0) {
         margin-bottom: .5rem;
+    }
+}
+
+h4,
+.h4,
+h5,
+.h5,
+h6,
+.h6 {
+    &:not(.mb-0) {
+        margin-bottom: .375rem;
     }
 }
 

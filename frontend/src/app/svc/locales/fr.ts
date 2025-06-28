@@ -110,13 +110,23 @@ export const KB_Fr: L10nLocale = {
         description: "Cette recette a été créée par vous. Vous pouvez la modifier ou en ajuster la visibilité à tout moment. Les options correspondantes se trouvent plus bas, après les étapes de préparation.",
         gothereLink: "Aller directement"
     },
+    recipePreparation: {
+        title: "Préparation",
+        stepFormat: "[0] : [1]",
+        stepFallback: "étape",
+    },
     recipePreparationTime: {
         title: "Temps de préparation",
         items: {
-            cooking: ["Temps de cuisson", "Cuisson"],
-            preparing: ["Temps de préparation", "Préparation"],
+            cooking: ["Temps de cuisson", "[0] cuisson"],
+            preparing: ["Temps de préparation", "[0] préparation"],
             total: "Temps total",
-            waiting: ["Temps de repos", "Repos"]
+            waiting: ["Temps de repos", "[0] repos"]
+        },
+        units: {
+            days: ['1 jour', '[0] jours'],
+            hours: ['1 h', '[0] h'],
+            minutes: ['1 min', '[0] min']
         }
     },
 }

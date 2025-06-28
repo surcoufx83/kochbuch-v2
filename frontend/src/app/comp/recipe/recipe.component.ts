@@ -42,6 +42,10 @@ export class RecipeComponent implements OnDestroy, OnInit {
     this.user.set(this.wsService.GetUser());
   }
 
+  FormatDuration(inMinutes: number): string {
+    return this.l10nService.FormatDuration(inMinutes);
+  }
+
   get Locale(): L10nLocale {
     return this.l10nService.Locale;
   }
@@ -92,7 +96,7 @@ export class RecipeComponent implements OnDestroy, OnInit {
         if (!this.recipe || this.recipe.id !== data.data.id || this.recipe.modified !== data.data.modified) {
           this.recipe = data.data;
           this.calculatorServings = this.recipe.servingsCount;
-          this.ingredientsCalc = new IngredientsCalculator(this.recipe, this.sharedDataService);
+          this.ingredientsCalc = new IngredientsCalculator(this.l10nService, this.recipe, this.sharedDataService);
           this.onSetServingsCount(this.calculatorServings);
         }
       })

@@ -5,7 +5,7 @@ import "time"
 type Recipe struct {
 	AiGenerated      bool                          `json:"aiGenerated"`
 	AiTranslatedTime NullTime                      `json:"localized"`
-	Categories       []RecipeCategoryitem          `json:"categories"`
+	Categories       []*RecipeCategoryitem         `json:"categories"`
 	CreatedTime      time.Time                     `json:"created"`
 	Difficulty       uint8                         `json:"difficulty"`
 	EditedByUserTime NullTime                      `json:"edited"`
@@ -17,8 +17,8 @@ type Recipe struct {
 	ModifiedTime     time.Time                     `json:"modified"`
 	OriginalRecipeId uint32                        `json:"originalRecipeId"`
 	OwnerUserId      NullInt32                     `json:"-"`
-	Pictures         []Picture                     `json:"pictures"`
-	Preparation      []Preparation                 `json:"preparation"`
+	Pictures         []*Picture                    `json:"pictures"`
+	Preparation      []*Preparation                `json:"preparation"`
 	PublishedTime    NullTime                      `json:"published"`
 	ServingsCount    uint8                         `json:"servingsCount"`
 	SharedInternal   bool                          `json:"sharedInternal"`
@@ -36,14 +36,14 @@ type Recipe struct {
 type RecipeSimple struct {
 	AiGenerated      *bool                          `json:"aiGenerated"`
 	AiTranslatedTime *NullTime                      `json:"localized"`
-	Categories       *[]RecipeCategoryitem          `json:"categories"`
+	Categories       *[]*RecipeCategoryitem         `json:"categories"`
 	CreatedTime      *time.Time                     `json:"created"`
 	Difficulty       *uint8                         `json:"difficulty"`
 	EditedByUserTime *NullTime                      `json:"edited"`
 	Id               *uint32                        `json:"id"`
 	Localization     *map[string]RecipeLocalization `json:"localization"`
 	ModifiedTime     *time.Time                     `json:"modified"`
-	Pictures         []Picture                      `json:"pictures"`
+	Pictures         []*Picture                     `json:"pictures"`
 	PublishedTime    *NullTime                      `json:"published"`
 	ServingsCount    *uint8                         `json:"servingsCount"`
 	SimpleStruct     bool                           `json:"simple"`

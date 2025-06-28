@@ -1,4 +1,5 @@
 import { Recipe, RecipeIngredientLocalization, RecipePreparation, RecipePreparationLocalization, RecipeTiming, Unit } from "../types";
+import { L10nService } from "./l10n.service";
 import { SharedDataService, UnitsConversion } from "./shared-data.service";
 
 export class IngredientsCalculator {
@@ -13,6 +14,7 @@ export class IngredientsCalculator {
     private unitWithIncomingConversion: { [key: number]: number }; // conversion to unit id -> index of array
 
     constructor(
+        private l10nService: L10nService,
         private recipe: Recipe,
         sharedDataService: SharedDataService,
     ) {
@@ -53,7 +55,7 @@ export class IngredientsCalculator {
                     displayAsUnit: null,
                     displayAsUnitId: null,
                     displayQuantity: null,
-                    displayStr: ''
+                    displayStr: this.l10nService.FormatIngredient(ing.quantity, this.units[ing.unitId ?? 0] ?? null),
                 }
                 this.convertToBestUnit(copying);
                 copystep.ingredients!.push(copying);
@@ -68,6 +70,7 @@ export class IngredientsCalculator {
             ing.displayAsUnit = ing.unit;
             ing.displayAsUnitId = ing.unitId;
             ing.displayQuantity = ing.calcQuantity ?? ing.baseQuantity;
+            ing.displayStr = this.l10nService.FormatIngredient(ing.calcQuantity ?? ing.baseQuantity, this.units[ing.unitId ?? 0] ?? null)
             return;
         }
 
@@ -78,12 +81,15 @@ export class IngredientsCalculator {
             ing.displayAsUnit = ing.unit;
             ing.displayAsUnitId = ing.unitId;
             ing.displayQuantity = ing.calcQuantity ?? ing.baseQuantity;
+            ing.displayStr = this.l10nService.FormatIngredient(ing.calcQuantity ?? ing.baseQuantity, this.units[ing.unitId ?? 0] ?? null)
             return;
         }
 
         ing.displayQuantity = ing.calcQuantity / convout.fromQuantity * convout.toQuantity;
         ing.displayAsUnitId = convout.toId;
         ing.displayAsUnit = convout.to;
+
+        ing.displayStr = this.l10nService.FormatIngredient(ing.displayQuantity, ing.displayAsUnit);
 
     }
 
