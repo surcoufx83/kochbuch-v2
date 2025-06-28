@@ -13,79 +13,145 @@
     <h3 class="pb-3">
         {{ recipe.localization[langCodeVisible()].title }}
     </h3>
-
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 pb-3">
-        <!-- Header div with description and pictures -->
+    @if (langCode() !== recipe.userLocale) {
+    <div class="flex flex-row mb-3 italic">
         <div>
-            @if (langCode() !== recipe.userLocale) {
-            <div class="flex flex-row pb-3">
-                <div>
-                    <span class="fi me-2"
-                        [ngClass]="recipe.userLocale === 'en' ? 'fi-eu' : 'fi-'+recipe.userLocale"></span>
-                </div>
-                <div>
-                    {{ LocaleReplace(Locale.recipe.aiLocalizedContentWithSourceLocale, [
-                    Locale.recipe.aiLocalizedContentSourceLocale[recipe.userLocale]]) }}
-                    <button class="text-link" (click)="onToggleLocalization(!localized())">
-                        {{ Locale.recipe.aiLocalizationSwitch[localized() ? 0 : 1] }}
-                    </button>
-                </div>
-            </div>
-            }
-            <p>
-                {{ recipe.localization[langCodeVisible()].description }}
-            </p>
+            <span class="fi me-2" [ngClass]="recipe.userLocale === 'en' ? 'fi-eu' : 'fi-'+recipe.userLocale"></span>
         </div>
         <div>
-            gallery goes here....
+            {{ LocaleReplace(Locale.recipe.aiLocalizedContentWithSourceLocale, [
+            Locale.recipe.aiLocalizedContentSourceLocale[recipe.userLocale]]) }}
+            <button class="text-link" (click)="onToggleLocalization(!localized())">
+                {{ Locale.recipe.aiLocalizationSwitch[localized() ? 0 : 1] }}
+            </button>
+        </div>
+    </div>
+    }
+
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
+        <!-- Header div with description and pictures -->
+
+        <div class="md:order-last">
+
+            <div class="mb-3"><!-- gallery -->
+                gallery goes here....
+
+            </div><!-- gallery -->
+
+            <div class="flex flex-row justify-center items-center mb-3"><!-- function buttons below gallery -->
+                <button class="btn-green mx-2">
+                    <fa-icon [icon]="icons.print" class="me-1"></fa-icon>
+                    Print
+                </button>
+                <button class="btn-green mx-2">
+                    <fa-icon [icon]="icons.share" class="me-1"></fa-icon>
+                    Share
+                </button>
+                <button class="btn-green mx-2">
+                    <fa-icon [icon]="icons.like" class="me-1"></fa-icon>
+                    Save
+                </button>
+            </div><!-- function buttons below gallery -->
+        </div>
+
+        <div class="md:order-first">
+
+            <p><!-- recipe description -->
+                {{ recipe.localization[langCodeVisible()].description }}
+            </p><!-- recipe description -->
+
+            @if (user() && recipe.user && user()?.id === recipe.user.id) {<!-- user is owner info block-->
+            <div class="font-bold">
+                <fa-icon [icon]="icons.edit" class="me-1"></fa-icon>
+                {{ Locale.recipeOwnerInfo.title }}
+            </div>
+            <p>
+                {{ Locale.recipeOwnerInfo.description }}
+                <button class="text-link ms-1">
+                    <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
+                    {{ Locale.recipeOwnerInfo.gothereLink }}
+                </button>
+            </p>
+            }<!-- user is owner info block-->
+
+            <section><!-- ingredients section-->
+                <h4>
+                    <fa-icon [icon]="icons.ingredients" class="me-2"></fa-icon>
+                    {{ Locale.recipeIngredients.title }}
+                </h4>
+
+                <p>
+                    {{ LocaleReplace(Locale.recipeIngredients.description[recipe.servingsCount === 1 ? 0 : 1],
+                    [recipe.servingsCount]) }}
+                </p>
+
+                <div class="bg-navbar-back text-navbar rounded-md p-2 mb-3 text-sm">
+                    <!-- ingredients calculator block -->
+                    <h5 class="text-lg!">
+                        <fa-icon [icon]="icons.calc" class="me-2"></fa-icon>
+                        {{ Locale.recipeIngredients.calculator.title }}
+                    </h5>
+                    <p>{{ Locale.recipeIngredients.calculator.description }}</p>
+                    <div class="flex row items-center justify-center text-base!">
+                        <button class="btn-green me-5"
+                            [ngClass]="{ invisible: calculatorServings === recipe.servingsCount}"
+                            (click)="onSetServingsCount(recipe.servingsCount)">
+                            <fa-icon [icon]="icons.reset"></fa-icon>
+                        </button>
+
+                        <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings - 1)">
+                            <fa-icon [icon]="icons.calcMinus"></fa-icon>
+                        </button>
+
+                        <input class="self-stretch" type="number" min="1" max="100" step="1"
+                            [(ngModel)]="calculatorServings" (keyup)="onSetServingsCount(calculatorServings)" />
+
+                        <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings + 1)">
+                            <fa-icon [icon]="icons.calcPlus"></fa-icon>
+                        </button>
+
+                        <div>
+                            {{ Locale.recipeIngredients.calculator.servings[calculatorServings === 1 ? 0 : 1] }}
+                        </div>
+
+                    </div>
+                </div><!-- ingredients calculator block -->
+
+                <div class="table rounded-md w-full">
+                    <div class="table-header-group">
+                        <div class="table-row">
+                            <div class="table-cell w-[30%] text-right">
+                                {{ Locale.recipeIngredients.table.quantityHeader }}
+                            </div>
+                            <div class="table-cell w-[70%] text-left">
+                                {{ Locale.recipeIngredients.table.nameHeader }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-row-group">
+                        @for (item of ingredients(); track $index) {
+                        <div class="table-row">
+                            <div class="table-cell w-[30%] text-right">
+                                {{ item.displayStr }}
+                            </div>
+                            <div class="table-cell w-[70%] text-left">
+                                {{ item.localization[langCode()].title ? item.localization[langCode()].title :
+                                item.localization[recipe.userLocale].title }}
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+            </section><!-- ingredients section-->
+
         </div>
         <!-- Header div with description and pictures -->
     </div>
 
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 pb-3">
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16">
         <!-- Div with ingredients and preparation steps -->
-        <div>
-            <h4>
-                <fa-icon [icon]="icons.ingredients" class="me-2"></fa-icon>
-                {{ Locale.recipeIngredients.title }}
-            </h4>
-            <p>{{ LocaleReplace(Locale.recipeIngredients.description[recipe.servingsCount === 1 ? 0 : 1],
-                [recipe.servingsCount]) }}</p>
 
-            <div class="bg-navbar-back text-navbar rounded-md p-2 text-sm">
-                <h5 class="text-lg!">
-                    <fa-icon [icon]="icons.calc" class="me-2"></fa-icon>
-                    {{ Locale.recipeIngredients.calculator.title }}
-                </h5>
-                <p>{{ Locale.recipeIngredients.calculator.description }}</p>
-                <div class="flex row items-center justify-center text-base!">
-                    <button class="btn-green me-5" [ngClass]="{ invisible: calculatorServings === recipe.servingsCount}"
-                        (click)="onSetServingsCount(recipe.servingsCount)">
-                        <fa-icon [icon]="icons.reset"></fa-icon>
-                    </button>
-
-                    <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings - 1)">
-                        <fa-icon [icon]="icons.calcMinus"></fa-icon>
-                    </button>
-
-                    <input class="self-stretch" type="number" min="1" max="100" step="1"
-                        [(ngModel)]="calculatorServings" />
-
-                    <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings + 1)">
-                        <fa-icon [icon]="icons.calcPlus"></fa-icon>
-                    </button>
-
-                    <div>
-                        {{ Locale.recipeIngredients.calculator.servings[calculatorServings === 1 ? 0 : 1] }}
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-        <div>
-
-        </div>
         <!-- Div with ingredients and preparation steps -->
     </div>
 </div>

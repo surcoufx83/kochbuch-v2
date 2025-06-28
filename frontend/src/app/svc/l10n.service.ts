@@ -6,6 +6,7 @@ import { KB_En } from './locales/en';
 import { KB_Fr } from './locales/fr';
 import { enUS as FNS_En, de as FNS_De, fr as FNS_Fr, Locale } from 'date-fns/locale';
 import { Duration, format, formatDate, formatDuration, parseISO } from 'date-fns';
+import { Unit } from '../types';
 
 @Injectable({
   providedIn: 'root'
@@ -123,6 +124,50 @@ export class L10nService {
     };
 
     return strvalue;
+  }
+
+  public FormatIngredient(quantity: number | null, unit: Unit | null): string {
+    if ((quantity === null || quantity === 0) && unit === null)
+      return '';
+
+    if (quantity !== null && unit === null) {
+      if (quantity === 0)
+        return '';
+    }
+
+    if ((quantity === null || quantity === 0) && unit !== null) {
+      return `${unit?.localization[this.userLocaleStr].plural}`;
+    }
+
+    quantity = quantity!;
+    const floored = Math.floor(quantity);
+    const decimals = quantity - floored;
+    const unitstr = decimals === 1.0 ?
+      (unit?.localization[this.userLocaleStr].singular ?? unit?.localization['de'].singular ?? '') :
+      (unit?.localization[this.userLocaleStr].plural ?? unit?.localization['de'].plural ?? '');
+
+    if (unit === null || unit?.showAsFraction) {
+      if (decimals === .25) {
+        return `${floored === 0 ? '' : this.FormatNumber(floored, {})}¼  ${unitstr}`;
+      }
+      if (decimals === .5) {
+        return `${floored === 0 ? '' : this.FormatNumber(floored, {})}½ ${unitstr}`;
+      }
+      if (decimals === .75) {
+        return `${floored === 0 ? '' : this.FormatNumber(floored, {})}¾ ${unitstr}`;
+      }
+      if (decimals > .3 && decimals < .35) {
+        return `${floored === 0 ? '' : this.FormatNumber(floored, {})}⅓ ${unitstr}`;
+      }
+    }
+
+    if (floored === 0 && (unit?.decimalPlaces ?? 0) === 0) {
+      return `<${this.FormatNumber(1, {})} ${unitstr}`;
+    }
+
+    return `${this.FormatNumber(quantity!, {
+      maximumFractionDigits: unit?.decimalPlaces,
+    })} ${unitstr}`;
   }
 
   public FormatVote(n: number): string {

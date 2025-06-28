@@ -278,7 +278,7 @@ func aiTranslateRecipesLoop() bool {
 
 			for _, l := range Locales {
 				if recipe.UserLocale != l {
-					source, tl, err = aiTranslateRecipe(&recipe, recipe.UserLocale, l)
+					source, tl, err = aiTranslateRecipe(recipe, recipe.UserLocale, l)
 					if err != nil {
 						log.Println("  > Cancelled translation for this recipe")
 						return true
@@ -290,7 +290,7 @@ func aiTranslateRecipesLoop() bool {
 
 		}
 
-		aiApplyTranslations(recipe, source, translations)
+		aiApplyTranslations(*recipe, source, translations)
 	}
 	return true
 }

@@ -73,15 +73,6 @@ export type L10nLocale = {
         loadingFailed: string,
         submittedBy: string,
     },
-    recipePreparationTime: {
-        title: string,
-        items: {
-            cooking: string[],
-            preparing: string[],
-            total: string,
-            waiting: string[],
-        },
-    },
     recipeIngredients: {
         title: string,
         description: string[],
@@ -93,6 +84,20 @@ export type L10nLocale = {
         table: {
             quantityHeader: string,
             nameHeader: string,
+        },
+    },
+    recipeOwnerInfo: {
+        title: string,
+        description: string,
+        gothereLink: string,
+    },
+    recipePreparationTime: {
+        title: string,
+        items: {
+            cooking: string[],
+            preparing: string[],
+            total: string,
+            waiting: string[],
         },
     },
 }

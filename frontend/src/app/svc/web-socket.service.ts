@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { UserSelf } from '../types';
+import { addDays } from 'date-fns';
 
 @Injectable({
   providedIn: 'root'
@@ -55,6 +56,9 @@ export class WebSocketService {
         this.saveSession();
         this._isLoggedIn.next(this.appParams.loggedIn);
         this._user.next(this.appParams.user && this.appParams.loggedIn ? this.appParams.user : null);
+        if (this.appParams.loggedIn && this.appParams.connection.session) {
+          document.cookie = `session=${this.appParams.connection.session}; exires=${addDays(new Date(), 365).toUTCString()}; path=/`;
+        }
         this._isConnected.next(true);
         this.ResendFromQueue();
       }

@@ -31,12 +31,12 @@ var (
 	categoriesEtagStr string
 
 	recipesMutex       sync.RWMutex
-	recipesCache       map[uint32]types.Recipe
+	recipesCache       map[uint32]*types.Recipe
 	recipesEtag        time.Time
 	recipesEtagStr     string
 	publicRecipesCache map[uint32]*types.RecipeSimple
 
-	recipePreparationIngredients map[uint64][]types.Ingredient
+	recipePreparationIngredients map[int32][]types.Ingredient
 
 	unitsMutex   sync.RWMutex
 	unitsCache   map[uint8]types.Unit
@@ -284,8 +284,9 @@ func LoadRecipes(db *sqlx.DB) {
 
 	// Build cache
 	recipesMutex.Lock()
-	recipesCache = make(map[uint32]types.Recipe)
+	recipesCache = make(map[uint32]*types.Recipe)
 	publicRecipesCache = make(map[uint32]*types.RecipeSimple)
+
 	for _, recipe := range recipes {
 
 		// log.Printf("  - %d: %s / %s / %s", recipe.Id, recipe.NameDe, recipe.NameEn, recipe.NameFr)
@@ -355,28 +356,46 @@ func LoadRecipes(db *sqlx.DB) {
 
 		recipeItem.Timing.Total = ConvertTotalTimingValue(recipeItem.Timing)
 
+		recipeItem.SimpleRecipe = types.RecipeSimple{
+			AiGenerated:      &recipeItem.AiGenerated,
+			AiTranslatedTime: &recipeItem.AiTranslatedTime,
+			Categories:       &recipeItem.Categories,
+			CreatedTime:      &recipeItem.CreatedTime,
+			Difficulty:       &recipeItem.Difficulty,
+			EditedByUserTime: &recipeItem.EditedByUserTime,
+			Id:               &recipeItem.Id,
+			Localization:     &recipeItem.Localization,
+			ModifiedTime:     &recipeItem.ModifiedTime,
+			Pictures:         []types.Picture{},
+			PublishedTime:    &recipeItem.PublishedTime,
+			ServingsCount:    &recipeItem.ServingsCount,
+			SimpleStruct:     true,
+			Statistics:       &recipeItem.Statistics,
+			Timing:           &recipeItem.Timing,
+			User:             &recipeItem.User,
+			UserLocale:       &recipeItem.UserLocale,
+		}
+
+		if recipe.SharedPublic {
+			publicRecipesCache[recipe.Id] = &recipeItem.SimpleRecipe
+		}
+
 		if recipe.Modified.After(recipesEtag) {
 			recipesEtag = recipe.Modified
 		}
 
-		recipesCache[recipe.Id] = recipeItem
+		recipesCache[recipe.Id] = &recipeItem
 
 	}
-
-	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
-	recipesMutex.Unlock()
-	// log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
 
 	loadRecipesCategories(db)
 	loadRecipesIngredients(db)
 	loadRecipesPreparation(db)
 	loadRecipesPictures(db)
 
-	for _, recipe := range recipesCache {
-		if recipe.SharedPublic {
-			publicRecipesCache[recipe.Id] = ConvertToRecipeSimple(&recipe)
-		}
-	}
+	// log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
+	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
+	recipesMutex.Unlock()
 
 	log.Printf("Loaded %d recipes into cache", len(recipes))
 	wsNotifyRecipesChanged()
@@ -414,7 +433,7 @@ func ConvertTotalTimingValue(dbvalue types.PreparationTiming) types.NullInt32 {
 	return result
 }
 
-func ConvertToRecipeSimple(r *types.Recipe) *types.RecipeSimple {
+/* func ConvertToRecipeSimple(r *types.Recipe) *types.RecipeSimple {
 	var firstPicture []types.Picture
 	if len(r.Pictures) > 0 {
 		firstPicture = []types.Picture{r.Pictures[0]}
@@ -438,7 +457,7 @@ func ConvertToRecipeSimple(r *types.Recipe) *types.RecipeSimple {
 		ModifiedTime:     r.ModifiedTime,
 		PublishedTime:    r.PublishedTime,
 	}
-}
+} */
 
 func loadRecipesCategories(db *sqlx.DB) {
 	query := "SELECT * FROM `recipe_categories`"
@@ -454,29 +473,34 @@ func loadRecipesCategories(db *sqlx.DB) {
 		log.Fatalf("Failed to load recipes categories: %v", err)
 	}
 
-	recipesMutex.Lock()
 	for _, item := range items {
 		// log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
 		_, user := GetUser(item.UserId)
-		recipe := recipesCache[uint32(item.RecipeId)]
+		recipe, found := recipesCache[uint32(item.RecipeId)]
+		if !found {
+			continue
+		}
+
 		recipe.Categories = append(recipe.Categories, types.RecipeCategoryitem{
 			ItemId:  uint16(item.ItemId),
 			UserId:  user.SimpleProfile,
 			Created: item.Created,
 		})
-		recipesCache[uint32(item.RecipeId)] = recipe
+
+		if item.Created.After(recipesEtag) {
+			recipesEtag = item.Created
+		}
 	}
 
-	recipesMutex.Unlock()
 	// log.Printf("Loaded %d recipes categories into cache", len(items))
 }
 
 func loadRecipesIngredients(db *sqlx.DB) {
-	query := "SELECT * FROM `recipe_ingredients` WHERE `step_id` IS NOT NULL ORDER BY `step_id`, `sortindex`"
+	query := "SELECT * FROM `recipe_ingredients` ORDER BY `step_id`, `sortindex`"
 	var items []struct {
 		Id            uint64            `db:"ingredient_id"`
 		RecipeId      uint32            `db:"recipe_id"`
-		StepId        uint64            `db:"step_id"`
+		StepId        types.NullInt32   `db:"step_id"`
 		UnitId        types.NullInt32   `db:"unit_id"`
 		Index         uint16            `db:"sortindex"`
 		Quantity      types.NullFloat64 `db:"quantity"`
@@ -490,12 +514,17 @@ func loadRecipesIngredients(db *sqlx.DB) {
 		log.Fatalf("Failed to load recipes ingredients: %v", err)
 	}
 
-	recipePreparationIngredients = make(map[uint64][]types.Ingredient)
+	recipePreparationIngredients = make(map[int32][]types.Ingredient)
 
-	recipesMutex.Lock()
 	for _, item := range items {
 		// log.Printf("  - %d < %d: %s", item.StepId, item.Id, item.DescriptionDe)
-		recipePreparationIngredients[item.StepId] = append(recipePreparationIngredients[item.StepId], types.Ingredient{
+
+		stepid := item.StepId.Int32
+		if stepid == 0 {
+			stepid = int32(item.RecipeId) * -1
+		}
+
+		recipePreparationIngredients[stepid] = append(recipePreparationIngredients[stepid], types.Ingredient{
 			Id:        item.Id,
 			SortIndex: item.Index,
 			Quantity:  item.Quantity,
@@ -514,7 +543,6 @@ func loadRecipesIngredients(db *sqlx.DB) {
 		})
 	}
 
-	recipesMutex.Unlock()
 	// log.Printf("Loaded %d recipes preparation steps into cache", len(items))
 }
 
@@ -540,14 +568,23 @@ func loadRecipesPreparation(db *sqlx.DB) {
 		log.Fatalf("Failed to load recipes preparation steps: %v", err)
 	}
 
-	recipesMutex.Lock()
 	for _, step := range steps {
 		// log.Printf("  - %d < %d: %s", step.RecipeId, step.Index, step.TitleDe)
-		recipe := recipesCache[uint32(step.RecipeId)]
+		recipe, found := recipesCache[uint32(step.RecipeId)]
+		if !found {
+			continue
+		}
+
+		tempid := int32(recipe.Id) * -1
+
+		if len(recipePreparationIngredients[tempid]) > 0 && step.Index == 0 {
+			recipePreparationIngredients[int32(step.Id)] = recipePreparationIngredients[tempid]
+		}
+
 		recipe.Preparation = append(recipe.Preparation, types.Preparation{
 			Id:          step.Id,
 			Index:       step.Index,
-			Ingredients: recipePreparationIngredients[step.Id],
+			Ingredients: recipePreparationIngredients[int32(step.Id)],
 			Localization: map[string]types.PreparationLocalization{
 				"de": {
 					Title:        step.TitleDe,
@@ -568,10 +605,8 @@ func loadRecipesPreparation(db *sqlx.DB) {
 				Waiting:   step.Waiting,
 			},
 		})
-		recipesCache[uint32(step.RecipeId)] = recipe
 	}
 
-	recipesMutex.Unlock()
 	// log.Printf("Loaded %d recipes preparation steps into cache", len(steps))
 }
 
@@ -584,7 +619,6 @@ func loadRecipesPictures(db *sqlx.DB) {
 		log.Fatalf("Failed to load recipes pictures: %v", err)
 	}
 
-	recipesMutex.Lock()
 	for _, item := range items {
 		// log.Printf("  - %d < %d", item.RecipeId, item.ItemId)
 		_, user := GetUser(int(item.UserId.Int32))
@@ -602,7 +636,11 @@ func loadRecipesPictures(db *sqlx.DB) {
 			}
 		}
 
-		recipe := recipesCache[uint32(item.RecipeId)]
+		recipe, found := recipesCache[uint32(item.RecipeId)]
+		if !found {
+			continue
+		}
+
 		basename, ext := GetBasenameAndExtension(item.Filename)
 
 		picture := types.Picture{
@@ -637,7 +675,10 @@ func loadRecipesPictures(db *sqlx.DB) {
 			},
 		}
 		recipe.Pictures = append(recipe.Pictures, picture)
-		recipesCache[uint32(item.RecipeId)] = recipe
+
+		if len(recipe.Pictures) == 1 {
+			recipe.SimpleRecipe.Pictures = append(recipe.SimpleRecipe.Pictures, picture)
+		}
 
 		if item.ThbGenerated.Valid {
 			for _, size := range ThumbnailSizes {
@@ -662,9 +703,12 @@ func loadRecipesPictures(db *sqlx.DB) {
 			})
 		}
 
+		if picture.Uploaded.After(recipesEtag) {
+			recipesEtag = picture.Uploaded
+		}
+
 	}
 
-	recipesMutex.Unlock()
 	// log.Printf("Loaded %d recipes categories into cache", len(items))
 }
 
@@ -679,7 +723,7 @@ func GetRecipes(user *types.UserProfile) (map[uint32]*types.RecipeSimple, string
 	userRecipes := make(map[uint32]*types.RecipeSimple)
 	for _, recipe := range recipesCache {
 		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
-			userRecipes[recipe.Id] = ConvertToRecipeSimple(&recipe)
+			userRecipes[recipe.Id] = &recipe.SimpleRecipe
 		}
 	}
 	return userRecipes, recipesEtagStr
@@ -689,53 +733,59 @@ func GetRecipesEtag() string {
 	return recipesEtagStr
 }
 
-func GetRecipe(id uint32, c *gin.Context) (types.Recipe, error) {
-	_, _, user, _ := GetSelf(c)
+func getRecipeCommon(id uint32, user types.UserProfile) (*types.Recipe, error) {
+	fn := fmt.Sprintf("getRecipeCommon(%d, %d, %s)", id, user.Id, user.DisplayName)
 
-	recipesMutex.RLock()
-	defer recipesMutex.RUnlock()
-
-	for _, recipe := range recipesCache {
-		if recipe.Id != id {
-			continue
-		}
-
-		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
-			return recipe, nil
-		}
+	recipe, found := recipesCache[id]
+	if !found {
+		log.Printf("%s: Not found in cache", fn)
+		return nil, errors.New("not found")
 	}
-	return types.Recipe{}, errors.New("not found")
-}
 
-func GetRecipeWs(id uint32, conn *wsConnection) (types.Recipe, error) {
-	_, _, user, _ := GetSelfByState(conn.ConnectionParams.Session)
-
-	recipesMutex.RLock()
-	defer recipesMutex.RUnlock()
-
-	for _, recipe := range recipesCache {
-		if recipe.Id != id {
-			continue
-		}
-
-		if recipe.SharedPublic || recipe.SharedInternal || (recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 == int32(user.Id)) {
-			return recipe, nil
-		}
+	if recipe.SharedPublic {
+		// public available -> ok
+		return recipe, nil
+	} else if user.Id == 0 {
+		// user not logged in - as not public available -> error
+		log.Printf("%s: Not public shared", fn)
+		return nil, errors.New("not found")
 	}
-	return types.Recipe{}, errors.New("not found")
-}
 
-func GetRecipeInternal(id uint32) (types.Recipe, error) {
-	recipesMutex.RLock()
-	defer recipesMutex.RUnlock()
+	// user loggedin
 
-	for _, recipe := range recipesCache {
-		if recipe.Id != id {
-			continue
-		}
+	if recipe.SharedInternal {
+		// internal available -> ok
 		return recipe, nil
 	}
-	return types.Recipe{}, errors.New("not found")
+
+	if recipe.OwnerUserId.Valid && recipe.OwnerUserId.Int32 != int32(user.Id) {
+		// not shared but owner -> ok
+		return recipe, nil
+	}
+
+	log.Printf("%s: No permission", fn)
+	return nil, errors.New("not found")
+}
+
+func GetRecipe(id uint32, c *gin.Context) (*types.Recipe, error) {
+	_, _, user, _ := GetSelf(c)
+	return getRecipeCommon(id, user)
+}
+
+func GetRecipeWs(id uint32, conn *wsConnection) (*types.Recipe, error) {
+	_, _, user, _ := GetSelfByState(conn.ConnectionParams.Session)
+	return getRecipeCommon(id, user)
+}
+
+func GetRecipeInternal(id uint32) (*types.Recipe, error) {
+	recipesMutex.RLock()
+	defer recipesMutex.RUnlock()
+
+	recipe, found := recipesCache[id]
+	if !found {
+		return nil, errors.New("not found")
+	}
+	return recipe, nil
 }
 
 func GetPicture(recipe *types.Recipe, pictureId uint32) (int, types.Picture, error) {
@@ -886,7 +936,7 @@ func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, er
 		return false, err
 	}
 
-	i, picture, err := GetPicture(&recipe, pictureId)
+	i, picture, err := GetPicture(recipe, pictureId)
 	if err != nil || i == -1 || picture.Id == 0 {
 		return false, err
 	}
@@ -924,7 +974,7 @@ func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, er
 
 	recipe.Pictures[i] = picture
 	recipesMutex.Lock()
-	touchRecipe(&recipe)
+	touchRecipe(recipe)
 	recipesCache[recipe.Id] = recipe
 	recipesMutex.Unlock()
 	log.Printf("  > %v saved to database and updated in cache", picture.FullPath)

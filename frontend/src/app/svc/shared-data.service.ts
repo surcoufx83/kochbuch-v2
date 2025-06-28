@@ -320,6 +320,7 @@ export class SharedDataService {
         if (Object.hasOwn(recipedata, 'error')) {
           return;
         }
+        console.log(recipedata)
         this.indexDbService.PutRecipe(recipedata as Recipe);
         this._recipeUpdated.next({
           id: (recipedata as Recipe).id,

@@ -86,15 +86,6 @@ export const KB_De: L10nLocale = {
         loadingFailed: "Das Rezept konnte nicht geladen werden. Du wirst automatisch auf die Startseite umgeleitet...",
         submittedBy: "Eingetragen von [0]"
     },
-    recipePreparationTime: {
-        title: "Zubereitungsdauer",
-        items: {
-            cooking: ["Koch-/Backzeit", "Kochen/Backen"],
-            preparing: ["Vorbereitungszeit", "Vorbereiten"],
-            total: "Gesamtzeit",
-            waiting: ["Ruhezeit", "Ruhen"],
-        }
-    },
     recipeIngredients: {
         title: "Zutatenliste",
         description: [
@@ -113,5 +104,19 @@ export const KB_De: L10nLocale = {
             quantityHeader: "Mengenangabe",
             nameHeader: "Zutatenbeschreibung",
         },
+    },
+    recipeOwnerInfo: {
+        title: "Bearbeitungshinweis",
+        description: "Dieses Rezept wurde von dir selbst erstellt. Du kannst es jederzeit bearbeiten oder die Sichtbarkeit anpassen. Die entsprechenden Optionen findest du weiter unten nach den Zubereitungsschritten.",
+        gothereLink: "Dahin springen"
+    },
+    recipePreparationTime: {
+        title: "Zubereitungsdauer",
+        items: {
+            cooking: ["Koch-/Backzeit", "Kochen/Backen"],
+            preparing: ["Vorbereitungszeit", "Vorbereiten"],
+            total: "Gesamtzeit",
+            waiting: ["Ruhezeit", "Ruhen"],
+        }
     },
 }

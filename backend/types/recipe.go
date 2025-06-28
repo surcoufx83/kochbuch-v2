@@ -29,25 +29,28 @@ type Recipe struct {
 	Timing           PreparationTiming             `json:"timing"`
 	User             NullUserProfileSimple         `json:"user"`
 	UserLocale       string                        `json:"userLocale"`
+
+	SimpleRecipe RecipeSimple `json:"-"`
 }
 
 type RecipeSimple struct {
-	AiTranslatedTime NullTime                      `json:"localized"`
-	Categories       []RecipeCategoryitem          `json:"categories"`
-	CreatedTime      time.Time                     `json:"created"`
-	Difficulty       uint8                         `json:"difficulty"`
-	EditedByUserTime NullTime                      `json:"edited"`
-	Id               uint32                        `json:"id"`
-	Localization     map[string]RecipeLocalization `json:"localization"`
-	ModifiedTime     time.Time                     `json:"modified"`
-	Pictures         []Picture                     `json:"pictures"`
-	PublishedTime    NullTime                      `json:"published"`
-	ServingsCount    uint8                         `json:"servingsCount"`
-	SimpleStruct     bool                          `json:"simple"`
-	Statistics       RecipeStatistics              `json:"statistics"`
-	Timing           PreparationTiming             `json:"timing"`
-	User             NullUserProfileSimple         `json:"user"`
-	UserLocale       string                        `json:"userLocale"`
+	AiGenerated      *bool                          `json:"aiGenerated"`
+	AiTranslatedTime *NullTime                      `json:"localized"`
+	Categories       *[]RecipeCategoryitem          `json:"categories"`
+	CreatedTime      *time.Time                     `json:"created"`
+	Difficulty       *uint8                         `json:"difficulty"`
+	EditedByUserTime *NullTime                      `json:"edited"`
+	Id               *uint32                        `json:"id"`
+	Localization     *map[string]RecipeLocalization `json:"localization"`
+	ModifiedTime     *time.Time                     `json:"modified"`
+	Pictures         []Picture                      `json:"pictures"`
+	PublishedTime    *NullTime                      `json:"published"`
+	ServingsCount    *uint8                         `json:"servingsCount"`
+	SimpleStruct     bool                           `json:"simple"`
+	Statistics       *RecipeStatistics              `json:"statistics"`
+	Timing           *PreparationTiming             `json:"timing"`
+	User             *NullUserProfileSimple         `json:"user"`
+	UserLocale       *string                        `json:"userLocale"`
 }
 
 type RecipeCategoryitem struct {

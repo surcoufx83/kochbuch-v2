@@ -86,15 +86,6 @@ export const KB_Fr: L10nLocale = {
         loadingFailed: "La recette n'a pas pu être chargée. Vous serez automatiquement redirigé vers la page d'accueil...",
         submittedBy: "Ajouté par [0]"
     },
-    recipePreparationTime: {
-        title: "Temps de préparation",
-        items: {
-            cooking: ["Temps de cuisson", "Cuisson"],
-            preparing: ["Temps de préparation", "Préparation"],
-            total: "Temps total",
-            waiting: ["Temps de repos", "Repos"]
-        }
-    },
     recipeIngredients: {
         title: "Liste des ingrédients",
         description: [
@@ -113,5 +104,19 @@ export const KB_Fr: L10nLocale = {
             quantityHeader: "Quantité",
             nameHeader: "Description de l’ingrédient",
         },
+    },
+    recipeOwnerInfo: {
+        title: "Note de modification",
+        description: "Cette recette a été créée par vous. Vous pouvez la modifier ou en ajuster la visibilité à tout moment. Les options correspondantes se trouvent plus bas, après les étapes de préparation.",
+        gothereLink: "Aller directement"
+    },
+    recipePreparationTime: {
+        title: "Temps de préparation",
+        items: {
+            cooking: ["Temps de cuisson", "Cuisson"],
+            preparing: ["Temps de préparation", "Préparation"],
+            total: "Temps total",
+            waiting: ["Temps de repos", "Repos"]
+        }
     },
 }

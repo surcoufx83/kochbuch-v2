@@ -86,15 +86,6 @@ export const KB_En: L10nLocale = {
         loadingFailed: "The recipe could not be loaded. You will be automatically redirected to the homepage...",
         submittedBy: "Submitted by [0]"
     },
-    recipePreparationTime: {
-        title: "Preparation Time",
-        items: {
-            cooking: ["Cooking/Baking Time", "Cooking/Baking"],
-            preparing: ["Preparation Time", "Preparing"],
-            total: "Total Time",
-            waiting: ["Resting Time", "Resting"]
-        }
-    },
     recipeIngredients: {
         title: "Ingredients List",
         description: [
@@ -113,5 +104,19 @@ export const KB_En: L10nLocale = {
             quantityHeader: "Quantity",
             nameHeader: "Ingredient Description",
         },
+    },
+    recipeOwnerInfo: {
+        title: "Edit Notice",
+        description: "This recipe was created by you. You can edit it or adjust its visibility at any time. The corresponding options can be found further below, after the preparation steps.",
+        gothereLink: "Jump there"
+    },
+    recipePreparationTime: {
+        title: "Preparation Time",
+        items: {
+            cooking: ["Cooking/Baking Time", "Cooking/Baking"],
+            preparing: ["Preparation Time", "Preparing"],
+            total: "Total Time",
+            waiting: ["Resting Time", "Resting"]
+        }
     },
 }

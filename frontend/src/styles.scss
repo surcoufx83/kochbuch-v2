@@ -29,6 +29,16 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-text-ongreen: #f8f9fa;
     }
 
+    .table>.table-row-group>.table-row {
+        &:nth-of-type(odd) {
+            background-color: rgba($color: #f5eae1, $alpha: 0.05);
+        }
+
+        &:hover {
+            background-color: rgba($color: #f5eae1, $alpha: 0.1);
+        }
+    }
+
 }
 
 @media (prefers-color-scheme: light) {
@@ -51,6 +61,16 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-green: #589014;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
+    }
+
+    .table>.table-row-group>.table-row {
+        &:nth-of-type(odd) {
+            background-color: rgba($color: #141514, $alpha: 0.1);
+        }
+
+        &:hover {
+            background-color: rgba($color: #141514, $alpha: 0.15);
+        }
     }
 
 }
@@ -260,6 +280,27 @@ p {
 
 .rounded {
     border-radius: calc(var(--spacing) * 2);
+}
+
+.table {
+
+    border: 1px solid var(--kb-bg-navbar-back-color);
+
+    td,
+    th,
+    .table-cell {
+        padding: .175rem .375rem;
+    }
+
+    >.table-header-group {
+        background-color: var(--kb-bg-navbar-back-color);
+        color: var(--kb-navbar-text-color);
+
+        >.table-row>.table-cell {
+            font-weight: bold;
+        }
+    }
+
 }
 
 .text-link {

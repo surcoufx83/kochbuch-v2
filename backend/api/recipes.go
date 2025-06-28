@@ -54,7 +54,7 @@ func GetRecipePicture(c *gin.Context) {
 		return
 	}
 
-	_, picture, err := services.GetPicture(&recipe, uint32(pictureid))
+	_, picture, err := services.GetPicture(recipe, uint32(pictureid))
 	if err != nil || picture.Id == 0 || picture.FileName != c.Param("filename") {
 		log.Printf("  b> Picture not found: %v", err)
 		c.Status(http.StatusNotFound)
@@ -85,7 +85,7 @@ func GetRecipeThbPicture(c *gin.Context) {
 		return
 	}
 
-	_, picture, err := services.GetPicture(&recipe, uint32(pictureid))
+	_, picture, err := services.GetPicture(recipe, uint32(pictureid))
 	if err != nil || picture.Id == 0 {
 		log.Printf("  b> Picture not found: %v", err)
 		c.Status(http.StatusNotFound)
