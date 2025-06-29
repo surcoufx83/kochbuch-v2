@@ -31,7 +31,7 @@ var upgrader = websocket.Upgrader{
 type wsConnection struct {
 	Connection       *websocket.Conn
 	ConnectionParams AppParams
-	User             types.UserProfile
+	User             *types.UserProfile
 }
 
 type wsIncomingAuthMessage struct {
@@ -66,9 +66,9 @@ type wsErrorContent struct {
 }
 
 type wsHelloContent struct {
-	ConnectionParams AppParams         `json:"connection"`
-	LoggedIn         bool              `json:"loggedIn"`
-	User             types.UserProfile `json:"user"`
+	ConnectionParams AppParams          `json:"connection"`
+	LoggedIn         bool               `json:"loggedIn"`
+	User             *types.UserProfile `json:"user"`
 }
 
 type wsCategoriesContent struct {
@@ -169,7 +169,7 @@ func OnWebsocketConnect(c *gin.Context) {
 	}
 }
 
-func OnUserProfileUpdated(state string, userProfile types.UserProfile) {
+func OnUserProfileUpdated(state string, userProfile *types.UserProfile) {
 	connectionsMutex.Lock()
 	defer connectionsMutex.Unlock()
 	conn := connections[state]
@@ -190,7 +190,7 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 
 	case "bye":
 		_, _ = Logout(conn)
-		OnUserProfileUpdated(conn.ConnectionParams.Session, types.UserProfile{})
+		OnUserProfileUpdated(conn.ConnectionParams.Session, &types.UserProfile{})
 		return
 
 	case "categories_get_all":
@@ -273,7 +273,7 @@ func wsGetRecipe(conn *wsConnection, msg wsMessage) {
 }
 
 func wsGetRecipes(conn *wsConnection) {
-	recipes, etag := GetRecipes(&conn.User)
+	recipes, etag := GetRecipes(conn.User)
 	var content wsRecipesContent = wsRecipesContent{
 		Recipes: recipes,
 		Etag:    etag,
@@ -600,6 +600,27 @@ func wsWelcome(conn *wsConnection) {
 		MsgType: "units_etag",
 		Content: unitsEtagStr,
 	})
+}
+
+func wsWelcomeAgain(user *types.UserProfile) {
+	for _, conn := range connections {
+		if conn.User != nil && conn.User.Id == user.Id {
+			var payload = wsHelloContent{
+				ConnectionParams: conn.ConnectionParams,
+				LoggedIn:         conn.User.Id > 0,
+				User:             conn.User,
+			}
+			jsoncontent, err := json.Marshal(payload)
+			if err != nil {
+				log.Println("Error marshalling recipes listing:", err)
+				return
+			}
+			wsWriteMessage(conn, &wsMessage{
+				MsgType: "hello",
+				Content: string(jsoncontent),
+			})
+		}
+	}
 }
 
 func wsWriteMessage(conn *wsConnection, message *wsMessage) {

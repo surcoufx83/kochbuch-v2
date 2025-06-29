@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"kochbuch-v2-backend/types"
 	"log"
@@ -33,11 +34,11 @@ var (
 	statesCache map[string]dbNextcloudState
 
 	userMutex sync.RWMutex
-	userCache map[int]types.UserProfile
+	userCache map[uint32]*types.UserProfile
 
 	groupsMutex     sync.RWMutex
-	groupsCache     map[int]types.Group
-	groupNamesCache map[string]int
+	groupsCache     map[uint16]types.Group
+	groupNamesCache map[string]uint16
 )
 
 type AppParams struct {
@@ -98,17 +99,42 @@ type nextcloudUserProfile struct {
 }
 
 type dbUserGroup struct {
-	Id      int       `db:"id"`
-	UserId  int       `db:"userid"`
-	GroupId int       `db:"groupid"`
+	Id      uint32    `db:"id"`
+	UserId  uint32    `db:"userid"`
+	GroupId uint16    `db:"groupid"`
 	Granted time.Time `db:"granted"`
+}
+
+func createNewGroup(name string) (int, error) {
+	log.Printf("  > Registering new group: %v", name)
+	query := "INSERT INTO `groups`(`displayname`, `ncname`) VALUES(?, ?)"
+
+	stmt, err := dbPrepareStmt("createNewGroup", query)
+	if err != nil {
+		log.Printf("Failed to prepare INSERT INTO groups query: %v", err)
+		return 0, err
+	}
+
+	result, err := stmt.Exec(name, name)
+	if err != nil {
+		log.Printf("Failed to INSERT INTO groups: %v", err)
+		return 0, err
+	}
+
+	groupid, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("Failed to get id from INSERT INTO groups: %v", err)
+		return 0, err
+	}
+
+	return int(groupid), nil
 }
 
 func generateState(remoteAddr string, userAgent string) (state string, err error) {
 	log.Printf("Generate new state for %v", remoteAddr)
-
 	query := "INSERT INTO `user_login_states`(`remoteaddr`, `useragent`) VALUES(?, ?)"
-	stmt, err := Db.Prepare(query)
+
+	stmt, err := dbPrepareStmt("generateState", query)
 	if err != nil {
 		log.Printf("Failed to prepare user_login_states query: %v", err)
 		return "", err
@@ -168,6 +194,211 @@ func GetApplicationParams(conn *websocket.Conn, state string) (newstate string, 
 		Session:  state,
 	}
 	return state, value, nil
+}
+
+func GetSelf(c *gin.Context) (int, string, *types.UserProfile, error) {
+	state, err := c.Cookie("session")
+
+	if state == "" || err != nil {
+		// No session cookie
+		return http.StatusBadRequest, "", &types.UserProfile{}, err
+	}
+
+	return GetSelfByState(state)
+}
+
+func GetSelfByState(state string) (int, string, *types.UserProfile, error) {
+	if state == "" {
+		// No session cookie
+		return http.StatusBadRequest, "", &types.UserProfile{}, errors.New("invalid request")
+	}
+
+	statesMutex.RLock()
+	clientstate, exists := statesCache[state]
+	statesMutex.RUnlock()
+	if !exists {
+		log.Printf("Cookie not found in cache: %v", state)
+		return http.StatusBadRequest, "", &types.UserProfile{}, nil
+	}
+
+	if !clientstate.UserId.Valid || clientstate.UserId.Int32 == 0 {
+		log.Printf("Cookie does not has loggedin user: %v", state)
+		return http.StatusUnauthorized, "", &types.UserProfile{}, nil
+	}
+
+	user, found := userCache[uint32(clientstate.UserId.Int32)]
+	if !found {
+		return http.StatusUnauthorized, "", &types.UserProfile{}, nil
+	}
+
+	return http.StatusOK, state, user, nil
+}
+
+func GetUser(id int) (int, *types.UserProfile) {
+	user, found := userCache[uint32(id)]
+	if !found {
+		return http.StatusUnauthorized, &types.UserProfile{}
+	}
+	return http.StatusOK, user
+}
+
+func loadUserProfile(state dbNextcloudState) (*types.UserProfile, error) {
+	log.Printf("Getting user profile from Nextcloud instance for state %v", state.State)
+
+	if !state.AccessToken.Valid {
+		log.Printf("  - skipped due to invalid access_token %v", state.AccessToken)
+		return &types.UserProfile{}, nil
+	}
+
+	req, err := http.NewRequest("GET", ncProfileEndpoint, nil)
+	if err != nil {
+		log.Printf("Failed preparing request for user profile: %v", err)
+		return &types.UserProfile{}, err
+	}
+
+	// Set required headers
+	req.Header.Set("Authorization", "Bearer "+state.AccessToken.String)
+	req.Header.Set("OCS-APIRequest", "true")
+
+	log.Printf("Request: %v", req)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Failed sending request for user profile: %v", err)
+		return &types.UserProfile{}, err
+	}
+	defer resp.Body.Close()
+
+	// Check for a successful HTTP status code.
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Unexpected status for user profile: %d  body = %s", resp.StatusCode, string(body))
+		return &types.UserProfile{}, err
+	}
+
+	var profileResp nextcloudUserProfileResponse
+	if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Failed to parse user profile: %d  body = %s", resp.StatusCode, string(body))
+		return &types.UserProfile{}, err
+	}
+
+	log.Printf("User profile: %v", profileResp)
+	var userProfile *types.UserProfile
+	insertedOne := false
+
+	for _, groupname := range profileResp.OCS.Data.Groups {
+		if groupNamesCache[groupname] == 0 {
+			_, err := createNewGroup(groupname)
+			if err != nil {
+				log.Printf("Failed creating new group: %v", err)
+				return &types.UserProfile{}, err
+			}
+			insertedOne = true
+		}
+	}
+	if insertedOne {
+		ncLoadGroupsCache()
+	}
+
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Printf("Failed starting transaction: %v", err)
+		return &types.UserProfile{}, err
+	}
+
+	defer ncLoadUserCache()
+	defer ncLoadStatesCache()
+
+	for _, user := range userCache {
+		if user.UserName == profileResp.OCS.Data.Id {
+			userProfile = user
+			break
+		}
+	}
+
+	if userProfile.Id == 0 {
+		userProfile, err = registerUserProfile(tx, profileResp)
+		if err != nil || userProfile.Id == 0 {
+			_ = tx.Rollback()
+			return &types.UserProfile{}, err
+		}
+	}
+
+	registerUserGroups(tx, userProfile, profileResp.OCS.Data.Groups)
+	if err != nil {
+		_ = tx.Rollback()
+		return &types.UserProfile{}, err
+	}
+
+	query := "UPDATE `user_login_states` SET `userid` = ? WHERE `id` = ? LIMIT 1"
+
+	stmt, err := dbPrepareStmt("registerUserGroups", query)
+	if err != nil {
+		log.Printf("Failed to prepare user_login_states query: %v", err)
+		_ = tx.Rollback()
+		return &types.UserProfile{}, err
+	}
+	stmt = tx.Stmt(stmt)
+
+	_, err = stmt.Exec(userProfile.Id, state.Id)
+	if err != nil {
+		log.Printf("Failed to update user_login_states: %v", err)
+		_ = tx.Rollback()
+		return &types.UserProfile{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		log.Printf("Failed to commit transaction: %v", err)
+		return &types.UserProfile{}, err
+	}
+
+	log.Printf("User profile: %v", userProfile)
+	go OnUserProfileUpdated(state.State, userProfile)
+
+	return userProfile, nil
+
+}
+
+func Logout(conn *wsConnection) (int, error) {
+	code, state, _, err := GetSelfByState(conn.ConnectionParams.Session)
+	if err != nil || code != http.StatusOK || state == "" {
+		return http.StatusAccepted, nil
+	}
+
+	statesMutex.Lock()
+	defer statesMutex.Unlock()
+
+	log.Printf("  > Removing session: %v", state)
+
+	query := "DELETE FROM `user_login_states` WHERE `state` = ? LIMIT 1"
+
+	stmt, err := dbPrepareStmt("Logout", query)
+	if err != nil {
+		log.Printf("Failed to prepare DELETE FROM user_login_states query: %v", err)
+		return http.StatusInternalServerError, err
+	}
+
+	result, err := stmt.Exec(state)
+	if err != nil {
+		log.Printf("Failed to DELETE FROM user_login_states: %v", err)
+		return http.StatusInternalServerError, err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Failed to get rowcount from DELETE FROM user_login_states: %v", err)
+	} else if count != 0 {
+		log.Printf("Rowcount == 0 from DELETE FROM user_login_states: %v", err)
+	}
+
+	delete(statesCache, state)
+
+	return http.StatusAccepted, nil
+
 }
 
 func NcConnect() {
@@ -268,9 +499,47 @@ func NcConnect() {
 
 }
 
-func ncLoadStatesCache() {
+func ncDeleteExpiredStates() {
+	query := "DELETE FROM `user_login_states` WHERE `until` IS NOT NULL AND `until` < current_timestamp()"
 
-	log.Println("Loading existing states (cookies)")
+	result, err := Db.Exec(query)
+	if err != nil {
+		log.Printf("Failed to delete outdated user_login_states: %v", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows > 0 {
+		log.Printf("Deleted %d outdated items from user_login_states", len(statesCache))
+	}
+}
+
+func ncLoadGroupsCache() {
+	// log.Println("Loading registered groups")
+	query := "SELECT * FROM `groups`"
+	var groups []types.Group
+
+	err := Db.Select(&groups, query)
+	if err != nil {
+		log.Fatalf("Failed to load groups: %v", err)
+	}
+
+	// Build cache
+	groupsMutex.Lock()
+	groupsCache = make(map[uint16]types.Group)
+	groupNamesCache = make(map[string]uint16)
+	for _, group := range groups {
+		groupsCache[group.Id] = group
+		groupNamesCache[group.Name] = group.Id
+		// log.Printf("  - Loaded %v", group.Name)
+	}
+	groupsMutex.Unlock()
+
+	log.Printf("Loaded %d groups into cache", len(groupsCache))
+
+}
+
+func ncLoadStatesCache() {
+	//log.Println("Loading existing states (cookies)")
 	query := "SELECT * FROM `user_login_states` WHERE `until` > current_timestamp() OR `granted` IS NOT NULL"
 	var states []dbNextcloudState
 
@@ -284,19 +553,18 @@ func ncLoadStatesCache() {
 	statesCache = make(map[string]dbNextcloudState)
 	for _, state := range states {
 		statesCache[state.State] = state
-		log.Printf("  - Loaded %v", state.State)
+		// log.Printf("  - Loaded %v", state.State)
 	}
 	statesMutex.Unlock()
 
 	log.Printf("Loaded %d login states into cache", len(statesCache))
-	log.Println("")
 
 	go ncDeleteExpiredStates()
 
 }
 
 func ncLoadUserCache() {
-	log.Println("Loading registered users")
+	//log.Println("Loading registered users")
 	query := "SELECT * FROM `users`"
 	var profiles []types.UserProfile
 
@@ -307,28 +575,107 @@ func ncLoadUserCache() {
 
 	// Build cache
 	userMutex.Lock()
-	userCache = make(map[int]types.UserProfile)
+	userCache = make(map[uint32]*types.UserProfile)
 	for _, profile := range profiles {
 		profile.SimpleProfile = types.NullUserProfileSimple{
 			Profile: types.UserProfileSimple{
-				Id:          profile.Id,
-				DisplayName: profile.DisplayName,
+				Id:          &profile.Id,
+				DisplayName: &profile.DisplayName,
 			},
 			Valid: true,
 		}
-		userCache[profile.Id] = profile
-		log.Printf("  - Loaded %v", profile.UserName)
+		userCache[profile.Id] = &profile
+		// log.Printf("  - Loaded %v", profile.UserName)
 	}
-	ncLoadUserGroupsCache()
-	userMutex.Unlock()
 
 	log.Printf("Loaded %d users into cache", len(userCache))
-	log.Println("")
 
+	ncLoadUserGroupsCache()
+	ncLoadUserCollections()
+
+	userMutex.Unlock()
+}
+
+func ncLoadUserCollections() {
+	fn := "ncLoadUserCollections()"
+	//log.Printf("%v: Loading user collections", fn)
+
+	query := "SELECT * FROM `user_collections`"
+	var colls []types.Collection
+
+	err := Db.Select(&colls, query)
+	if err != nil {
+		log.Fatalf("%v: Failed: %v", fn, err)
+	}
+
+	for _, coll := range colls {
+		user, found := userCache[coll.UserId]
+		if !found {
+			log.Fatalf("%v: Loaded collection %d with unknown user %d", fn, coll.Id, coll.UserId)
+		}
+
+		if user.Collections == nil {
+			user.Collections = make(map[uint32]*types.Collection)
+		}
+
+		user.Collections[coll.Id] = &coll
+
+		if coll.Modified.After(user.Modified) {
+			setUserModified(user, coll.Modified)
+		}
+	}
+	log.Printf("Loaded %d user collections into cache", len(colls))
+}
+
+func ncLoadUserCollectionItems() {
+	fn := "ncLoadUserCollectionItems()"
+	//log.Printf("%v: Loading user collection items", fn)
+
+	query := "SELECT `cr`.*, `c`.`user_id` FROM `user_collection_recipes` `cr` JOIN `user_collections` `c` ON `c`.`collection_id` = `cr`.`collection_id`"
+	var items []types.CollectionItem
+
+	err := Db.Select(&items, query)
+	if err != nil {
+		log.Fatalf("%v: Failed: %v", fn, err)
+	}
+
+	userMutex.Lock()
+	defer userMutex.Unlock()
+
+	for _, item := range items {
+		user, found := userCache[item.UserId]
+		if !found {
+			log.Fatalf("%v: Loaded collection item (Collection %d, Recipe %d) with unknown user %d", fn, item.CollectionId, item.RecipeId, item.UserId)
+		}
+
+		if user.Collections == nil {
+			user.Collections = make(map[uint32]*types.Collection)
+		}
+
+		coll, found := user.Collections[item.CollectionId]
+		if !found {
+			log.Fatalf("%v: Loaded collection item (Collection %d, Recipe %d, User %d) but collection is not loaded", fn, item.CollectionId, item.RecipeId, item.UserId)
+		}
+
+		if coll.Items == nil {
+			coll.Items = []types.CollectionItem{}
+		}
+
+		coll.Items = append(coll.Items, item)
+
+		if item.Modified.After(coll.Modified) {
+			setUserCollectionModified(coll, item.Modified)
+
+			if item.Modified.After(user.Modified) {
+				setUserModified(user, item.Modified)
+			}
+		}
+	}
+	log.Printf("Loaded %d collection items into cache", len(items))
 }
 
 func ncLoadUserGroupsCache() {
-	log.Print("Loading usergroups")
+	//log.Print("Loading usergroups")
 	query := "SELECT * FROM `user_groups`"
 	var groups []dbUserGroup
 
@@ -341,49 +688,10 @@ func ncLoadUserGroupsCache() {
 		user := userCache[group.UserId]
 		user.Groups = append(user.Groups, groupsCache[group.GroupId])
 		userCache[group.UserId] = user
-		log.Printf("  - %s > %s", user.UserName, groupsCache[group.GroupId].Name)
+		// log.Printf("  - %s > %s", user.UserName, groupsCache[group.GroupId].Name)
 	}
 
-}
-
-func ncLoadGroupsCache() {
-	log.Println("Loading registered groups")
-	query := "SELECT * FROM `groups`"
-	var groups []types.Group
-
-	err := Db.Select(&groups, query)
-	if err != nil {
-		log.Fatalf("Failed to load groups: %v", err)
-	}
-
-	// Build cache
-	groupsMutex.Lock()
-	groupsCache = make(map[int]types.Group)
-	groupNamesCache = make(map[string]int)
-	for _, group := range groups {
-		groupsCache[group.Id] = group
-		groupNamesCache[group.Name] = group.Id
-		log.Printf("  - Loaded %v", group.Name)
-	}
-	groupsMutex.Unlock()
-
-	log.Printf("Loaded %d groups into cache", len(userCache))
-	log.Println("")
-
-}
-
-func ncDeleteExpiredStates() {
-	query := "DELETE FROM `user_login_states` WHERE `until` IS NOT NULL AND `until` < current_timestamp()"
-
-	result, err := Db.Exec(query)
-	if err != nil {
-		log.Printf("Failed to delete outdated user_login_states: %v", err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows > 0 {
-		log.Printf("Deleted %d outdated items from user_login_states", len(statesCache))
-	}
+	log.Printf("Loaded %d user groups into cache", len(groups))
 }
 
 func NcLoginCallback(state string, code string) (bool, error) {
@@ -408,7 +716,7 @@ func NcLoginCallback(state string, code string) (bool, error) {
 
 	query := "UPDATE `user_login_states` SET `until` = NULL, `granted` = ?, `accesstoken` = ?, `refreshtoken` = ?, `expires` = ? WHERE `id` = ? LIMIT 1"
 
-	stmt, err := Db.Prepare(query)
+	stmt, err := dbPrepareStmt("NcLoginCallback", query)
 	if err != nil {
 		log.Printf("Failed to prepare user_login_states query: %v", err)
 		return false, err
@@ -488,161 +796,15 @@ func ncLoginCallbackSendRequest(code string) (nextcloudTokenResponse, error) {
 	return tokenResp, nil
 }
 
-func loadUserProfile(state dbNextcloudState) (types.UserProfile, error) {
-	log.Printf("Getting user profile from Nextcloud instance for state %v", state.State)
-
-	if !state.AccessToken.Valid {
-		log.Printf("  - skipped due to invalid access_token %v", state.AccessToken)
-		return types.UserProfile{}, nil
-	}
-
-	req, err := http.NewRequest("GET", ncProfileEndpoint, nil)
-	if err != nil {
-		log.Printf("Failed preparing request for user profile: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	// Set required headers
-	req.Header.Set("Authorization", "Bearer "+state.AccessToken.String)
-	req.Header.Set("OCS-APIRequest", "true")
-
-	log.Printf("Request: %v", req)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("Failed sending request for user profile: %v", err)
-		return types.UserProfile{}, err
-	}
-	defer resp.Body.Close()
-
-	// Check for a successful HTTP status code.
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("Unexpected status for user profile: %d  body = %s", resp.StatusCode, string(body))
-		return types.UserProfile{}, err
-	}
-
-	var profileResp nextcloudUserProfileResponse
-	if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("Failed to parse user profile: %d  body = %s", resp.StatusCode, string(body))
-		return types.UserProfile{}, err
-	}
-
-	log.Printf("User profile: %v", profileResp)
-	var userProfile types.UserProfile
-	insertedOne := false
-
-	for _, groupname := range profileResp.OCS.Data.Groups {
-		if groupNamesCache[groupname] == 0 {
-			_, err := createNewGroup(groupname)
-			if err != nil {
-				log.Printf("Failed creating new group: %v", err)
-				return types.UserProfile{}, err
-			}
-			insertedOne = true
-		}
-	}
-	if insertedOne {
-		ncLoadGroupsCache()
-	}
-
-	tx, err := Db.Begin()
-	if err != nil {
-		log.Printf("Failed starting transaction: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	defer ncLoadUserCache()
-	defer ncLoadStatesCache()
-
-	for _, user := range userCache {
-		if user.UserName == profileResp.OCS.Data.Id {
-			userProfile = user
-			break
-		}
-	}
-
-	if userProfile.Id == 0 {
-		userProfile, err = registerUserProfile(tx, profileResp)
-		if err != nil || userProfile.Id == 0 {
-			_ = tx.Rollback()
-			return types.UserProfile{}, err
-		}
-	}
-
-	registerUserGroups(tx, userProfile, profileResp.OCS.Data.Groups)
-	if err != nil {
-		_ = tx.Rollback()
-		return types.UserProfile{}, err
-	}
-
-	query := "UPDATE `user_login_states` SET `userid` = ? WHERE `id` = ? LIMIT 1"
-
-	stmt, err := tx.Prepare(query)
-	if err != nil {
-		log.Printf("Failed to prepare user_login_states query: %v", err)
-		_ = tx.Rollback()
-		return types.UserProfile{}, err
-	}
-
-	_, err = stmt.Exec(userProfile.Id, state.Id)
-	if err != nil {
-		log.Printf("Failed to update user_login_states: %v", err)
-		_ = tx.Rollback()
-		return types.UserProfile{}, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		_ = tx.Rollback()
-		log.Printf("Failed to commit transaction: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	log.Printf("User profile: %v", userProfile)
-	go OnUserProfileUpdated(state.State, userProfile)
-
-	return userProfile, nil
-
-}
-
-func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (types.UserProfile, error) {
-	log.Printf("  > Creating new user profile: %v", profile.OCS.Data.Id)
-
-	query := "INSERT INTO `users`(`cloudid`, `clouddisplayname`, `cloudenabled`, `cloudsync`, `cloudsync_status`, `enabled`) VALUES(?, ?, ?, CURRENT_TIMESTAMP(), 200, ?)"
-
-	stmt, err := tx.Prepare(query)
-	if err != nil {
-		log.Printf("Failed to prepare INSERT INTO users query: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	result, err := stmt.Exec(profile.OCS.Data.Id, profile.OCS.Data.DisplayName, profile.OCS.Data.Enabled, profile.OCS.Data.Enabled)
-	if err != nil {
-		log.Printf("Failed to INSERT INTO users: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	userid, err := result.LastInsertId()
-	if err != nil {
-		log.Printf("Failed to get id from INSERT INTO users: %v", err)
-		return types.UserProfile{}, err
-	}
-
-	return userCache[int(userid)], nil
-
-}
-
-func registerUserGroups(tx *sql.Tx, profile types.UserProfile, groups []string) (bool, error) {
+func registerUserGroups(tx *sql.Tx, profile *types.UserProfile, groups []string) (bool, error) {
 	log.Printf("  > Saving user groups: %v", groups)
 
-	stmt, err := tx.Prepare("DELETE FROM `user_groups` WHERE `userid` = ?")
+	stmt, err := dbPrepareStmt("registerUserGroups_Delete", "DELETE FROM `user_groups` WHERE `userid` = ?")
 	if err != nil {
 		log.Printf("Failed to prepare DELETE FROM user_groups query: %v", err)
 		return false, err
 	}
+	stmt = tx.Stmt(stmt)
 
 	_, err = stmt.Exec(profile.Id)
 	if err != nil {
@@ -658,11 +820,12 @@ func registerUserGroups(tx *sql.Tx, profile types.UserProfile, groups []string) 
 		}
 		group := groupsCache[groupid]
 
-		stmt, err := tx.Prepare("INSERT INTO `user_groups`(`userid`, `groupid`) VALUES(?, ?)")
+		stmt, err := dbPrepareStmt("registerUserGroups_Insert", "INSERT INTO `user_groups`(`userid`, `groupid`) VALUES(?, ?)")
 		if err != nil {
 			log.Printf("Failed to prepare INSERT INTO user_groups query: %v", err)
 			return false, err
 		}
+		stmt = tx.Stmt(stmt)
 
 		_, err = stmt.Exec(profile.Id, group.Id)
 		if err != nil {
@@ -676,105 +839,75 @@ func registerUserGroups(tx *sql.Tx, profile types.UserProfile, groups []string) 
 
 }
 
-func createNewGroup(name string) (int, error) {
-	log.Printf("  > Registering new group: %v", name)
-	query := "INSERT INTO `groups`(`displayname`, `ncname`) VALUES(?, ?)"
+func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (*types.UserProfile, error) {
+	log.Printf("  > Creating new user profile: %v", profile.OCS.Data.Id)
 
-	stmt, err := Db.Prepare(query)
+	query := "INSERT INTO `users`(`cloudid`, `clouddisplayname`, `cloudenabled`, `cloudsync`, `cloudsync_status`, `enabled`) VALUES(?, ?, ?, CURRENT_TIMESTAMP(), 200, ?)"
+
+	stmt, err := dbPrepareStmt("registerUserProfile", query)
 	if err != nil {
-		log.Printf("Failed to prepare INSERT INTO groups query: %v", err)
-		return 0, err
+		log.Printf("Failed to prepare INSERT INTO users query: %v", err)
+		return &types.UserProfile{}, err
+	}
+	stmt = tx.Stmt(stmt)
+
+	result, err := stmt.Exec(profile.OCS.Data.Id, profile.OCS.Data.DisplayName, profile.OCS.Data.Enabled, profile.OCS.Data.Enabled)
+	if err != nil {
+		log.Printf("Failed to INSERT INTO users: %v", err)
+		return &types.UserProfile{}, err
 	}
 
-	result, err := stmt.Exec(name, name)
+	userid, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("Failed to INSERT INTO groups: %v", err)
-		return 0, err
+		log.Printf("Failed to get id from INSERT INTO users: %v", err)
+		return &types.UserProfile{}, err
 	}
 
-	groupid, err := result.LastInsertId()
-	if err != nil {
-		log.Printf("Failed to get id from INSERT INTO groups: %v", err)
-		return 0, err
+	user, found := userCache[uint32(userid)]
+	if !found {
+		return &types.UserProfile{}, errors.New("not found")
 	}
 
-	return int(groupid), nil
+	return user, nil
 }
 
-func GetSelf(c *gin.Context) (int, string, types.UserProfile, error) {
-	state, err := c.Cookie("session")
+func setUserCollectionModified(coll *types.Collection, time time.Time) {
+	fn := fmt.Sprintf("setUserCollectionModified(%d, %s)", coll.Id, time)
+	log.Print(fn)
+	query := "UPDATE `user_collections` SET `modified` = ? WHERE `collection_id` = ?"
 
-	if state == "" || err != nil {
-		// No session cookie
-		return http.StatusBadRequest, "", types.UserProfile{}, err
+	stmt, err := dbPrepareStmt("setUserCollectionModified", query)
+	if err != nil {
+		log.Printf("%s: Failed to prepare stmt: %v", fn, err)
+		return
 	}
 
-	return GetSelfByState(state)
+	_, err = stmt.Exec(time, coll.Id)
+	if err != nil {
+		log.Printf("%s: Failed to exec stmt: %v", fn, err)
+		return
+	}
+
+	coll.Modified = time
 }
 
-func GetSelfByState(state string) (int, string, types.UserProfile, error) {
-	if state == "" {
-		// No session cookie
-		return http.StatusBadRequest, "", types.UserProfile{}, errors.New("invalid request")
-	}
+func setUserModified(user *types.UserProfile, time time.Time) {
+	fn := fmt.Sprintf("setUserModified(%d, %s, %s)", user.Id, user.DisplayName, time)
+	log.Print(fn)
+	query := "UPDATE `users` SET `modified` = ? WHERE `user_id` = ?"
 
-	statesMutex.RLock()
-	clientstate, exists := statesCache[state]
-	statesMutex.RUnlock()
-	if !exists {
-		log.Printf("Cookie not found in cache: %v", state)
-		return http.StatusBadRequest, "", types.UserProfile{}, nil
-	}
-
-	if !clientstate.UserId.Valid || clientstate.UserId.Int32 == 0 {
-		log.Printf("Cookie does not has loggedin user: %v", state)
-		return http.StatusUnauthorized, "", types.UserProfile{}, nil
-	}
-
-	return http.StatusOK, state, userCache[int(clientstate.UserId.Int32)], nil
-}
-
-func GetUser(id int) (int, types.UserProfile) {
-	if userCache[id].Id > 0 {
-		return http.StatusOK, userCache[id]
-	}
-	return http.StatusNotFound, types.UserProfile{}
-}
-
-func Logout(conn *wsConnection) (int, error) {
-	code, state, _, err := GetSelfByState(conn.ConnectionParams.Session)
-	if err != nil || code != http.StatusOK || state == "" {
-		return http.StatusAccepted, nil
-	}
-
-	statesMutex.Lock()
-	defer statesMutex.Unlock()
-
-	log.Printf("  > Removing session: %v", state)
-
-	query := "DELETE FROM `user_login_states` WHERE `state` = ? LIMIT 1"
-
-	stmt, err := Db.Prepare(query)
+	stmt, err := dbPrepareStmt("setUserModified", query)
 	if err != nil {
-		log.Printf("Failed to prepare DELETE FROM user_login_states query: %v", err)
-		return http.StatusInternalServerError, err
+		log.Printf("%s: Failed to prepare stmt: %v", fn, err)
+		return
 	}
 
-	result, err := stmt.Exec(state)
+	_, err = stmt.Exec(time, user.Id)
 	if err != nil {
-		log.Printf("Failed to DELETE FROM user_login_states: %v", err)
-		return http.StatusInternalServerError, err
+		log.Printf("%s: Failed to exec stmt: %v", fn, err)
+		return
 	}
 
-	count, err := result.RowsAffected()
-	if err != nil {
-		log.Printf("Failed to get rowcount from DELETE FROM user_login_states: %v", err)
-	} else if count != 0 {
-		log.Printf("Rowcount == 0 from DELETE FROM user_login_states: %v", err)
-	}
-
-	delete(statesCache, state)
-
-	return http.StatusAccepted, nil
-
+	user.Modified = time
+	go wsWelcomeAgain(user)
 }

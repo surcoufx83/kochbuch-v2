@@ -98,10 +98,12 @@
                     <fa-icon [icon]="icons.print" class="me-1"></fa-icon>
                     Print
                 </button>
-                <button class="btn-green mx-2">
+                @if (recipe.sharedPublic) {
+                <button class="btn-green mx-2" (click)="onShareClick()">
                     <fa-icon [icon]="icons.share" class="me-1"></fa-icon>
-                    Share
+                    {{ Locale.recipe.shareBtn }}
                 </button>
+                }
                 <button class="btn-green mx-2">
                     <fa-icon [icon]="icons.like" class="me-1"></fa-icon>
                     Save
@@ -131,6 +133,14 @@
                 </button>
             </p>
             }<!-- user is owner info block-->
+
+            @if ((recipe.timing.total ?? 0) > 120) {
+            <p class="text-warn rounded-md"><!-- duration waning -->
+                <fa-icon [icon]="icons.attention" class="me-2"></fa-icon>
+                {{ LocaleReplace(Locale.recipePreparationTime.longDurationWarning, [
+                FormatDuration(recipe.timing.total!, true) ]) }}
+            </p><!-- duration waning -->
+            }
 
             <section><!-- ingredients section-->
                 <h4>

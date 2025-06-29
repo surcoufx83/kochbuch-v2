@@ -19,6 +19,7 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-navbar2-back-color: #002448;
         --kb-text-color: #f5eae1;
         --kb-navbar-text-color: #f5eae1;
+        --kb-navbar-link-color: #a2c672;
         --kb-menu-buttons-bg: #00478f;
         --kb-menu-buttons-color: #f5eae1;
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
@@ -64,6 +65,7 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-navbar2-back-color: #003366;
         --kb-text-color: #141514;
         --kb-navbar-text-color: #f5eae1;
+        --kb-navbar-link-color: #a2c672;
         --kb-menu-buttons-bg: #002448;
         --kb-menu-buttons-color: #f5eae1;
         --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
@@ -113,6 +115,10 @@ a {
 
 .bg-navbar-back {
     background-color: var(--kb-bg-navbar-back-color) !important;
+
+    &.text-navbar a {
+        color: var(--kb-navbar-link-color) !important;
+    }
 }
 
 .bg-navbar2-back {

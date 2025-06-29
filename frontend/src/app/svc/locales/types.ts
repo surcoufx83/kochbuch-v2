@@ -72,6 +72,11 @@ export type L10nLocale = {
         isLoading: string,
         loadingFailed: string,
         submittedBy: string,
+        shareBtn: string,
+        share: {
+            title: string,
+            message: string,
+        },
     },
     recipeGallery: {
         noPicturesUploaded: string,
@@ -106,6 +111,7 @@ export type L10nLocale = {
     },
     recipePreparationTime: {
         title: string,
+        longDurationWarning: string,
         items: {
             cooking: string[],
             preparing: string[],

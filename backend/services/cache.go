@@ -391,6 +391,7 @@ func LoadRecipes(db *sqlx.DB) {
 	loadRecipesIngredients(db)
 	loadRecipesPreparation(db)
 	loadRecipesPictures(db)
+	ncLoadUserCollectionItems()
 
 	// log.Printf("Public recipes cache ETag: %v", recipesEtagStr)
 	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipes)))
@@ -762,12 +763,12 @@ func getRecipeCommon(id uint32, user types.UserProfile) (*types.Recipe, error) {
 
 func GetRecipe(id uint32, c *gin.Context) (*types.Recipe, error) {
 	_, _, user, _ := GetSelf(c)
-	return getRecipeCommon(id, user)
+	return getRecipeCommon(id, *user)
 }
 
 func GetRecipeWs(id uint32, conn *wsConnection) (*types.Recipe, error) {
 	_, _, user, _ := GetSelfByState(conn.ConnectionParams.Session)
-	return getRecipeCommon(id, user)
+	return getRecipeCommon(id, *user)
 }
 
 func GetRecipeInternal(id uint32) (*types.Recipe, error) {

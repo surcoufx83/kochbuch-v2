@@ -84,7 +84,12 @@ export const KB_Fr: L10nLocale = {
         },
         isLoading: "Chargement des données de recette en cours...",
         loadingFailed: "La recette n'a pas pu être chargée. Vous serez automatiquement redirigé vers la page d'accueil...",
-        submittedBy: "Ajouté par [0]"
+        submittedBy: "Ajouté par [0]",
+        shareBtn: "Partager",
+        share: {
+            title: "Recette de « [0] » sur kochbuch.mogul.network",
+            message: "Recette de « [0] » sur kochbuch.mogul.network\n\nCette recette et bien d'autres de [1] sont disponibles dans notre livre de cuisine numérique. Bonne cuisine !"
+        },
     },
     recipeGallery: {
         noPicturesUploaded: "Pas encore de photo. Cliquez ici pour en prendre une...",
@@ -125,6 +130,7 @@ export const KB_Fr: L10nLocale = {
     },
     recipePreparationTime: {
         title: "Temps de préparation",
+        longDurationWarning: "Veuillez noter que la durée totale de préparation pour cette recette est d’au moins [0].",
         items: {
             cooking: ["Temps de cuisson", "[0] cuisson"],
             preparing: ["Temps de préparation", "[0] préparation"],
@@ -132,9 +138,9 @@ export const KB_Fr: L10nLocale = {
             waiting: ["Temps de repos", "[0] repos"]
         },
         units: {
-            days: ['1 jour', '[0] jours'],
-            hours: ['1 h', '[0] h'],
-            minutes: ['1 min', '[0] min']
-        }
+            days: ['1 j', '[0] j', '1 jour', '[0] jours'],
+            hours: ['1 h', '[0] h', '1 heure', '[0] heures'],
+            minutes: ['1 min', '[0] min', '1 minute', '[0] minutes']
+        },
     },
 }

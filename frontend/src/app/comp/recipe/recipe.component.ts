@@ -105,8 +105,8 @@ export class RecipeComponent implements OnDestroy, OnInit {
     return ingredients;
   }
 
-  FormatDuration(inMinutes: number): string {
-    return this.l10nService.FormatDuration(inMinutes);
+  FormatDuration(inMinutes: number, longFormat: boolean = false): string {
+    return this.l10nService.FormatDuration(inMinutes, longFormat);
   }
 
   get Locale(): L10nLocale {
@@ -248,6 +248,21 @@ export class RecipeComponent implements OnDestroy, OnInit {
       });
 
     }
+  }
+
+  onShareClick(): void {
+    if (!this.recipe || !this.recipe.sharedPublic)
+      return;
+    console.log({
+      url: window.location.href,
+      title: this.LocaleReplace(this.Locale.recipe.share.title, [this.recipe.localization[this.recipe.localized ? this.langCodeVisible() : this.recipe.userLocale].title]),
+      text: this.LocaleReplace(this.Locale.recipe.share.message, [this.recipe.user?.displayname]),
+    })
+    navigator.share({
+      url: window.location.href,
+      title: this.LocaleReplace(this.Locale.recipe.share.title, [this.recipe.localization[this.recipe.localized ? this.langCodeVisible() : this.recipe.userLocale].title]),
+      text: this.LocaleReplace(this.Locale.recipe.share.message, [this.recipe.localization[this.recipe.localized ? this.langCodeVisible() : this.recipe.userLocale].title, this.recipe.user?.displayname]),
+    });
   }
 
   onSetServingsCount(value: number): void {

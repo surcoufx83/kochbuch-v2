@@ -88,7 +88,7 @@ export class L10nService {
     return n.toLocaleString(this.LangCode, o);
   }
 
-  public FormatDuration(inMinutes: number): string {
+  public FormatDuration(inMinutes: number, longFormat: boolean = false): string {
     if (this.minutesToDurationCache[inMinutes])
       return this.minutesToDurationCache[inMinutes].uivalue;
 
@@ -106,9 +106,9 @@ export class L10nService {
     }
 
     let strvalue =
-      d > 0 ? this.Replace(this.Locale.recipePreparationTime.units.days[d === 1 ? 0 : 1], [d]) :
-        h > 0 ? this.Replace(this.Locale.recipePreparationTime.units.hours[h === 1 ? 0 : 1], [h]) :
-          this.Replace(this.Locale.recipePreparationTime.units.minutes[m === 1 ? 0 : 1], [m]);
+      d > 0 ? this.Replace(this.Locale.recipePreparationTime.units.days[(d === 1 ? 0 : 1) + (longFormat ? 2 : 0)], [d]) :
+        h > 0 ? this.Replace(this.Locale.recipePreparationTime.units.hours[(h === 1 ? 0 : 1) + (longFormat ? 2 : 0)], [h]) :
+          this.Replace(this.Locale.recipePreparationTime.units.minutes[(m === 1 ? 0 : 1) + (longFormat ? 2 : 0)], [m]);
 
     this.minutesToDurationCache[inMinutes] = {
       duration: {
