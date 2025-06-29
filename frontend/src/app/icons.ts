@@ -1,6 +1,6 @@
 import { faCloudversify } from '@fortawesome/free-brands-svg-icons';
-import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faCalculator, faCaretLeft, faCaretRight, faCheck, faFireBurner, faHeart, faHome, faHurricane, faLanguage, faMinus, faO, faPen, faPenAlt, faPepperHot, faPlus, faPrint, faQuoteLeft, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
-import { faClock } from '@fortawesome/free-regular-svg-icons';
+import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faCalculator, faCamera, faCaretLeft, faCaretRight, faCheck, faCircleNotch, faCloudArrowUp, faFireBurner, faHeart, faHome, faHurricane, faLanguage, faMinus, faO, faPen, faPenAlt, faPepperHot, faPlus, faPrint, faQuoteLeft, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faFaceSadCry, faFaceSadTear } from '@fortawesome/free-regular-svg-icons';
 
 export const IconLib = {
     accountNone: faUser,
@@ -10,6 +10,7 @@ export const IconLib = {
     calc: faCalculator,
     calcMinus: faMinus,
     calcPlus: faPlus,
+    camera: faCamera,
     caretLeft: faCaretLeft,
     caretRight: faCaretRight,
     clock: faClock,
@@ -33,9 +34,11 @@ export const IconLib = {
     quote: faQuoteRight,
     recipeNew: faPlus,
     reset: faRotateLeft,
+    sadFace: faFaceSadTear,
     search: faSearch,
     searchClose: faX,
     searchStart: faCheck,
     share: faShare,
-    spinner: faHurricane
+    spinner: faCircleNotch,
+    upload: faCloudArrowUp,
 };

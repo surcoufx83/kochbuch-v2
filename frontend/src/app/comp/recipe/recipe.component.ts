@@ -18,6 +18,7 @@ import { CalculatorIngredient, CalculatorPreparationStep, IngredientsCalculator 
 export class RecipeComponent implements OnDestroy, OnInit {
 
   calculatorServings = 0;
+  fileProgress = signal<'none' | 'checking' | 'uploading'>('none');
   icons = IconLib;
   ingredients = signal<CalculatorIngredient[]>([]);
   ingredientsCalc?: IngredientsCalculator;
@@ -40,89 +41,6 @@ export class RecipeComponent implements OnDestroy, OnInit {
     private wsService: WebSocketService,
   ) {
     this.user.set(this.wsService.GetUser());
-  }
-
-  FormatDuration(inMinutes: number): string {
-    return this.l10nService.FormatDuration(inMinutes);
-  }
-
-  get Locale(): L10nLocale {
-    return this.l10nService.Locale;
-  }
-
-  public LocaleReplace(content: string, replacements: any[]): string {
-    return this.l10nService.Replace(content, replacements);
-  }
-
-  ngOnDestroy(): void {
-    for (const s of this.subs) {
-      s.unsubscribe();
-    }
-    this.subs = [];
-  }
-
-  ngOnInit(): void {
-
-    this.subs.push(this.route.params.subscribe((params) => {
-      this.routeRecipeId = params['id'] ? +params['id'] : undefined;
-      if (this.routeRecipeId === undefined) {
-        this.router.navigate(['/']);
-        return;
-      }
-      this.loadRecipeById(this.routeRecipeId);
-    }));
-
-    this.subs.push(this.sharedDataService.RecipeEvents.subscribe((event) => {
-      if (event === false || event.id !== this.routeRecipeId || !this.recipe || event.id !== this.recipe.id || event.etag !== this.recipe.modified)
-        return;
-
-      this.loadRecipeById(this.routeRecipeId);
-    }));
-
-    this.subs.push(this.l10nService.userLocale.subscribe((l) => {
-      this.langCode.set(l);
-      this.onToggleLocalization(this.localized());
-    }));
-
-    this.subs.push(this.wsService.User.subscribe((u) => {
-      this.user.set(u);
-    }))
-
-  }
-
-  loadRecipeById(id: number) {
-    this.sharedDataService.getRecipe(id)
-      .then((data: { id: number, etag: string, data: Recipe }) => {
-        if (!this.recipe || this.recipe.id !== data.data.id || this.recipe.modified !== data.data.modified) {
-          this.recipe = data.data;
-          this.calculatorServings = this.recipe.servingsCount;
-          this.ingredientsCalc = new IngredientsCalculator(this.l10nService, this.recipe, this.sharedDataService);
-          this.onSetServingsCount(this.calculatorServings);
-        }
-      })
-      .catch((err) => {
-        console.error(err)
-        this.loadingFailed.set(true);
-        this.wsService.ReportError({
-          url: this.router.url,
-          error: `Recipe with id ${id} not found.`,
-          severity: 'E'
-        });
-        setTimeout(() => {
-          this.router.navigate(['/']);
-        }, 1000);
-      });
-
-  }
-
-  onSetServingsCount(value: number): void {
-    if (value < 1)
-      value = 1;
-    if (value > 100)
-      value = 100;
-    this.calculatorServings = value;
-    this.steps.set(this.ingredientsCalc?.setServings(value) ?? []);
-    this.ingredients.set(this.calcIngredients());
   }
 
   calcIngredients(): CalculatorIngredient[] {
@@ -187,10 +105,177 @@ export class RecipeComponent implements OnDestroy, OnInit {
     return ingredients;
   }
 
+  FormatDuration(inMinutes: number): string {
+    return this.l10nService.FormatDuration(inMinutes);
+  }
+
+  get Locale(): L10nLocale {
+    return this.l10nService.Locale;
+  }
+
+  public LocaleReplace(content: string, replacements: any[]): string {
+    return this.l10nService.Replace(content, replacements);
+  }
+
+  ngOnDestroy(): void {
+    for (const s of this.subs) {
+      s.unsubscribe();
+    }
+    this.subs = [];
+  }
+
+  ngOnInit(): void {
+
+    this.subs.push(this.route.params.subscribe((params) => {
+      this.routeRecipeId = params['id'] ? +params['id'] : undefined;
+      if (this.routeRecipeId === undefined) {
+        this.router.navigate(['/']);
+        return;
+      }
+      this.loadRecipeById(this.routeRecipeId);
+    }));
+
+    this.subs.push(this.sharedDataService.RecipeEvents.subscribe((event) => {
+      if (event === false || event.id !== this.routeRecipeId || !this.recipe || event.id !== this.recipe.id || event.etag === this.recipe.modified)
+        return;
+
+      this.loadRecipeById(this.routeRecipeId);
+    }));
+
+    this.subs.push(this.l10nService.userLocale.subscribe((l) => {
+      this.langCode.set(l);
+      this.onToggleLocalization(this.localized());
+    }));
+
+    this.subs.push(this.wsService.User.subscribe((u) => {
+      this.user.set(u);
+    }))
+
+  }
+
+  loadRecipeById(id: number) {
+    this.sharedDataService.getRecipe(id)
+      .then((data: { id: number, etag: string, data: Recipe }) => {
+        if (!this.recipe || this.recipe.id !== data.data.id || this.recipe.modified !== data.data.modified) {
+          this.recipe = data.data;
+          this.calculatorServings = this.recipe.servingsCount;
+          this.ingredientsCalc = new IngredientsCalculator(this.l10nService, this.recipe, this.sharedDataService);
+          this.onSetServingsCount(this.calculatorServings);
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+        this.loadingFailed.set(true);
+        this.wsService.ReportError({
+          url: this.router.url,
+          error: `Recipe with id ${id} not found.`,
+          severity: 'E'
+        });
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 1000);
+      });
+
+  }
+
+  onPictureUploadChange(event: Event): void {
+    const element = event.currentTarget as HTMLInputElement;
+    let fileList: FileList | null = element.files;
+    if (fileList) {
+      this.fileProgress.set('checking');
+
+      const fileReadPromises: Promise<RecipePictureUploadMsgContent | false>[] = [];
+
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList.item(i);
+        if (!file) continue;
+
+        const fileReadPromise = new Promise<RecipePictureUploadMsgContent | false>((resolve) => {
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+
+            const fileData: RecipePictureUploadMsgContent = {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              base64: base64,
+            };
+
+            resolve(fileData);
+          };
+
+          reader.onerror = () => {
+            console.error("Error reading file:", file.name);
+            resolve(false);
+          };
+
+          reader.onabort = () => {
+            console.warn("File read aborted:", file.name);
+            resolve(false);
+          };
+
+          reader.readAsDataURL(file);
+        });
+
+        fileReadPromises.push(fileReadPromise);
+      }
+
+      // Wait for all file reads to complete
+      Promise.all(fileReadPromises).then((results) => {
+        const validFiles = results.filter((r): r is RecipePictureUploadMsgContent => r !== false);
+
+        const wspayload: RecipePictureUploadMsg = {
+          type: 'recipe_picture_upload',
+          content: JSON.stringify({
+            recipe: this.recipe!.id,
+            files: validFiles,
+          }),
+        };
+
+        this.fileProgress.set('uploading');
+
+        this.wsService.SendMessageAndWait(wspayload).then((result) => {
+          // do nothing.
+        }).catch((err) => {
+          console.log(err)
+        }).finally(() => {
+          this.fileProgress.set('none');
+        })
+
+      });
+
+    }
+  }
+
+  onSetServingsCount(value: number): void {
+    if (value < 1)
+      value = 1;
+    if (value > 100)
+      value = 100;
+    this.calculatorServings = value;
+    this.steps.set(this.ingredientsCalc?.setServings(value) ?? []);
+    this.ingredients.set(this.calcIngredients());
+  }
+
   onToggleLocalization(to: boolean): void {
     this.localized.set(to);
     this.langCodeVisible.set(to === true ? this.langCode() : (this.recipe?.userLocale ?? this.langCode()));
     this.onSetServingsCount(this.calculatorServings);
   }
 
+}
+
+export type RecipePictureUploadMsg = {
+  type: 'recipe_picture_upload',
+  content: string,
+}
+
+export type RecipePictureUploadMsgContent = {
+  name: string,
+  type: string,
+  size: number,
+  base64: string,
 }

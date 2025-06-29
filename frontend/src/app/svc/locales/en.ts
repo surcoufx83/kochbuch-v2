@@ -86,6 +86,14 @@ export const KB_En: L10nLocale = {
         loadingFailed: "The recipe could not be loaded. You will be automatically redirected to the homepage...",
         submittedBy: "Submitted by [0]"
     },
+    recipeGallery: {
+        noPicturesUploaded: "No photo yet. Click here to take one...",
+        uploadBtn: "Upload photo",
+        uploadStatus: {
+            checking: "Checking...",
+            uploading: "Saving...",
+        },
+    },
     recipeIngredients: {
         title: "Ingredients List",
         description: [

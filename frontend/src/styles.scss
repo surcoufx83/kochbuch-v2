@@ -27,6 +27,7 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-green: #589014;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
+        --kb-muted-color: #777;
     }
 
     .striped {
@@ -71,6 +72,7 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-bg-green: #589014;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
+        --kb-muted-color: #555;
     }
 
     .striped {
@@ -135,6 +137,18 @@ body {
 
 .border-right {
     border-right: 1px solid var(--kb-border-color);
+}
+
+.border {
+    border: 1px solid var(--kb-bg-navbar-back-color);
+}
+
+.border-b-none {
+    border-bottom: 0 !important;
+}
+
+.border-t-none {
+    border-top: 0 !important;
 }
 
 button,
@@ -338,6 +352,10 @@ p {
     color: var(--kb-link-color);
 }
 
+.text-muted {
+    color: var(--kb-muted-color);
+}
+
 .text-navbar {
     color: var(--kb-navbar-text-color);
 }
@@ -374,5 +392,27 @@ ul.no-bullets {
 
     h4 {
         font-size: 1.5rem;
+    }
+}
+
+.lightbox-wrapper {
+
+    .pswp__bg {
+        background: rgba($color: #000000, $alpha: .95) !important;
+    }
+
+    .pswp__button--arrow--right,
+    .pswp__button--arrow--left {
+        right: 6px !important;
+        background: none !important;
+        z-index: 999;
+    }
+
+    .pswp__button--arrow--right::before {
+        background-position: -93px -45px !important;
+    }
+
+    .pswp__button--arrow--left::before {
+        background-position: -138px -45px !important;
     }
 }

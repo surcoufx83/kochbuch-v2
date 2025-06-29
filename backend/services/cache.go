@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -678,42 +677,32 @@ func loadRecipesPictures(db *sqlx.DB) {
 				Generated:      item.ThbGenerated,
 			},
 		}
-		recipe.Pictures = append(recipe.Pictures, &picture)
-
-		if len(recipe.Pictures) == 1 {
-			recipe.SimpleRecipe.Pictures = append(recipe.SimpleRecipe.Pictures, &picture)
-		}
-
-		if item.ThbGenerated.Valid {
-			for _, size := range ThumbnailSizes {
-				if !slices.Contains(thbsizes, size) {
-					item.ThbSizes = types.NullString{
-						Valid:  true,
-						String: "[]",
-					}
-					item.ThbGenerated = types.NullTime{
-						Valid: false,
-					}
-				}
-			}
-		}
-
-		if !item.ThbGenerated.Valid {
-			ThumbnailGenerationRequests = append(ThumbnailGenerationRequests, PictureRequiresThumbnail{
-				RecipeId:  picture.RecipeId,
-				PictureId: picture.Id,
-				Picture:   &picture,
-				Index:     picture.Index,
-			})
-		}
-
-		if picture.Uploaded.After(recipesEtag) {
-			recipesEtag = picture.Uploaded
-		}
+		AddPictureToRecipe(recipe, &picture)
 
 	}
 
 	// log.Printf("Loaded %d recipes categories into cache", len(items))
+}
+
+func AddPictureToRecipe(recipe *types.Recipe, picture *types.Picture) {
+	recipe.Pictures = append(recipe.Pictures, picture)
+
+	if len(recipe.Pictures) == 1 {
+		recipe.SimpleRecipe.Pictures = append(recipe.SimpleRecipe.Pictures, picture)
+	}
+
+	if !picture.Dimension.Generated.Valid {
+		ThumbnailGenerationRequests = append(ThumbnailGenerationRequests, PictureRequiresThumbnail{
+			RecipeId:  picture.RecipeId,
+			PictureId: picture.Id,
+			Picture:   picture,
+			Index:     picture.Index,
+		})
+	}
+
+	if picture.Uploaded.After(recipesEtag) {
+		recipesEtag = picture.Uploaded
+	}
 }
 
 func GetRecipes(user *types.UserProfile) (map[uint32]*types.RecipeSimple, string) {
@@ -924,12 +913,15 @@ func putRecipeLocalizationPreparationIngredients(tx *sql.Tx, prep *types.Prepara
 }
 
 func touchRecipe(recipe *types.Recipe) {
-	// log.Println("Updating recipe timestamp")
+	log.Printf("Updating recipe modified from %v to %v", recipe.ModifiedTime, time.Now())
+	log.Printf("RecipesEtag = %v", recipesEtag)
+
 	recipe.ModifiedTime = time.Now()
 	if recipe.ModifiedTime.After(recipesEtag) {
 		recipesEtag = recipe.ModifiedTime
-		recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipesCache)))
 	}
+	recipesEtagStr = hash(recipesEtag.Format(time.RFC3339) + strconv.Itoa(len(recipesCache)))
+	go wsNotifyRecipesChanged()
 }
 
 func GenerateResizedPictureVersions(recipeId uint32, pictureId uint32) (bool, error) {

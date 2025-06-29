@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"reflect"
 )
 
@@ -20,11 +21,30 @@ func (s NullString) MarshalJSON() ([]byte, error) {
 	return []byte("null"), nil
 }
 
+func (ns *NullString) UnmarshalJSON(data []byte) error {
+	// Handle JSON null
+	if string(data) == "null" {
+		ns.String = ""
+		ns.Valid = false
+		return nil
+	}
+
+	// Unmarshal into a string
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("NullString: cannot unmarshal %s: %w", data, err)
+	}
+
+	ns.String = s
+	ns.Valid = true
+	return nil
+}
+
 func (s NullString) Value() (driver.Value, error) {
 	if s.Valid {
 		return s.String, nil
 	}
-	return []byte("null"), nil
+	return nil, nil
 }
 
 func (ns *NullString) Scan(value interface{}) error {

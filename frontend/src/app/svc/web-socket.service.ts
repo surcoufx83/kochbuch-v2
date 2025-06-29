@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { UserSelf } from '../types';
 import { addDays } from 'date-fns';
+import { HttpStatusCode } from '@angular/common/http';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
   providedIn: 'root'
@@ -163,6 +165,48 @@ export class WebSocketService {
     }
   }
 
+  SendMessageAndWait(msg: WsMessage): Promise<[number, any]> {
+    return new Promise<[number, any]>((resolve, reject) => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        reject(HttpStatusCode.ServiceUnavailable);
+        return;
+      }
+
+      if (typeof msg.content !== 'string') {
+        msg.content = JSON.stringify(msg.content);
+      }
+
+      msg.state = uuidv4();
+
+      const sub = this.events.subscribe((ev) => {
+        if (!ev || ev.state !== msg.state)
+          return;
+
+        const content = JSON.parse(ev.content) as WsCommonResponse;
+
+        if (content.error === HttpStatusCode.Accepted) {
+          resolve([HttpStatusCode.Accepted, content]);
+          sub.unsubscribe();
+        }
+        else {
+          resolve([content.error ?? HttpStatusCode.Conflict, content]);
+          sub.unsubscribe();
+        }
+      });
+
+      this.socket.send(JSON.stringify(msg));
+
+      setTimeout(() => {
+        if (sub) {
+          reject(HttpStatusCode.RequestTimeout);
+          sub.unsubscribe();
+        }
+      }, 30000);
+
+    });
+
+  }
+
   ResendFromQueue(): void {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN)
       return;
@@ -181,6 +225,12 @@ export class WebSocketService {
 export type WsMessage = {
   type: string,
   content: any,
+  state?: string,
+}
+
+export type WsCommonResponse = {
+  error?: number,
+  message?: string,
 }
 
 export type WsHelloMessageContent = {

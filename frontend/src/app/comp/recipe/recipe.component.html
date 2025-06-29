@@ -33,8 +33,63 @@
 
         <div class="md:order-last">
 
-            <div class="mb-3"><!-- gallery -->
-                gallery goes here....
+            <div class="image-gallery mb-3"><!-- gallery -->
+
+                @if (recipe.pictures.length > 0) {
+                <div class="images rounded-t-md border border-b-none" [photoGalleryGroup]="{ arrowEl: true }">
+                    @for (item of recipe.pictures; track $index) {
+                    <div class="images-item"
+                        [photoGallery]="'/api/media/uploads/' + recipe.id + '/' + item.id + '/' + item.filename">
+                        @if ($index === 0) {
+                        <img class="rounded-t-md"
+                            [src]="'/api/media/uploads/' + recipe.id + '/' + item.id + '/thb/800/' + item.filename" />
+                        }
+                    </div>
+                    }
+                </div>
+                }
+                @else {
+                <button class="w-full flex flex-col items-center rounded-t-md border border-b-none p-5 text-muted"
+                    (click)="camera.click()" [disabled]="fileProgress() !== 'none'">
+                    <fa-icon
+                        [icon]="fileProgress() === 'none' ? icons.sadFace : fileProgress() === 'checking' ? icons.spinner : icons.upload"
+                        [animation]="fileProgress() === 'none' ? undefined : fileProgress() === 'checking' ? 'spin' : 'beat'"
+                        class="mb-3 text-7xl"></fa-icon>
+                    <div>
+                        @if (fileProgress() === 'none') {
+                        {{ Locale.recipeGallery.noPicturesUploaded }}
+                        }
+                        @else if (fileProgress() === 'checking') {
+                        {{ Locale.recipeGallery.uploadStatus.checking }}
+                        }
+                        @else {
+                        {{ Locale.recipeGallery.uploadStatus.uploading }}
+                        }
+                    </div>
+                </button>
+                }
+                <div
+                    class="flex justify-between align-center rounded-b-md border bg-navbar-back text-navbar px-2 pt-1 text-sm">
+                    <div>
+                        @if (recipe.pictures.length > 0) {
+                        1/{{ recipe.pictures.length }} <a [routerLink]="['/user', recipe.pictures[0].user.id]"
+                            [queryParams]="{ q: recipe.pictures[0].user.displayname }">{{
+                            recipe.pictures[0].user.displayname }}</a>
+                        }
+                    </div>
+                    <div>
+                        @if (recipe.pictures.length > 0) {
+                        <button (click)="camera.click()" [disabled]="fileProgress() !== 'none'">
+                            <fa-icon [icon]="fileProgress() === 'none' ? icons.camera : icons.spinner"
+                                [animation]="fileProgress() === 'none' ? undefined : 'beat'" class="me-1"></fa-icon>
+                            {{ Locale.recipeGallery.uploadBtn }}
+                        </button>
+                        }
+                    </div>
+                </div>
+
+                <input #camera type="file" accept="image/*" multiple capture="environment" class="hidden"
+                    (change)="onPictureUploadChange($event)">
 
             </div><!-- gallery -->
 
@@ -56,10 +111,12 @@
 
         <div class="md:order-first">
 
+            @if (recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description) {
             <p class="striped rounded-md px-3"><!-- recipe description -->
                 <fa-icon [icon]="icons.quote" class="me-2"></fa-icon>
-                {{ recipe.localization[langCodeVisible()].description }}
+                {{ recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description }}
             </p><!-- recipe description -->
+            }
 
             @if (user() && recipe.user && user()?.id === recipe.user.id) {<!-- user is owner info block-->
             <div class="font-bold">
@@ -136,8 +193,7 @@
                                 {{ item.displayStr }}
                             </div>
                             <div class="table-cell w-[70%] text-left">
-                                {{ item.localization[langCode()].title ? item.localization[langCode()].title :
-                                item.localization[recipe.userLocale].title }}
+                                {{ item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title }}
                             </div>
                         </div>
                         }
@@ -164,9 +220,7 @@
             <section class="striped rounded-md px-3">
                 <h5>
                     {{ LocaleReplace(Locale.recipePreparation.stepFormat, [ $index + 1,
-                    item.localization[langCode()].title ? item.localization[langCode()].title :
-                    item.localization['de'].title ? item.localization['de'].title :
-                    Locale.recipePreparation.stepFallback]) }}
+                    item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title]) }}
                 </h5>
 
                 @if (item.timing.total !== null && item.timing.total > 0) {
@@ -191,15 +245,12 @@
                 <p class="text-sm">
                     <fa-icon [icon]="icons.ingredients" class="me-1"></fa-icon>
                     @for (ingitem of item.ingredients; track $index) {
-                    {{ ingitem.displayStr }} {{ ingitem.localization[langCode()].title ?
-                    ingitem.localization[langCode()].title :
-                    ingitem.localization[recipe.userLocale].title }}{{ ($index < item.ingredients!.length - 1) ? ';'
-                        : '' }} } </p>
+                    {{ ingitem.displayStr }} {{ ingitem.localization[recipe.localized ? langCodeVisible() :
+                    recipe.userLocale].title }}{{ ($index < item.ingredients!.length - 1) ? ';' : '' }} } </p>
                         }
 
                         <p>
-                            {{ item.localization[langCode()].instruct ? item.localization[langCode()].instruct :
-                            item.localization[recipe.userLocale].instruct }}
+                            {{ item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].instruct }}
                         </p>
 
             </section>

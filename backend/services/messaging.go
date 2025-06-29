@@ -1,11 +1,14 @@
 package services
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
 	"kochbuch-v2-backend/types"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -52,8 +55,9 @@ type wsIncomingErrorReport struct {
 }
 
 type wsMessage struct {
-	MsgType string `json:"type" binding:"required"`
-	Content string `json:"content" binding:"required"`
+	MsgType string           `json:"type" binding:"required"`
+	Content string           `json:"content" binding:"required"`
+	State   types.NullString `json:"state"`
 }
 
 type wsErrorContent struct {
@@ -75,6 +79,18 @@ type wsCategoriesContent struct {
 type wsRecipesContent struct {
 	Recipes map[uint32]*types.RecipeSimple `json:"recipes"`
 	Etag    string                         `json:"etag"`
+}
+
+type wsUploadPictureContent struct {
+	Recipe int32                        `json:"recipe" binding:"required"`
+	Files  []wsUploadPictureFileContent `json:"files" binding:"required"`
+}
+
+type wsUploadPictureFileContent struct {
+	Name          string `json:"name" binding:"required"`
+	Type          string `json:"type" binding:"required"`
+	Size          int    `json:"size" binding:"required"`
+	Base64Content string `json:"base64" binding:"required"`
 }
 
 type wsUnitsContent struct {
@@ -108,15 +124,11 @@ func OnWebsocketConnect(c *gin.Context) {
 		return
 	}
 
-	log.Println(authMsg.Content)
-
 	var authToken wsIncomingAuthMessage
 	if err := json.Unmarshal([]byte(authMsg.Content), &authToken); err != nil {
 		log.Println("Error unmarshalling auth message:", err)
 		return
 	}
-
-	log.Println(authToken.Token)
 
 	state, params, _ := GetApplicationParams(conn, authToken.Token)
 	code, _, user, err := GetSelfByState(state)
@@ -147,7 +159,7 @@ func OnWebsocketConnect(c *gin.Context) {
 			break
 		}
 
-		log.Printf("  > WS: received msg %v", string(p))
+		// log.Printf("  > WS: received msg %v", string(p))
 		inMsg, err := wsReadMessage(p)
 		if err != nil {
 			break
@@ -173,7 +185,7 @@ func OnUserProfileUpdated(state string, userProfile types.UserProfile) {
 }
 
 func wsHandleMessage(conn *wsConnection, msg wsMessage) {
-	log.Println("  > WS: async handle message")
+	log.Printf("  > WS: wsHandleMessage(%s)", msg.MsgType)
 	switch msg.MsgType {
 
 	case "bye":
@@ -199,6 +211,10 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 
 	case "recipes_get_all":
 		wsGetRecipes(conn)
+		return
+
+	case "recipe_picture_upload":
+		wsUploadPicture(conn, msg)
 		return
 
 	case "units_get_all":
@@ -229,18 +245,18 @@ func wsGetRecipe(conn *wsConnection, msg wsMessage) {
 	var data wsIncomingIdMessage
 	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
 		log.Println("Error unmarshalling recipe request message:", err)
-		wsWrite400BadRequest(conn, "recipe_get")
+		wsWrite400BadRequest(conn, "recipe_get", types.NullString{Valid: false})
 		return
 	}
 
 	recipe, err := GetRecipeWs(uint32(data.Id), conn)
 	if err != nil {
-		wsWrite403Forbidden(conn, "recipe_get")
+		wsWrite403Forbidden(conn, "recipe_get", types.NullString{Valid: false})
 		return
 	}
 
 	if data.Etag.Equal(recipe.ModifiedTime) {
-		wsWrite304NotModified(conn, "recipe_get")
+		wsWrite304NotModified(conn, "recipe_get", types.NullString{Valid: false})
 		return
 	}
 
@@ -355,7 +371,7 @@ func wsReportError(conn *wsConnection, msg wsMessage) {
 	var data wsIncomingErrorReport
 	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
 		log.Printf("%v: Error unmarshalling recipe request message: %v", fn, err)
-		wsWrite400BadRequest(conn, "error_report")
+		wsWrite400BadRequest(conn, "error_report", types.NullString{Valid: false})
 		return
 	}
 
@@ -370,6 +386,187 @@ func wsReportError(conn *wsConnection, msg wsMessage) {
 	}
 
 	_, _ = stmt.Exec(data.Severity, data.Url, data.Message)
+}
+
+func wsUploadPicture(conn *wsConnection, msg wsMessage) {
+	var data wsUploadPictureContent
+	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
+		log.Println("Error unmarshalling request content:", err)
+		wsWrite400BadRequest(conn, msg.MsgType, msg.State)
+		return
+	}
+
+	fn := fmt.Sprintf("wsUploadPicture(%s, %d, %d files)", conn.User.DisplayName, data.Recipe, len(data.Files))
+
+	recipe, err := GetRecipeWs(uint32(data.Recipe), conn)
+	if err != nil {
+		wsWrite403Forbidden(conn, msg.MsgType, msg.State)
+		return
+	}
+
+	for i, file := range data.Files {
+		// basic checks if all required properties exist
+		if file.Name == "" || file.Size <= 0 || file.Base64Content == "" {
+			log.Printf("%v: Invalid request data for i=%d", fn, i)
+			wsWrite400BadRequest(conn, msg.MsgType, msg.State)
+			return
+		}
+
+		// base64 decode of file content
+		filecontent, err := base64.StdEncoding.DecodeString(file.Base64Content)
+		if err != nil {
+			log.Printf("%v: Base64 decode for i=%d failed with: %v", fn, i, err)
+			wsWrite400BadRequest(conn, msg.MsgType, msg.State)
+			return
+		}
+
+		// check base64 decoded string length vs. requested filesize
+		if len(filecontent) != int(file.Size) {
+			log.Printf("%v: Invalid filesize for i=%d: bytes=%d, request=%d", fn, i, len(filecontent), file.Size)
+			wsWrite400BadRequest(conn, msg.MsgType, msg.State)
+			return
+		}
+
+		hash := Sha256(fmt.Sprintf("%v,%v", string(filecontent), time.Now()), 8)
+		subfolder := hash[:2]
+		folder := fmt.Sprintf("/media/cbimages/%s", subfolder)
+		filename := fmt.Sprintf("%s_%s", hash, file.Name)
+		fullpath := fmt.Sprintf("/media/cbimages/%s/%s_%s", subfolder, hash, file.Name)
+		pictureIndex := len(recipe.Pictures)
+
+		log.Printf("%v: Fullpath for i=%d: %s", fn, i, fullpath)
+
+		// recursive create image folder -> does nothing if exists already
+		err = os.MkdirAll(folder, 0644)
+		if err != nil {
+			log.Printf("%v: Failed creating image folder for i=%d: %v", fn, i, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			return
+		}
+
+		// sql transaction
+		tx, err := Db.Begin()
+		if err != nil {
+			log.Printf("%v: Failed creating transaction: %v", fn, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			return
+		}
+
+		// preapre stmt
+		stmt, err := dbPrepareStmt("wsUploadPicture_insert", "INSERT INTO `recipe_pictures`(`recipe_id`, `user_id`, `sortindex`, `name_de`, `name_en`, `name_fr`, `description_de`, `description_en`, `description_fr`, `hash`, `filename`, `fullpath`, `width`, `height`) VALUES(?, ?, ?, ?, ?, ?, '', '', '', ?, ?, ?, ?, ?)")
+		if err != nil {
+			log.Printf("%v: Failed preparing stmt: %v", fn, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			return
+		}
+
+		// assign stmt to transaction
+		stmt = tx.Stmt(stmt)
+
+		// save file content to disk
+		err = os.WriteFile(fullpath, filecontent, 0644)
+		if err != nil {
+			log.Printf("%v: Failed saving file for i=%d: %v", fn, i, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			return
+		}
+
+		// open image to read dimensions
+		imgFile, err := os.Open(fullpath)
+		if err != nil {
+			log.Printf("%v: Failed opening file for i=%d: %v", fn, i, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			_ = os.Remove(fullpath)
+			return
+		}
+		imgFile.Seek(0, 0)
+
+		// decode image to check dimensions
+		img, _, err := image.Decode(imgFile)
+		if err != nil {
+			_ = imgFile.Close()
+			log.Printf("%v: Failed decoding img file for i=%d: %v", fn, i, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			_ = os.Remove(fullpath)
+			return
+		}
+		_ = imgFile.Close()
+
+		// execute stmt
+		result, err := stmt.Exec(recipe.Id, conn.User.Id, pictureIndex, file.Name, file.Name, file.Name, hash, filename, fullpath, img.Bounds().Dx(), img.Bounds().Dy())
+		if err != nil {
+			log.Printf("%v: Failed exec stmt: %v", fn, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			_ = os.Remove(fullpath)
+			return
+		}
+
+		// retrieve picture id from database
+		fileid, err := result.LastInsertId()
+		if err != nil {
+			log.Printf("%v: Failed retrieving insertId: %v", fn, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			_ = os.Remove(fullpath)
+			return
+		}
+
+		// commit changes to the database
+		err = tx.Commit()
+		if err != nil {
+			log.Printf("%v: Failed commiting stmt: %v", fn, err)
+			wsWrite500InternalServerError(conn, msg.MsgType, msg.State)
+			_ = tx.Rollback()
+			_ = os.Remove(fullpath)
+			return
+		}
+
+		log.Printf("%v: File i=%d created as id %d", fn, i, fileid)
+
+		basename, ext := GetBasenameAndExtension(filename)
+		picture := types.Picture{
+			Id:       uint32(fileid),
+			RecipeId: recipe.Id,
+			User:     conn.User.SimpleProfile,
+			Index:    uint8(pictureIndex),
+			Localization: map[string]types.PictureLocalization{
+				"de": {
+					Name:        file.Name,
+					Description: "",
+				},
+				"en": {
+					Name:        file.Name,
+					Description: "",
+				},
+				"fr": {
+					Name:        file.Name,
+					Description: "",
+				},
+			},
+			FileName: filename,
+			BaseName: basename,
+			Ext:      ext,
+			FullPath: fullpath,
+			Uploaded: time.Now(),
+			Dimension: types.PictureDimension{
+				Height:         img.Bounds().Dy(),
+				Width:          img.Bounds().Dx(),
+				GeneratedSizes: []int{},
+				Generated:      types.NullTime{Valid: false},
+			},
+		}
+		AddPictureToRecipe(recipe, &picture)
+	}
+
+	wsWrite202Accepted(conn, msg.MsgType, msg.State)
+	go touchRecipe(recipe)
+
 }
 
 func wsWelcome(conn *wsConnection) {
@@ -418,7 +615,24 @@ func wsWriteMessage(conn *wsConnection, message *wsMessage) {
 	}
 }
 
-func wsWrite304NotModified(conn *wsConnection, msgType string) {
+func wsWrite202Accepted(conn *wsConnection, msgType string, state types.NullString) {
+	var content wsErrorContent = wsErrorContent{
+		Code:    202,
+		Message: "Accepted",
+	}
+	jsoncontent, err := json.Marshal(content)
+	if err != nil {
+		log.Println("Error marshalling recipe response:", err)
+		return
+	}
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msgType,
+		Content: string(jsoncontent),
+		State:   state,
+	})
+}
+
+func wsWrite304NotModified(conn *wsConnection, msgType string, state types.NullString) {
 	var content wsErrorContent = wsErrorContent{
 		Code:    304,
 		Message: "NotModified",
@@ -431,10 +645,11 @@ func wsWrite304NotModified(conn *wsConnection, msgType string) {
 	wsWriteMessage(conn, &wsMessage{
 		MsgType: msgType,
 		Content: string(jsoncontent),
+		State:   state,
 	})
 }
 
-func wsWrite400BadRequest(conn *wsConnection, msgType string) {
+func wsWrite400BadRequest(conn *wsConnection, msgType string, state types.NullString) {
 	var content wsErrorContent = wsErrorContent{
 		Code:    400,
 		Message: "Bad request",
@@ -447,10 +662,11 @@ func wsWrite400BadRequest(conn *wsConnection, msgType string) {
 	wsWriteMessage(conn, &wsMessage{
 		MsgType: msgType,
 		Content: string(jsoncontent),
+		State:   state,
 	})
 }
 
-func wsWrite403Forbidden(conn *wsConnection, msgType string) {
+func wsWrite403Forbidden(conn *wsConnection, msgType string, state types.NullString) {
 	var content wsErrorContent = wsErrorContent{
 		Code:    403,
 		Message: "Forbidden",
@@ -463,10 +679,11 @@ func wsWrite403Forbidden(conn *wsConnection, msgType string) {
 	wsWriteMessage(conn, &wsMessage{
 		MsgType: msgType,
 		Content: string(jsoncontent),
+		State:   state,
 	})
 }
 
-func wsWrite404NotFound(conn *wsConnection, msgType string) {
+func wsWrite404NotFound(conn *wsConnection, msgType string, state types.NullString) {
 	var content wsErrorContent = wsErrorContent{
 		Code:    404,
 		Message: "Not Found",
@@ -479,10 +696,11 @@ func wsWrite404NotFound(conn *wsConnection, msgType string) {
 	wsWriteMessage(conn, &wsMessage{
 		MsgType: msgType,
 		Content: string(jsoncontent),
+		State:   state,
 	})
 }
 
-func wsWrite500InternalServerError(conn *wsConnection, msgType string) {
+func wsWrite500InternalServerError(conn *wsConnection, msgType string, state types.NullString) {
 	var content wsErrorContent = wsErrorContent{
 		Code:    500,
 		Message: "Internal Server Error",
@@ -495,5 +713,6 @@ func wsWrite500InternalServerError(conn *wsConnection, msgType string) {
 	wsWriteMessage(conn, &wsMessage{
 		MsgType: msgType,
 		Content: string(jsoncontent),
+		State:   state,
 	})
 }

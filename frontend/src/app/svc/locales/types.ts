@@ -73,6 +73,14 @@ export type L10nLocale = {
         loadingFailed: string,
         submittedBy: string,
     },
+    recipeGallery: {
+        noPicturesUploaded: string,
+        uploadBtn: string,
+        uploadStatus: {
+            checking: string,
+            uploading: string,
+        },
+    },
     recipeIngredients: {
         title: string,
         description: string[],

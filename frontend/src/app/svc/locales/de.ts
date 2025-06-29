@@ -86,6 +86,14 @@ export const KB_De: L10nLocale = {
         loadingFailed: "Das Rezept konnte nicht geladen werden. Du wirst automatisch auf die Startseite umgeleitet...",
         submittedBy: "Eingetragen von [0]"
     },
+    recipeGallery: {
+        noPicturesUploaded: "Noch kein Foto vorhanden. Klicke hier um eines aufzunehmen...",
+        uploadBtn: "Foto hochladen",
+        uploadStatus: {
+            checking: "Überprüfen...",
+            uploading: "Wird gespeichert...",
+        },
+    },
     recipeIngredients: {
         title: "Zutatenliste",
         description: [

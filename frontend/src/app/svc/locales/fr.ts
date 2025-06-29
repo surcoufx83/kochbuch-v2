@@ -86,6 +86,14 @@ export const KB_Fr: L10nLocale = {
         loadingFailed: "La recette n'a pas pu être chargée. Vous serez automatiquement redirigé vers la page d'accueil...",
         submittedBy: "Ajouté par [0]"
     },
+    recipeGallery: {
+        noPicturesUploaded: "Pas encore de photo. Cliquez ici pour en prendre une...",
+        uploadBtn: "Téléverser une photo",
+        uploadStatus: {
+            checking: "Vérification...",
+            uploading: "Enregistrement...",
+        },
+    },
     recipeIngredients: {
         title: "Liste des ingrédients",
         description: [
