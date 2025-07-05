@@ -56,11 +56,11 @@ export class WebSocketService {
       if (message.type === 'hello') {
         this.appParams = JSON.parse(message.content) as WsHelloMessageContent;
         this.saveSession();
-        this._isLoggedIn.next(this.appParams.loggedIn);
         this._user.next(this.appParams.user && this.appParams.loggedIn ? this.appParams.user : null);
         if (this.appParams.loggedIn && this.appParams.connection.session) {
           document.cookie = `session=${this.appParams.connection.session}; exires=${addDays(new Date(), 365).toUTCString()}; path=/`;
         }
+        this._isLoggedIn.next(this.appParams.loggedIn);
         this._isConnected.next(true);
         this.ResendFromQueue();
       }
