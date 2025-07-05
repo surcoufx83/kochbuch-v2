@@ -6,7 +6,8 @@ export const KB_De: L10nLocale = {
             de: "Deutsch",
             en: "Englisch",
             fr: "Französisch"
-        }
+        },
+        unknownUser: "Ehemaliger Benutzer",
     },
     errorPages: {
         loginToCreateRecipe: {
@@ -84,6 +85,7 @@ export const KB_De: L10nLocale = {
         },
         isLoading: "Rezeptdaten werden gerade geladen ...",
         loadingFailed: "Das Rezept konnte nicht geladen werden. Du wirst automatisch auf die Startseite umgeleitet...",
+        modifiedAndUser: "[0] von ",
         submittedBy: "Eingetragen von [0]",
         shareBtn: "Teilen",
         share: {

@@ -10,9 +10,28 @@
 }
 @else {
 <div class="lg:container mx-auto">
-    <h3 class="pb-3">
+    <h3 class="mb-4!">
         {{ recipe.localization[langCodeVisible()].title }}
     </h3>
+
+    <div class="striped rounded-md py-2 px-4 mb-4"><!-- recipe description -->
+        @if (recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description) {
+        <div>
+            <fa-icon [icon]="icons.quote" class="me-2"></fa-icon>
+            {{ recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description }}
+        </div>
+        }
+        <div>
+            — {{ LocaleReplace(Locale.recipe.modifiedAndUser, [FormatDate(recipe.modified, 'PP')]) }}
+            @if (recipe.user) {
+            <a [routerLink]="['/user', recipe.user.id]" [queryParams]="{ q: recipe.user.displayname }">{{
+                recipe.user.displayname }}</a>
+            } @else {
+            {{ Locale.common.unknownUser }}
+            }
+        </div>
+    </div><!-- recipe description -->
+
     @if (langCode() !== recipe.userLocale) {
     <div class="flex flex-row mb-3 italic">
         <div>
@@ -112,13 +131,6 @@
         </div>
 
         <div class="md:order-first">
-
-            @if (recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description) {
-            <p class="striped rounded-md px-3"><!-- recipe description -->
-                <fa-icon [icon]="icons.quote" class="me-2"></fa-icon>
-                {{ recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].description }}
-            </p><!-- recipe description -->
-            }
 
             @if (user() && recipe.user && user()?.id === recipe.user.id) {<!-- user is owner info block-->
             <div class="font-bold">

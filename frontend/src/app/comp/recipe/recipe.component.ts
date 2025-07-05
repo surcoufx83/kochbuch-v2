@@ -105,6 +105,10 @@ export class RecipeComponent implements OnDestroy, OnInit {
     return ingredients;
   }
 
+  public FormatDate(date: string | number | Date, formatStr: string): string {
+    return this.l10nService.FormatDate(date, formatStr);
+  }
+
   FormatDuration(inMinutes: number, longFormat: boolean = false): string {
     return this.l10nService.FormatDuration(inMinutes, longFormat);
   }

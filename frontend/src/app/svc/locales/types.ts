@@ -1,6 +1,7 @@
 export type L10nLocale = {
     common: {
         language: { [key: string]: string },
+        unknownUser: string,
     },
     errorPages: {
         loginToCreateRecipe: {
@@ -71,6 +72,7 @@ export type L10nLocale = {
         },
         isLoading: string,
         loadingFailed: string,
+        modifiedAndUser: string,
         submittedBy: string,
         shareBtn: string,
         share: {
