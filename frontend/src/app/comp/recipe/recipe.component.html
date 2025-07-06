@@ -10,8 +10,13 @@
 }
 @else {
 <div class="lg:container mx-auto">
+
+    <div class="hidden print:inline float-right mb-5 ms-5">
+        <qrcode [qrdata]="uri" elementType="url" [scale]="3"></qrcode>
+    </div>
+
     <h3 class="mb-4!">
-        {{ recipe.localization[langCodeVisible()].title }}
+        {{ recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title }}
     </h3>
 
     <div class="striped rounded-md py-2 px-4 mb-4"><!-- recipe description -->
@@ -34,20 +39,22 @@
 
     @if (langCode() !== recipe.userLocale) {
     <div class="flex flex-row mb-3 italic">
-        <div>
+        <div class="print:hidden">
             <span class="fi me-2" [ngClass]="recipe.userLocale === 'en' ? 'fi-eu' : 'fi-'+recipe.userLocale"></span>
         </div>
         <div>
             {{ LocaleReplace(Locale.recipe.aiLocalizedContentWithSourceLocale, [
             Locale.recipe.aiLocalizedContentSourceLocale[recipe.userLocale]]) }}
-            <button class="text-link" (click)="onToggleLocalization(!localized())">
+            <button class="text-link print:hidden" (click)="onToggleLocalization(!localized())">
                 {{ Locale.recipe.aiLocalizationSwitch[localized() ? 0 : 1] }}
             </button>
         </div>
     </div>
     }
 
-    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 mb-5">
+    <br class="hidden print:inline" clear="all" />
+
+    <div class="grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 lg:gap-16 mb-5 print:block">
         <!-- Header div with description and pictures -->
 
         <div class="md:order-last">
@@ -55,12 +62,13 @@
             <div class="image-gallery mb-3"><!-- gallery -->
 
                 @if (recipe.pictures.length > 0) {
-                <div class="images rounded-t-md border border-b-none" [photoGalleryGroup]="{ arrowEl: true }">
+                <div class="images rounded-t-md print:rounded-none! border border-b-none"
+                    [photoGalleryGroup]="{ arrowEl: true }">
                     @for (item of recipe.pictures; track $index) {
                     <div class="images-item"
                         [photoGallery]="'/api/media/uploads/' + recipe.id + '/' + item.id + '/' + item.filename">
                         @if ($index === 0) {
-                        <img class="rounded-t-md"
+                        <img class="rounded-t-md print:rounded-none!"
                             [src]="'/api/media/uploads/' + recipe.id + '/' + item.id + '/thb/800/' + item.filename" />
                         }
                     </div>
@@ -88,7 +96,7 @@
                 </button>
                 }
                 <div
-                    class="flex justify-between align-center rounded-b-md border bg-navbar-back text-navbar px-2 pt-1 text-sm">
+                    class="flex justify-between align-center rounded-b-md border bg-navbar-back text-navbar px-2 pt-1 text-sm print:hidden">
                     <div>
                         @if (recipe.pictures.length > 0) {
                         1/{{ recipe.pictures.length }} <a [routerLink]="['/user', recipe.pictures[0].user.id]"
@@ -112,39 +120,71 @@
 
             </div><!-- gallery -->
 
-            <div class="flex flex-row justify-center items-center mb-3"><!-- function buttons below gallery -->
-                <button class="btn-green mx-2">
+            @if (!(user && user.admin === true && user.id !== recipe.user?.id && !recipe.sharedInternal &&
+            !recipe.sharedPublic)) {
+            <div class="flex flex-row justify-center items-center mb-3 print:hidden">
+                <!-- function buttons below gallery -->
+
+                <button class="btn-green mx-2" (click)="onPrintClick()">
                     <fa-icon [icon]="icons.print" class="me-1"></fa-icon>
-                    Print
+                    {{ Locale.recipe.printBtn }}
                 </button>
+
                 @if (recipe.sharedPublic) {
                 <button class="btn-green mx-2" (click)="onShareClick()">
                     <fa-icon [icon]="icons.share" class="me-1"></fa-icon>
                     {{ Locale.recipe.shareBtn }}
                 </button>
                 }
-                <button class="btn-green mx-2">
+
+                @if (user !== null) {
+                <button class="mx-2 btn-green" (click)="onSaveToCollectionClick(pickCollectionSwal, saveConfirmSwal)"
+                    [ngClass]="{ 'btn-green': recipeFoundInCollections.length === 0, 'btn-outline-green': recipeFoundInCollections.length > 0 }">
                     <fa-icon [icon]="icons.like" class="me-1"></fa-icon>
-                    Save
+                    {{ recipeFoundInCollections.length === 0 ? Locale.recipe.saveBtn : Locale.recipe.saveBtnAlreadySaved
+                    }}
                 </button>
+                }
+
             </div><!-- function buttons below gallery -->
+            }
         </div>
 
         <div class="md:order-first">
 
-            @if (user() && recipe.user && user()?.id === recipe.user.id) {<!-- user is owner info block-->
-            <div class="font-bold">
-                <fa-icon [icon]="icons.edit" class="me-1"></fa-icon>
-                {{ Locale.recipeOwnerInfo.title }}
+            <div class="print:hidden">
+                @if (user && recipe.user && user.id === recipe.user.id) {<!-- user is owner info block-->
+                <div class="font-bold">
+                    <fa-icon [icon]="icons.edit" class="me-1"></fa-icon>
+                    {{ Locale.recipeOwnerInfo.title }}
+                </div>
+                <p>
+                    {{ Locale.recipeOwnerInfo.description }}
+                    <button class="text-link ms-1">
+                        <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
+                        {{ Locale.recipeOwnerInfo.gothereLink }}
+                    </button>
+                </p>
+                }<!-- user is owner info block-->
             </div>
-            <p>
-                {{ Locale.recipeOwnerInfo.description }}
-                <button class="text-link ms-1">
-                    <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
-                    {{ Locale.recipeOwnerInfo.gothereLink }}
-                </button>
-            </p>
-            }<!-- user is owner info block-->
+
+            <div class="print:hidden text-warn">
+                @if (user && user.admin === true && user.id !== recipe.user?.id && !recipe.sharedInternal &&
+                !recipe.sharedPublic)
+                {<!-- user is admin info block-->
+                <div class="font-bold">
+                    <fa-icon [icon]="icons.attention" class="me-1"></fa-icon>
+                    {{ Locale.recipeOwnerInfo.title }}
+                </div>
+                <p>
+                    {{ LocaleReplace(Locale.recipeOwnerInfo.adminDescription, [recipe.user?.displayname]) }}
+                    <button class="text-link ms-1">
+                        <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
+                        {{ Locale.recipeOwnerInfo.gothereLink }}
+                    </button>
+                </p>
+                }<!-- user is admin info block-->
+            </div>
 
             @if ((recipe.timing.total ?? 0) > 120) {
             <p class="text-warn rounded-md"><!-- duration waning -->
@@ -160,12 +200,17 @@
                     {{ Locale.recipeIngredients.title }}
                 </h4>
 
-                <p>
+                <p class="print:hidden">
                     {{ LocaleReplace(Locale.recipeIngredients.description[recipe.servingsCount === 1 ? 0 : 1],
                     [recipe.servingsCount]) }}
                 </p>
 
-                <div class="bg-navbar-back text-navbar rounded-md p-2 mb-3 text-sm">
+                <p class="hidden print:block">
+                    {{ LocaleReplace(Locale.recipeIngredients.description[calculatorServings === 1 ? 0 : 1],
+                    [calculatorServings]) }}
+                </p>
+
+                <div class="bg-navbar-back text-navbar rounded-md p-2 mb-3 text-sm print:hidden">
                     <!-- ingredients calculator block -->
                     <h5 class="text-lg!">
                         <fa-icon [icon]="icons.calc" class="me-2"></fa-icon>
@@ -190,14 +235,14 @@
                             <fa-icon [icon]="icons.calcPlus"></fa-icon>
                         </button>
 
-                        <div>
+                        <div class="print:ms-2">
                             {{ Locale.recipeIngredients.calculator.servings[calculatorServings === 1 ? 0 : 1] }}
                         </div>
 
                     </div>
                 </div><!-- ingredients calculator block -->
 
-                <div class="table rounded-md w-full">
+                <div class="table rounded-md w-full print:w-auto">
                     <div class="table-header-group">
                         <div class="table-row">
                             <div class="table-cell w-[30%] text-right">
@@ -285,3 +330,95 @@
     </div>
 </div>
 }
+
+<swal class="print:hidden" #pickCollectionSwal icon="question" [showCancelButton]="true" [showConfirmButton]="true"
+    [focusConfirm]="true" [confirmButtonColor]="'#589014'">
+
+    <form [formGroup]="collectionEditorForm" *swalPortal="swalTargets.content" (submit)="onCreateCollectionSubmit()">
+        <p>{{ Locale.saveToCollection.pickCollection.description }}</p>
+
+        <div class="flex flex-col text-left px-5 mb-3">
+            @for (item of userCollections; track $index) {
+            <div class="flex flex-row collection-item">
+                <div class="shrink-0" style="width: 48px!important;">
+                    <button class="text-xl w-full h-full" [id]="'recipe--collection-picker-' + item.id"
+                        (click)="onToggleRecipeInCollection(item)">
+                        @if (recipeFoundInCollectionsClone.includes(item.id)) {
+                        <fa-icon [icon]="icons.boxCheck"></fa-icon>
+                        }
+                        @else {
+                        <fa-icon [icon]="icons.boxUncheck"></fa-icon>
+                        }
+                    </button>
+                </div>
+                <label [for]="'recipe--collection-picker-' + item.id" class="grow cursor-pointer">
+                    <div class="">{{ item.title }}</div>
+                    <div class="text-md italic">{{ item.description }}</div>
+                    <div class="text-sm">{{
+                        LocaleReplace(Locale.saveToCollection.pickCollection.itemCount[item.items.length > 2 ? 2 :
+                        item.items.length], [item.items.length]) }}</div>
+                </label>
+            </div>
+            }
+
+            <div class="flex flex-row collection-item mt-3" [ngClass]="{ hidden: !showCollectionEditor() }">
+                <div class="shrink-0" style="width: 48px!important;">
+                    <button class="text-xl w-full h-full" [id]="'recipe--collection-picker-0'">
+                        @if (recipeFoundInCollectionsClone.includes(0)) {
+                        <fa-icon [icon]="icons.boxCheck"></fa-icon>
+                        }
+                        @else {
+                        <fa-icon [icon]="icons.boxUncheck"></fa-icon>
+                        }
+                    </button>
+                </div>
+                <div class="grow">
+                    <div class="input-group">
+                        <label for="recipe--collection-editor-new">{{
+                            Locale.saveToCollection.pickCollection.titleInputLabel }}</label>
+                        <input type="text" maxlength="256" formControlName="title" name="recipe--collection-editor-new"
+                            id="recipe--collection-editor-new" #collectioninput required>
+                        <button type="submit" class="btn-green ms-2"
+                            [disabled]="collectionEditorForm.invalid || collectionSaving()">
+                            <fa-icon [icon]="icons.save" class="me-1"></fa-icon>
+                            {{ Locale.saveToCollection.pickCollection.saveBtn }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-row collection-item mt-3" [ngClass]="{ hidden: showCollectionEditor() }">
+                <div class="shrink-0" style="width: 48px!important;">
+                    &nbsp;
+                </div>
+                <button type="button" class="text-link" (click)="onCreateCollectionClick(collectioninput)">
+                    <fa-icon [icon]="icons.collectionNew" class="me-2 text-sm"></fa-icon>
+                    <span>{{ Locale.saveToCollection.pickCollection.newBtn }}</span>
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+</swal>
+
+<swal class="print:hidden" #saveConfirmSwal icon="success" [showCloseButton]="true" [confirmButtonColor]="'#589014'">
+
+    <ng-container *swalPortal="swalTargets.content">
+        {{ Locale.saveToCollection.confirmMsg }}
+    </ng-container>
+
+    <ng-container *swalPortal="swalTargets.footer">
+        @if (recipeSavedToCollection.length == 1) {
+        <a [routerLink]="['/me', 'collection', recipeSavedToCollection[0]]"
+            [queryParams]="{ ref: 'recipe', source: recipe?.id}">
+            {{ Locale.saveToCollection.gotoCollectionLink[0] }}
+        </a>
+        } @else if (recipeSavedToCollection.length > 1) {
+        <a [routerLink]="['/me']" [queryParams]="{ ref: 'recipe', source: recipe?.id}">
+            {{ Locale.saveToCollection.gotoCollectionLink[1] }}
+        </a>
+        }
+    </ng-container>
+
+</swal>

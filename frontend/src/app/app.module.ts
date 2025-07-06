@@ -3,7 +3,9 @@ import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { SweetAlert2Module } from '@sweetalert2/ngx-sweetalert2';
 import { PhotoGalleryModule } from '@twogate/ngx-photo-gallery';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { EditorComponent } from './comp/editor/editor.component';
@@ -48,7 +50,9 @@ import { WebSocketService } from './svc/web-socket.service';
     FontAwesomeModule,
     FormsModule,
     PhotoGalleryModule,
+    QRCodeComponent,
     ReactiveFormsModule,
+    SweetAlert2Module.forRoot(),
   ],
   providers: [
     provideHttpClient(),

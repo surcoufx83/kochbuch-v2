@@ -47,4 +47,8 @@ export class ListingComponent {
     return this.l10nService.Replace(content, replacements);
   }
 
+  public urlencode(content: string): string {
+    return this.l10nService.UrlEncode(content);
+  }
+
 }

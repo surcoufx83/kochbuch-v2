@@ -29,6 +29,20 @@ type UserProfileSimple struct {
 	DisplayName *string `json:"displayname" db:"clouddisplayname"`
 }
 
+type UserRecipeSimple struct {
+	*RecipeSimple
+	Reason UserRecipeReason `json:"reason"`
+}
+
+type UserRecipeReason uint16
+
+const (
+	SharedPublic   UserRecipeReason = 0
+	SharedInternal UserRecipeReason = 1
+	IsOwner        UserRecipeReason = 2
+	IsAdmin        UserRecipeReason = 3
+)
+
 type Group struct {
 	Created     time.Time `json:"-" db:"created"`
 	DisplayName string    `json:"displayname" db:"displayname"`

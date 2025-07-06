@@ -26,9 +26,11 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-link-color: #a2c672;
         --kb-warn-color: #ef787a;
         --kb-bg-green: #589014;
+        --kb-bg-green-disabled: #6e7881;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
         --kb-muted-color: #777;
+        --kb-font-size-default: 1.05rem;
     }
 
     .striped {
@@ -72,9 +74,11 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
         --kb-link-color: #375a0c;
         --kb-warn-color: #bb4430;
         --kb-bg-green: #589014;
+        --kb-bg-green-disabled: #6e7881;
         --kb-border-green: #589014;
         --kb-text-ongreen: #f8f9fa;
         --kb-muted-color: #555;
+        --kb-font-size-default: 1.05rem;
     }
 
     .striped {
@@ -99,10 +103,58 @@ $flag-icons-included-countries: 'eu' 'de' 'fr';
 
 }
 
+@media print {
+
+    :root {
+        --spacing: 0.12rem;
+        // palette: https://coolors.co/f5eae1-141514-002448-375a0c-bb4430
+        --kb-bg-back-color: #fff;
+        --kb-bg-back-color-rgb: 245, 234, 225;
+        --kb-card-back-color: #ebd4c2;
+        --kb-border-color: #141514;
+        --kb-bg-navbar-back-color: #fff;
+        --kb-bg-navbar2-back-color: #fff;
+        --kb-text-color: #141514;
+        --kb-navbar-text-color: #141514;
+        --kb-navbar-link-color: #405440;
+        --kb-menu-buttons-bg: #fff;
+        --kb-menu-buttons-color: #141514;
+        --kb-menu-buttons-border-radius: calc(var(--spacing) * 3);
+        --kb-link-color: #375a0c;
+        --kb-warn-color: #bb4430;
+        --kb-bg-green: #fff;
+        --kb-border-green: #405440;
+        --kb-text-ongreen: #141514;
+        --kb-muted-color: #555;
+        --kb-font-size-default: .89rem;
+    }
+
+    body {
+        margin: .2cm .6cm .2cm 1.2cm;
+    }
+
+    .image-gallery {
+        width: 8cm !important;
+        height: auto !important;
+        float: right;
+        margin-left: 1cm;
+    }
+
+    p:not(.mb-0) {
+        margin-bottom: .24rem !important;
+    }
+
+    td,
+    th,
+    .table-cell {
+        padding: 0 .36rem !important;
+    }
+
+}
+
 :root {
     --kb-font-default: "Source Sans Pro";
     --kb-font-heading: "Cinzel";
-    --kb-font-size-default: 1.05rem;
 }
 
 a {
@@ -111,6 +163,10 @@ a {
     &:not(.clear) {
         color: var(--kb-link-color);
     }
+}
+
+.bg-body-rgba-0\.8 {
+    background-color: rgba(var(--kb-bg-back-color-rgb), .8);
 }
 
 .bg-navbar-back {
@@ -125,15 +181,19 @@ a {
     background-color: var(--kb-bg-navbar2-back-color) !important;
 }
 
-.bg-body-rgba-0\.8 {
-    background-color: rgba(var(--kb-bg-back-color-rgb), .8);
+.bg-warn {
+    background-color: rgba($color: #bb4430, $alpha: .4);
 }
 
-body {
+body,
+.swal2-modal {
     background-color: var(--kb-bg-back-color);
     color: var(--kb-text-color);
     font-family: var(--kb-font-default);
     font-size: var(--kb-font-size-default);
+}
+
+body {
     min-height: 100vh;
 }
 
@@ -176,10 +236,23 @@ button,
     }
 
     &.btn-green {
-        background-color: var(--kb-bg-green);
-        border: 1px solid var(--kb-border-green);
-        color: var(--kb-text-ongreen);
-        padding: .375rem .75rem;
+        color: var(--kb-text-ongreen) !important;
+        padding: .375rem .75rem !important;
+
+        &:not(:disabled) {
+            background-color: var(--kb-bg-green) !important;
+            border: 1px solid var(--kb-border-green) !important;
+        }
+
+        &:disabled {
+            background-color: var(--kb-bg-green-disabled);
+        }
+    }
+
+    &.btn-outline-green {
+        border: 1px solid var(--kb-border-green) !important;
+        color: var(--kb-navbar-link-color) !important;
+        padding: .375rem .75rem !important;
     }
 
     &.no-style {
@@ -201,6 +274,10 @@ button,
     padding-left: calc(var(--bs-gutter-x)* 2);
     margin-right: auto;
     margin-left: auto;
+}
+
+.flex.fill {
+    flex: 1 1 auto !important;
 }
 
 .fs-90\% {
@@ -270,6 +347,16 @@ input {
     border-radius: calc(var(--spacing) * 2);
 }
 
+.input-group {
+    width: 100%;
+
+    >label {
+        display: block;
+        margin-bottom: calc(var(--spacing)* 2);
+        font-size: 80%;
+    }
+}
+
 nav {
 
     a,
@@ -319,8 +406,11 @@ p {
     >.footer {
         font-size: 90%;
         padding: calc(var(--spacing) * 2);
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        &:not(.no-grid) {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
 
         >* {
             text-align: center;

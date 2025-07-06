@@ -1,6 +1,12 @@
 import { L10nLocale } from "./types";
 
 export const KB_Fr: L10nLocale = {
+    collections: {
+        defaultCollection: {
+            description: "",
+            title: "Mon livre de cuisine",
+        },
+    },
     common: {
         language: {
             de: "Allemand",
@@ -58,6 +64,14 @@ export const KB_Fr: L10nLocale = {
     login: {
         loginWithNcButton: "Se connecter avec un compte Nextcloud"
     },
+    me: {
+        title: "Ton livre de cuisine numérique",
+        description: "Voici ton espace personnel — tu y trouveras toutes tes recettes, qu’elles aient été créées ou simplement enregistrées.",
+        collections: {
+            title: "Collections",
+            description: "Les recettes sont organisées en collections. Une collection par défaut a été créée automatiquement pour toi, mais tu peux en créer autant que tu veux — par exemple pour les meilleures recettes de pâtisserie, desserts ou cocktails."
+        }
+    },
     navbar: {
         brand: {
             pageTitle: "Livre de recettes",
@@ -83,9 +97,13 @@ export const KB_Fr: L10nLocale = {
             2: "Moyen",
             3: "Difficile"
         },
+        hasAdminAccess: "Visible uniquement parce que tu es connecté en tant qu’administrateur.",
         isLoading: "Chargement des données de recette en cours...",
         loadingFailed: "La recette n'a pas pu être chargée. Vous serez automatiquement redirigé vers la page d'accueil...",
         modifiedAndUser: "[0] par ",
+        printBtn: "Imprimer",
+        saveBtn: "Enregistrer",
+        saveBtnAlreadySaved: "Enregistré",
         submittedBy: "Ajouté par [0]",
         shareBtn: "Partager",
         share: {
@@ -123,6 +141,7 @@ export const KB_Fr: L10nLocale = {
     recipeOwnerInfo: {
         title: "Note de modification",
         description: "Cette recette a été créée par vous. Vous pouvez la modifier ou en ajuster la visibilité à tout moment. Les options correspondantes se trouvent plus bas, après les étapes de préparation.",
+        adminDescription: "Cette recette a été créée par [0], mais elle est visible pour toi car tu es connecté en tant qu’administrateur. Les options de gestion se trouvent plus bas, après les étapes de préparation.",
         gothereLink: "Aller directement"
     },
     recipePreparation: {
@@ -143,6 +162,24 @@ export const KB_Fr: L10nLocale = {
             days: ['1 j', '[0] j', '1 jour', '[0] jours'],
             hours: ['1 h', '[0] h', '1 heure', '[0] heures'],
             minutes: ['1 min', '[0] min', '1 minute', '[0] minutes']
+        },
+    },
+    saveToCollection: {
+        confirmMsg: "Recette enregistrée.",
+        gotoCollectionLink: [
+            "Voir la collection de recettes",
+            "Voir tes collections",
+        ],
+        pickCollection: {
+            description: "Choisis une collection dans laquelle enregistrer la recette.",
+            itemCount: [
+                "Ne contient encore aucune recette",
+                "Contient une recette",
+                "Contient [0] recettes",
+            ],
+            titleInputLabel: "Nom de la collection de recettes :",
+            newBtn: "Nouvelle collection",
+            saveBtn: "Enregistrer",
         },
     },
 }

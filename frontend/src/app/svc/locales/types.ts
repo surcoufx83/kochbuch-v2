@@ -1,4 +1,10 @@
 export type L10nLocale = {
+    collections: {
+        defaultCollection: {
+            title: string,
+            description: string,
+        },
+    },
     common: {
         language: { [key: string]: string },
         unknownUser: string,
@@ -51,7 +57,15 @@ export type L10nLocale = {
     },
     login: {
         loginWithNcButton: string,
-    }
+    },
+    me: {
+        title: string,
+        description: string,
+        collections: {
+            title: string,
+            description: string,
+        }
+    },
     navbar: {
         brand: {
             pageTitle: string,
@@ -70,9 +84,13 @@ export type L10nLocale = {
             2: string,
             3: string,
         },
+        hasAdminAccess: string,
         isLoading: string,
         loadingFailed: string,
         modifiedAndUser: string,
+        printBtn: string,
+        saveBtn: string,
+        saveBtnAlreadySaved: string,
         submittedBy: string,
         shareBtn: string,
         share: {
@@ -104,6 +122,7 @@ export type L10nLocale = {
     recipeOwnerInfo: {
         title: string,
         description: string,
+        adminDescription: string,
         gothereLink: string,
     },
     recipePreparation: {
@@ -126,4 +145,15 @@ export type L10nLocale = {
             minutes: string[],
         }
     },
+    saveToCollection: {
+        confirmMsg: string,
+        gotoCollectionLink: string[],
+        pickCollection: {
+            description: string,
+            itemCount: string[],
+            titleInputLabel: string,
+            newBtn: string,
+            saveBtn: string,
+        }
+    }
 }

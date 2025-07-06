@@ -1,12 +1,12 @@
-import { Component, OnChanges, OnDestroy, OnInit, signal, SimpleChanges } from '@angular/core';
-import { ActivatedRoute, ActivatedRouteSnapshot, Router } from '@angular/router';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { IconLib } from '../../icons';
 import { L10nService } from '../../svc/l10n.service';
 import { L10nLocale } from '../../svc/locales/types';
 import { SharedDataService } from '../../svc/shared-data.service';
-import { UserSelf } from '../../types';
 import { WebSocketService } from '../../svc/web-socket.service';
+import { Collection, UserSelf } from '../../types';
 
 @Component({
   selector: 'kb-me',
@@ -16,11 +16,12 @@ import { WebSocketService } from '../../svc/web-socket.service';
 })
 export class MeComponent implements OnDestroy, OnInit {
 
-  Icons = IconLib;
-  LoggedIn = signal<boolean | 'unknown'>('unknown');
-  PageRef = signal<string>('');
-  PageSrc = signal<string>('');
-  User = signal<UserSelf | false>(false);
+  icons = IconLib;
+  loggedIn = signal<boolean | 'unknown'>('unknown');
+  pageRef = signal<string>('');
+  pageSrc = signal<string>('');
+  user: UserSelf | false = false;
+  userCollections: Collection[] = [];
 
   private subs: Subscription[] = [];
 
@@ -36,6 +37,10 @@ export class MeComponent implements OnDestroy, OnInit {
     return this.l10nService.Locale;
   }
 
+  public LocaleReplace(content: string, replacements: any[]): string {
+    return this.l10nService.Replace(content, replacements);
+  }
+
   logout(): void {
     this.wsService.Logout();
     setTimeout(() => {
@@ -49,15 +54,22 @@ export class MeComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    console.log('init')
     this.subs.push(this.wsService.isLoggedIn.subscribe((state) => {
-      this.LoggedIn.set(state);
-      this.User.set(this.wsService.GetUser() ?? false);
+      this.loggedIn.set(state);
+      this.user = this.wsService.GetUser() ?? false;
+      console.log(this.user)
+
+      if (this.user) {
+        this.userCollections = Object.values(this.user.collections).filter(x => x.deleted === null).sort((a, b) => a.title.toLocaleLowerCase().localeCompare(b.title.toLocaleLowerCase()));
+      }
+      else {
+        this.userCollections = [];
+      }
+
     }));
     this.subs.push(this.route.queryParamMap.subscribe((e) => {
-      this.PageRef.set(`${e.get('ref')}`)
-      this.PageSrc.set(`${e.get('source')}`)
-      console.log(e)
+      this.pageRef.set(`${e.get('ref')}`);
+      this.pageSrc.set(`${e.get('source')}`);
     }))
   }
 

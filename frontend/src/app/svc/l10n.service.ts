@@ -206,6 +206,10 @@ export class L10nService {
     }));
   }
 
+  public UrlEncode(content: string): string {
+    return content.replaceAll(/['":,.;]/ig, '').replaceAll(/[^a-z0-9äöüßàâçéèêëîïôûùüÿñæœ]/ig, '-').replaceAll(/\-\-/ig, '-').replaceAll(/-$/g, '');
+  }
+
 }
 
 type LocaleStorage = {

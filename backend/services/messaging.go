@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -28,14 +29,30 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type wsCategoriesContent struct {
+	Categories map[uint16]types.Category `json:"categories"`
+	Etag       string                    `json:"etag"`
+}
+
 type wsConnection struct {
 	Connection       *websocket.Conn
 	ConnectionParams AppParams
 	User             *types.UserProfile
 }
 
-type wsIncomingAuthMessage struct {
-	Token string `json:"token"`
+type wsCreateCollectionMessage struct {
+	Name        string `json:"title" binding:"required"`
+	Description string `json:"description" binding:"required"`
+}
+
+type wsCreateCollectionResponse struct {
+	Collection *types.Collection `json:"collection"`
+	Code       int32             `json:"error"`
+}
+
+type wsErrorContent struct {
+	Code    int    `json:"error"`
+	Message string `json:"message"`
 }
 
 type wsIncomingAuthCallbackMessage struct {
@@ -43,9 +60,8 @@ type wsIncomingAuthCallbackMessage struct {
 	Code  string `json:"code" binding:"required"`
 }
 
-type wsIncomingIdMessage struct {
-	Id   int       `json:"id" binding:"required"`
-	Etag time.Time `json:"etag"`
+type wsIncomingAuthMessage struct {
+	Token string `json:"token"`
 }
 
 type wsIncomingErrorReport struct {
@@ -54,15 +70,15 @@ type wsIncomingErrorReport struct {
 	Message  string `json:"error" binding:"required"`
 }
 
+type wsIncomingIdMessage struct {
+	Id   int       `json:"id" binding:"required"`
+	Etag time.Time `json:"etag"`
+}
+
 type wsMessage struct {
 	MsgType string           `json:"type" binding:"required"`
 	Content string           `json:"content" binding:"required"`
 	State   types.NullString `json:"state"`
-}
-
-type wsErrorContent struct {
-	Code    int    `json:"error"`
-	Message string `json:"message"`
 }
 
 type wsHelloContent struct {
@@ -71,14 +87,14 @@ type wsHelloContent struct {
 	User             *types.UserProfile `json:"user"`
 }
 
-type wsCategoriesContent struct {
-	Categories map[uint16]types.Category `json:"categories"`
-	Etag       string                    `json:"etag"`
+type wsPushRecipeToCollectionsMessage struct {
+	RecipeId      int32   `json:"recipeId" binding:"required"`
+	CollectionIds []int32 `json:"collectionIds" binding:"required"`
 }
 
 type wsRecipesContent struct {
-	Recipes map[uint32]*types.RecipeSimple `json:"recipes"`
-	Etag    string                         `json:"etag"`
+	Recipes map[uint32]*types.UserRecipeSimple `json:"recipes"`
+	Etag    string                             `json:"etag"`
 }
 
 type wsUploadPictureContent struct {
@@ -217,11 +233,52 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 		wsUploadPicture(conn, msg)
 		return
 
+	case "recipe_to_collections":
+		wsPushRecipeToCollections(conn, msg)
+		return
+
 	case "units_get_all":
 		wsGetUnits(conn)
 		return
 
+	case "user_collection_create":
+		wsCreateCollection(conn, msg)
+		return
+
 	}
+}
+
+func wsCreateCollection(conn *wsConnection, msg wsMessage) {
+	fn := "wsCreateCollection()"
+	var data wsCreateCollectionMessage
+
+	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
+		log.Printf("%v: Error unmarshalling request message: %v", fn, err)
+		wsWrite400BadRequest(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	coll, err := createCollection(conn.User, data.Name, data.Description)
+	if err != nil {
+		wsWrite500InternalServerError(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	response := wsCreateCollectionResponse{
+		Collection: coll,
+		Code:       http.StatusAccepted,
+	}
+	jsoncontent, err := json.Marshal(response)
+	if err != nil {
+		log.Println("Error marshalling response:", err)
+		return
+	}
+
+	wsWriteMessage(conn, &wsMessage{
+		MsgType: msg.MsgType + "_response",
+		State:   msg.State,
+		Content: string(jsoncontent),
+	})
 }
 
 func wsGetCategories(conn *wsConnection) {
@@ -355,6 +412,142 @@ func wsOAuth2Callback(conn *wsConnection, msg wsMessage) {
 		MsgType: "oauth2_response",
 		Content: "202/Accepted",
 	})
+}
+
+func wsPushRecipeToCollections(conn *wsConnection, msg wsMessage) {
+	fn := "wsPushRecipeToCollections()"
+
+	if conn.User.Id == 0 {
+		log.Printf("%v: User not logged in", fn)
+		wsWrite400BadRequest(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	var data wsPushRecipeToCollectionsMessage
+	if err := json.Unmarshal([]byte(msg.Content), &data); err != nil {
+		log.Printf("%v: Error unmarshalling recipe request message: %v", fn, err)
+		wsWrite400BadRequest(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	recipe, err := GetRecipeWs(uint32(data.RecipeId), conn)
+	if err != nil {
+		log.Printf("%v: Invalid recipe id or access denied: %v", fn, err)
+		wsWrite404NotFound(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	if conn.User.Collections == nil {
+		conn.User.Collections = make(map[uint32]*types.Collection)
+		log.Printf("%v: User has no collections yet", fn)
+		wsWrite404NotFound(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	var requiredActions map[uint32]*struct {
+		collection *types.Collection
+		create     bool
+		delete     bool
+	} = make(map[uint32]*struct {
+		collection *types.Collection
+		create     bool
+		delete     bool
+	})
+
+	for _, coll := range conn.User.Collections {
+		if coll.Contains(recipe) {
+			if !slices.Contains(data.CollectionIds, int32(coll.Id)) {
+				requiredActions[coll.Id] = &struct {
+					collection *types.Collection
+					create     bool
+					delete     bool
+				}{
+					collection: coll,
+					create:     false,
+					delete:     true,
+				}
+			}
+		} else {
+			if slices.Contains(data.CollectionIds, int32(coll.Id)) {
+				requiredActions[coll.Id] = &struct {
+					collection *types.Collection
+					create     bool
+					delete     bool
+				}{
+					collection: coll,
+					create:     true,
+					delete:     false,
+				}
+			}
+		}
+	}
+
+	log.Printf("%v: %d changes requied", fn, len(requiredActions))
+	if len(requiredActions) == 0 {
+		wsWrite202Accepted(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Printf("%v: Failed preparing tx: %v", fn, err)
+		wsWrite500InternalServerError(conn, msg.MsgType+"_response", msg.State)
+		return
+	}
+
+	stmtCreate, err := dbPrepareStmt("wsPushRecipeToCollections_Insert", types.QueryCollectionAddItem)
+	if err != nil {
+		log.Printf("%v: Failed preparing Insert stmt: %v", fn, err)
+		wsWrite500InternalServerError(conn, msg.MsgType+"_response", msg.State)
+		_ = tx.Rollback()
+		return
+	}
+
+	stmtDelete, err := dbPrepareStmt("wsPushRecipeToCollections_Delete", types.QueryCollectionRemoveItem)
+	if err != nil {
+		log.Printf("%v: Failed preparing Delete stmt: %v", fn, err)
+		wsWrite500InternalServerError(conn, msg.MsgType+"_response", msg.State)
+		_ = tx.Rollback()
+		return
+	}
+
+	rollback := false
+	for _, a := range requiredActions {
+		if a.create {
+			stmt := tx.Stmt(stmtCreate)
+			_, err := stmt.Exec(a.collection.Id, recipe.Id, conn.User.Id == uint32(recipe.OwnerUserId.Int32), "")
+			if err != nil {
+				rollback = true
+				break
+			}
+			a.collection.AddItem(conn.User, recipe, "")
+			setUserCollectionModified(tx, a.collection, time.Now())
+		} else if a.delete {
+			stmt := tx.Stmt(stmtDelete)
+			_, err := stmt.Exec(a.collection.Id, recipe.Id)
+			if err != nil {
+				rollback = true
+				break
+			}
+			a.collection.RemoveItem(recipe)
+			setUserCollectionModified(tx, a.collection, time.Now())
+		}
+	}
+
+	if !rollback {
+		err = tx.Commit()
+	}
+
+	if rollback || err != nil {
+		wsWrite500InternalServerError(conn, msg.MsgType+"_response", msg.State)
+		_ = tx.Rollback()
+		LoadRecipes()
+		return
+	}
+
+	go setUserModified(conn.User, time.Now())
+	wsWrite202Accepted(conn, msg.MsgType+"_response", msg.State)
+
 }
 
 func wsReadMessage(msg []byte) (wsMessage, error) {

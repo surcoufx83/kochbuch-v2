@@ -38,9 +38,9 @@ func main() {
 	go services.AiConnect()
 
 	// Load entities into cache
-	services.LoadCategories(services.Db)
-	services.LoadUnits(services.Db)
-	services.LoadRecipes(services.Db)
+	services.LoadCategories()
+	services.LoadUnits()
+	services.LoadRecipes()
 
 	// Run Image Thumbnail generator
 	go services.ThbAutoGenerator()

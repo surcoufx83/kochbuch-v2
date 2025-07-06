@@ -1,12 +1,14 @@
 import { faCloudversify } from '@fortawesome/free-brands-svg-icons';
-import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faCalculator, faCamera, faCaretLeft, faCaretRight, faCheck, faCircleNotch, faCloudArrowUp, faFireBurner, faHeart, faHome, faHurricane, faLanguage, faMinus, faO, faPen, faPenAlt, faPepperHot, faPlus, faPrint, faQuoteLeft, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
-import { faClock, faFaceSadCry, faFaceSadTear } from '@fortawesome/free-regular-svg-icons';
+import { faClock, faFaceSadTear, faSquare, faSquareCheck } from '@fortawesome/free-regular-svg-icons';
+import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faBook, faBookAtlas, faBookOpen, faCalculator, faCamera, faCaretLeft, faCaretRight, faCheck, faCircleNotch, faCirclePlus, faCloudArrowUp, faFireBurner, faFloppyDisk, faHeart, faHome, faInfoCircle, faLanguage, faMinus, faO, faPen, faPepperHot, faPlus, faPrint, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
 
 export const IconLib = {
     accountNone: faUser,
     account: faUser,
     ailocalized: faLanguage,
     attention: faTriangleExclamation,
+    boxCheck: faSquareCheck,
+    boxUncheck: faSquare,
     calc: faCalculator,
     calcMinus: faMinus,
     calcPlus: faPlus,
@@ -14,6 +16,8 @@ export const IconLib = {
     caretLeft: faCaretLeft,
     caretRight: faCaretRight,
     clock: faClock,
+    collection: faBookOpen,
+    collectionNew: faPlus,
     difficulty: {
         0: faO,
         1: faMinus,
@@ -23,6 +27,7 @@ export const IconLib = {
     edit: faPen,
     goDownToArrow: faTurnDown,
     home: faHome,
+    info: faInfoCircle,
     ingredients: faPepperHot,
     like: faHeart,
     login: faUnlockKeyhole,
@@ -35,6 +40,7 @@ export const IconLib = {
     recipeNew: faPlus,
     reset: faRotateLeft,
     sadFace: faFaceSadTear,
+    save: faFloppyDisk,
     search: faSearch,
     searchClose: faX,
     searchStart: faCheck,

@@ -1,6 +1,12 @@
 import { L10nLocale } from "./types";
 
 export const KB_En: L10nLocale = {
+    collections: {
+        defaultCollection: {
+            description: "",
+            title: "My Cookbook",
+        },
+    },
     common: {
         language: {
             de: "German",
@@ -58,6 +64,14 @@ export const KB_En: L10nLocale = {
     login: {
         loginWithNcButton: "Log in with Nextcloud account"
     },
+    me: {
+        title: "Your Digital Cookbook",
+        description: "This is your personal space — here you’ll find all your recipes, whether you created or saved them.",
+        collections: {
+            title: "Collections",
+            description: "Recipes are organized in collections. We’ve automatically created a default collection for you, but you can create as many as you like — for example, for the best baking recipes, desserts, or cocktails."
+        }
+    },
     navbar: {
         brand: {
             pageTitle: "Cookbook",
@@ -83,9 +97,13 @@ export const KB_En: L10nLocale = {
             2: "Medium",
             3: "Difficult"
         },
+        hasAdminAccess: "Visible only because you’re logged in as an admin.",
         isLoading: "Recipe data is currently loading...",
         loadingFailed: "The recipe could not be loaded. You will be automatically redirected to the homepage...",
         modifiedAndUser: "[0] by ",
+        printBtn: "Print",
+        saveBtn: "Save",
+        saveBtnAlreadySaved: "Saved",
         submittedBy: "Submitted by [0]",
         shareBtn: "Share",
         share: {
@@ -123,6 +141,7 @@ export const KB_En: L10nLocale = {
     recipeOwnerInfo: {
         title: "Edit Notice",
         description: "This recipe was created by you. You can edit it or adjust its visibility at any time. The corresponding options can be found further below, after the preparation steps.",
+        adminDescription: "This recipe was created by [0], but is visible to you because you’re logged in as an admin. Management options for this recipe can be found below the preparation steps.",
         gothereLink: "Jump there"
     },
     recipePreparation: {
@@ -143,6 +162,24 @@ export const KB_En: L10nLocale = {
             days: ['1 d', '[0] d', '1 day', '[0] days'],
             hours: ['1 h', '[0] h', '1 hour', '[0] hours'],
             minutes: ['1 min', '[0] min', '1 minute', '[0] minutes']
+        },
+    },
+    saveToCollection: {
+        confirmMsg: "Recipe has been saved.",
+        gotoCollectionLink: [
+            "Go to recipe collection",
+            "Go to your collections",
+        ],
+        pickCollection: {
+            description: "Choose a collection to save the recipe to.",
+            itemCount: [
+                "Contains no recipes yet",
+                "Contains one recipe",
+                "Contains [0] recipes",
+            ],
+            titleInputLabel: "Name for the recipe collection:",
+            newBtn: "New Collection",
+            saveBtn: "Save",
         },
     },
 }

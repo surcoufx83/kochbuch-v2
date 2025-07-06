@@ -100,7 +100,6 @@ export class WebSocketService {
   public Login(state: string, code: string): Subject<boolean | 'wait'> {
     let reply = new Subject<boolean | 'wait'>();
     const sub = this.events.subscribe((e) => {
-      console.log(e)
       if (!e || e.type !== 'oauth2_response') {
         return;
       }
@@ -165,7 +164,7 @@ export class WebSocketService {
     }
   }
 
-  SendMessageAndWait(msg: WsMessage): Promise<[number, any]> {
+  SendMessageAndWait(msg: WsMessage, waittime: number = 30000): Promise<[number, any]> {
     return new Promise<[number, any]>((resolve, reject) => {
       if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
         reject(HttpStatusCode.ServiceUnavailable);
@@ -201,7 +200,7 @@ export class WebSocketService {
           reject(HttpStatusCode.RequestTimeout);
           sub.unsubscribe();
         }
-      }, 30000);
+      }, waittime);
 
     });
 

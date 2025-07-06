@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Recipe } from '../types';
 
 @Injectable({
@@ -15,37 +15,55 @@ export class IdbService {
   public isOpen = this._isOpen.asObservable();
 
   constructor() {
-    setTimeout(() => {
-      this.open();
-    }, 0);
+    this.open();
   }
 
   public GetRecipe(id: number): Promise<IdbRecipe> {
     return new Promise((resolve, reject) => {
-      const dbRequest = indexedDB.open(this.dbname);
-
-      dbRequest.onsuccess = (event: any) => {
-        const db = event.target.result;
-        const transaction = db.transaction([this.recipesStore], 'readonly');
-        const objectStore = transaction.objectStore(this.recipesStore);
-
-        const request = objectStore.get(id);
-
-        request.onsuccess = () => {
-          const result = request.result;
-          if (result) {
-            result.data = JSON.parse(result.data) as Recipe;
-            resolve(result);
-          } else {
-            reject('Entity not found');
+      if (!this._isOpen.value) {
+        let sub: Subscription | undefined = this.isOpen.subscribe((state) => {
+          if (state === true) {
+            sub?.unsubscribe();
+            sub = undefined;
+            this.getRecipeMain(id, resolve, reject);
           }
-        };
+        });
+        setTimeout(() => {
+          if (sub) {
+            sub.unsubscribe();
+            reject("Connection timeout");
+            throw new Error("Connection timeout");
+          }
+        }, 30000);
+      }
+      this.getRecipeMain(id, resolve, reject);
+    });
+  }
 
-        request.onerror = (event: any) => reject(event);
+  private getRecipeMain(id: number, resolve: (value: IdbRecipe | PromiseLike<IdbRecipe>) => void, reject: (reason?: any) => void) {
+    const dbRequest = indexedDB.open(this.dbname);
+
+    dbRequest.onsuccess = (event: any) => {
+      const db = event.target.result;
+      const transaction = db.transaction([this.recipesStore], 'readonly');
+      const objectStore = transaction.objectStore(this.recipesStore);
+
+      const request = objectStore.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          result.data = JSON.parse(result.data) as Recipe;
+          resolve(result);
+        } else {
+          reject('Entity not found');
+        }
       };
 
-      dbRequest.onerror = (event: any) => reject(event);
-    });
+      request.onerror = (event: any) => reject(event);
+    };
+
+    dbRequest.onerror = (event: any) => reject(event);
   }
 
   public PutRecipe(recipe: Recipe): Promise<void> {
@@ -84,6 +102,10 @@ export class IdbService {
       console.log('IndexedDB upgrade needed: ', event);
       this.upgradeSchema(event);
     }
+
+    request.onsuccess = (event: Event) => {
+      this._isOpen.next(true);
+    }
   }
 
   private upgradeSchema(event: IDBVersionChangeEvent): void {
@@ -92,7 +114,7 @@ export class IdbService {
     }
   }
 
-  private upgradeSchema_v1(event: IDBVersionChangeEvent): void {
+  private upgradeSchema_v1(event: Event): void {
     if (!event.target) {
       console.warn('Event target is null', event);
       return;

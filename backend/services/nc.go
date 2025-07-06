@@ -591,87 +591,9 @@ func ncLoadUserCache() {
 	log.Printf("Loaded %d users into cache", len(userCache))
 
 	ncLoadUserGroupsCache()
-	ncLoadUserCollections()
+	loadCollections()
 
 	userMutex.Unlock()
-}
-
-func ncLoadUserCollections() {
-	fn := "ncLoadUserCollections()"
-	//log.Printf("%v: Loading user collections", fn)
-
-	query := "SELECT * FROM `user_collections`"
-	var colls []types.Collection
-
-	err := Db.Select(&colls, query)
-	if err != nil {
-		log.Fatalf("%v: Failed: %v", fn, err)
-	}
-
-	for _, coll := range colls {
-		user, found := userCache[coll.UserId]
-		if !found {
-			log.Fatalf("%v: Loaded collection %d with unknown user %d", fn, coll.Id, coll.UserId)
-		}
-
-		if user.Collections == nil {
-			user.Collections = make(map[uint32]*types.Collection)
-		}
-
-		user.Collections[coll.Id] = &coll
-
-		if coll.Modified.After(user.Modified) {
-			setUserModified(user, coll.Modified)
-		}
-	}
-	log.Printf("Loaded %d user collections into cache", len(colls))
-}
-
-func ncLoadUserCollectionItems() {
-	fn := "ncLoadUserCollectionItems()"
-	//log.Printf("%v: Loading user collection items", fn)
-
-	query := "SELECT `cr`.*, `c`.`user_id` FROM `user_collection_recipes` `cr` JOIN `user_collections` `c` ON `c`.`collection_id` = `cr`.`collection_id`"
-	var items []types.CollectionItem
-
-	err := Db.Select(&items, query)
-	if err != nil {
-		log.Fatalf("%v: Failed: %v", fn, err)
-	}
-
-	userMutex.Lock()
-	defer userMutex.Unlock()
-
-	for _, item := range items {
-		user, found := userCache[item.UserId]
-		if !found {
-			log.Fatalf("%v: Loaded collection item (Collection %d, Recipe %d) with unknown user %d", fn, item.CollectionId, item.RecipeId, item.UserId)
-		}
-
-		if user.Collections == nil {
-			user.Collections = make(map[uint32]*types.Collection)
-		}
-
-		coll, found := user.Collections[item.CollectionId]
-		if !found {
-			log.Fatalf("%v: Loaded collection item (Collection %d, Recipe %d, User %d) but collection is not loaded", fn, item.CollectionId, item.RecipeId, item.UserId)
-		}
-
-		if coll.Items == nil {
-			coll.Items = []types.CollectionItem{}
-		}
-
-		coll.Items = append(coll.Items, item)
-
-		if item.Modified.After(coll.Modified) {
-			setUserCollectionModified(coll, item.Modified)
-
-			if item.Modified.After(user.Modified) {
-				setUserModified(user, item.Modified)
-			}
-		}
-	}
-	log.Printf("Loaded %d collection items into cache", len(items))
 }
 
 func ncLoadUserGroupsCache() {
@@ -869,26 +791,6 @@ func registerUserProfile(tx *sql.Tx, profile nextcloudUserProfileResponse) (*typ
 	}
 
 	return user, nil
-}
-
-func setUserCollectionModified(coll *types.Collection, time time.Time) {
-	fn := fmt.Sprintf("setUserCollectionModified(%d, %s)", coll.Id, time)
-	log.Print(fn)
-	query := "UPDATE `user_collections` SET `modified` = ? WHERE `collection_id` = ?"
-
-	stmt, err := dbPrepareStmt("setUserCollectionModified", query)
-	if err != nil {
-		log.Printf("%s: Failed to prepare stmt: %v", fn, err)
-		return
-	}
-
-	_, err = stmt.Exec(time, coll.Id)
-	if err != nil {
-		log.Printf("%s: Failed to exec stmt: %v", fn, err)
-		return
-	}
-
-	coll.Modified = time
 }
 
 func setUserModified(user *types.UserProfile, time time.Time) {

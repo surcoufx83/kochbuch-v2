@@ -1,6 +1,12 @@
 import { L10nLocale } from "./types";
 
 export const KB_De: L10nLocale = {
+    collections: {
+        defaultCollection: {
+            description: "",
+            title: "Mein Kochbuch",
+        },
+    },
     common: {
         language: {
             de: "Deutsch",
@@ -58,6 +64,14 @@ export const KB_De: L10nLocale = {
     login: {
         loginWithNcButton: "Anmelden mit Nextcloud-Konto"
     },
+    me: {
+        title: "Dein digitales Kochbuch",
+        description: "Das ist dein persönlicher Bereich, hier findest du alle deine Rezepte - egal ob von dir erstellt oder gespeichert.",
+        collections: {
+            title: "Sammlungen",
+            description: "Rezepte werden in Sammlungen organisiert. Wir haben für dich automatisch eine Standard-Sammlung angelegt, du kannst aber eine beliebige Anzahl weiterer anlegen, zum Beispiel für die besten Backrezepte, Deserts, Cocktails."
+        },
+    },
     navbar: {
         brand: {
             pageTitle: "Kochbuch",
@@ -83,9 +97,13 @@ export const KB_De: L10nLocale = {
             2: "Mittelschwer",
             3: "Schwierig"
         },
+        hasAdminAccess: "Nur sichtbar, weil du als Admin angemeldet bist.",
         isLoading: "Rezeptdaten werden gerade geladen ...",
         loadingFailed: "Das Rezept konnte nicht geladen werden. Du wirst automatisch auf die Startseite umgeleitet...",
         modifiedAndUser: "[0] von ",
+        printBtn: "Drucken",
+        saveBtn: "Speichern",
+        saveBtnAlreadySaved: "Gespeichert",
         submittedBy: "Eingetragen von [0]",
         shareBtn: "Teilen",
         share: {
@@ -123,6 +141,7 @@ export const KB_De: L10nLocale = {
     recipeOwnerInfo: {
         title: "Bearbeitungshinweis",
         description: "Dieses Rezept wurde von dir selbst erstellt. Du kannst es jederzeit bearbeiten oder die Sichtbarkeit anpassen. Die entsprechenden Optionen findest du weiter unten nach den Zubereitungsschritten.",
+        adminDescription: "Dieses Rezept wurde von [0] erstellt, ist aber für dich sichtbar, da du als Admin angemeldet bist. Optionen zum Verwalten des Rezepts findest du weiter unten nach den Zubereitungsschritten.",
         gothereLink: "Dahin springen"
     },
     recipePreparation: {
@@ -143,6 +162,24 @@ export const KB_De: L10nLocale = {
             days: ['1 Tag', '[0] Tage', '1 Tag', '[0] Tage'],
             hours: ['1 Std.', '[0] Std.', '1 Stunde', '[0] Stunden'],
             minutes: ['1 Min.', '[0] Min.', '1 Minute', '[0] Minuten'],
+        },
+    },
+    saveToCollection: {
+        confirmMsg: "Rezept wurde gespeichert.",
+        gotoCollectionLink: [
+            "Zur Rezeptesammlung",
+            "Zu deinen Sammlungen",
+        ],
+        pickCollection: {
+            description: "Wähle eine Sammlung in die das Rezept gespeichert wird.",
+            itemCount: [
+                "Enthält noch keine Rezepte",
+                "Enthält ein Rezept",
+                "Enthält [0] Rezepte",
+            ],
+            titleInputLabel: "Name für die Rezeptesammlung:",
+            newBtn: "Neue Sammlung",
+            saveBtn: "Speichern",
         },
     },
 }

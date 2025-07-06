@@ -17,6 +17,25 @@ export type Category = {
     items: { [id: number]: CategoryItem },
 }
 
+export type Collection = {
+    created: string,
+    deleted: string | null,
+    description: string,
+    id: number,
+    items: CollectionItem[],
+    modified: string,
+    published: string | null,
+    title: string,
+}
+
+export type CollectionItem = {
+    created: string,
+    isOwner: boolean,
+    modified: string,
+    recipeId: number,
+    remarks: string,
+}
+
 export type Group = {
     displayname: string,
     id: number,
@@ -39,6 +58,7 @@ export type Recipe = {
     pictures: RecipePicture[],
     preparation: RecipePreparation[],
     published: string | null,
+    reason?: RecipeAvailableReason,
     servingsCount: number,
     sharedInternal: boolean,
     sharedPublic: boolean,
@@ -48,6 +68,13 @@ export type Recipe = {
     timing: RecipeTiming,
     user: User | null,
     userLocale: string,
+}
+
+export enum RecipeAvailableReason {
+    sharedPublic = 0,
+    sharedInternal = 1,
+    isOwner = 2,
+    isAdmin = 3,
 }
 
 export type RecipeCategoryitem = {
@@ -161,6 +188,7 @@ export type UnitLocalization = {
 
 export type UserSelf = {
     admin: boolean,
+    collections: { [key: number]: Collection },
     created: string,
     displayname: string,
     email: string | null,

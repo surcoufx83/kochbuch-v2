@@ -48,13 +48,17 @@ export class RecipesComponent implements OnDestroy, OnInit {
         return;
       this.LoggedIn.set(state);
     }));
+
     this.subs.push(this.wsService.User.subscribe((u) => this.User.set(u ?? false)));
+
     this.subs.push(this.l10nService.userLocale.subscribe((l) => {
       if (l !== this.LangCode()) {
         this.LangCode.set(l);
       }
     }));
+
     this.subs.push(this.sharedDataService.Recipes.subscribe((items) => {
+      console.log(items)
       if (Object.keys(items).length == 0)
         return;
       this.Recipes.set(

@@ -167,6 +167,39 @@ func aiGetAssistants() (int, error) {
 	return http.StatusNotFound, err
 }
 
+func aiLogMessage(dir string, content string, recipe *types.Recipe, thread *createThreadResp) {
+	fn := fmt.Sprintf("aiLogMessage(%s)", dir)
+	if recipe != nil && thread != nil {
+		fn = fmt.Sprintf("aiLogMessage(%s, %d, %s)", dir, recipe.Id, thread.RunID)
+	} else if recipe != nil {
+		fn = fmt.Sprintf("aiLogMessage(%s, %d)", dir, recipe.Id)
+	} else if thread != nil {
+		fn = fmt.Sprintf("aiLogMessage(%s, %s)", dir, thread.RunID)
+	}
+
+	query := "INSERT INTO `apilog`(`severity`, `reporter`, `agent`, `request_type`, `recipe_id`, `message`) VALUES('I', 'Server', ?, ?, ?, ?)"
+	stmt, err := dbPrepareStmt("aiLogMessage", query)
+	if err != nil {
+		log.Printf("%s: Failed to prepare stmt: %v", fn, err)
+		return
+	}
+
+	run := ""
+	if thread != nil {
+		run = thread.RunID
+	}
+
+	recipeid := -1
+	if recipe != nil {
+		recipeid = int(recipe.Id)
+	}
+	_, err = stmt.Exec(run, dir, recipeid, content)
+	if err != nil {
+		log.Printf("%s: Failed to execute stmt: %v", fn, err)
+		return
+	}
+}
+
 func aiCreateAssistant() (int, error) {
 	log.Println("Creating new translator assistant")
 
@@ -186,6 +219,8 @@ func aiCreateAssistant() (int, error) {
 		return http.StatusServiceUnavailable, err
 	}
 
+	aiLogMessage("> CrAss", string(reqDataBytes), nil, nil)
+
 	bodyReader := bytes.NewReader(reqDataBytes)
 	req, err := http.NewRequest("POST", aiBaseUrl+"assistants", bodyReader)
 	if err != nil {
@@ -200,6 +235,7 @@ func aiCreateAssistant() (int, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		aiLogMessage("> CrAss", fmt.Sprintf("Failed sending: %v", err), nil, nil)
 		log.Printf("  > Failed sending request to create assistant: %v", err)
 		return http.StatusServiceUnavailable, err
 	}
@@ -208,13 +244,18 @@ func aiCreateAssistant() (int, error) {
 	// Check for a successful HTTP status code.
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		aiLogMessage("< CrAss", string(body), nil, nil)
+		aiLogMessage("< CrAss", fmt.Sprintf("Unexpected status: %d", resp.StatusCode), nil, nil)
 		log.Printf("  > Unexpected status to create assistant: %d  body = %s", resp.StatusCode, string(body))
 		return http.StatusServiceUnavailable, err
 	}
 
 	var assistantsResp getAssistantsRespListitem
+	body, _ := io.ReadAll(resp.Body)
+	aiLogMessage("< CrAss", string(body), nil, nil)
+
 	if err := json.NewDecoder(resp.Body).Decode(&assistantsResp); err != nil {
-		body, _ := io.ReadAll(resp.Body)
+		aiLogMessage("< CrAss", fmt.Sprintf("Failed parsing: %v", err), nil, nil)
 		log.Printf("  > Failed to parse response body = %s", string(body))
 		return http.StatusServiceUnavailable, err
 	}
@@ -290,7 +331,7 @@ func aiTranslateRecipesLoop() bool {
 
 		}
 
-		aiApplyTranslations(*recipe, source, translations)
+		aiApplyTranslations(recipe, source, translations)
 	}
 	return true
 }
@@ -316,6 +357,7 @@ func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, 
 		return []string{}, []string{}, err
 	}
 	// fmt.Println(string(reqJson))
+	aiLogMessage("> CrThr", string(reqJson), recipe, nil)
 
 	// Send request to Open AI API to create and run a messaging thread
 	res, createdThread := aiCreateThread(reqJson)
@@ -330,7 +372,10 @@ func aiTranslateRecipe(recipe *types.Recipe, from string, to string) ([]string, 
 	}
 
 	msg, err := aiGetThreadMessage(createdThread)
+	msgbody, _ := json.Marshal(msg)
+	aiLogMessage("< Msg", string(msgbody), recipe, createdThread)
 	if err != nil {
+		aiLogMessage("< Msg", fmt.Sprintf("Failed decoding: %v", err), nil, nil)
 		return []string{}, []string{}, err
 	}
 
@@ -367,7 +412,7 @@ func aiRecipeFillTranslationTableItem(table []string, phrase string) []string {
 	return table
 }
 
-func aiCreateThread(message []byte) (bool, createThreadResp) {
+func aiCreateThread(message []byte) (bool, *createThreadResp) {
 	log.Printf("  > Creating messaging thread")
 
 	msg := types.AiMessageRequest{
@@ -386,14 +431,14 @@ func aiCreateThread(message []byte) (bool, createThreadResp) {
 	reqDataBytes, err := json.Marshal(threadReq)
 	if err != nil {
 		log.Printf("  > > Failed preparing request payload: %v", err)
-		return false, createThreadResp{}
+		return false, nil
 	}
 
 	bodyReader := bytes.NewReader(reqDataBytes)
 	req, err := http.NewRequest("POST", aiBaseUrl+"threads/runs", bodyReader)
 	if err != nil {
 		log.Printf("   > > Failed preparing request to create thread: %v", err)
-		return false, createThreadResp{}
+		return false, nil
 	}
 
 	req.Header.Set("Authorization", "Bearer "+aiApiKey)
@@ -403,29 +448,29 @@ func aiCreateThread(message []byte) (bool, createThreadResp) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("  > > Failed sending request to create thread: %v", err)
-		return false, createThreadResp{}
+		return false, nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Unexpected status to create thread: %d  body = %s", resp.StatusCode, string(body))
-		return false, createThreadResp{}
+		return false, nil
 	}
 
 	var threadResp createThreadResp
 	if err := json.NewDecoder(resp.Body).Decode(&threadResp); err != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Failed to parse response body = %s", string(body))
-		return false, createThreadResp{}
+		return false, nil
 	}
 
 	log.Printf("  > > Messaging thread created: %v", threadResp.RunID)
 
-	return true, threadResp
+	return true, &threadResp
 }
 
-func aiWaitThread(createdThread createThreadResp) (bool, error) {
+func aiWaitThread(createdThread *createThreadResp) (bool, error) {
 	log.Println("  > Waiting for message thread finished")
 
 	for i := 1; i <= aiTranslatorWaitRetries; i++ {
@@ -444,13 +489,13 @@ func aiWaitThread(createdThread createThreadResp) (bool, error) {
 
 }
 
-func aiGetThreadStatus(createdThread createThreadResp) (getRunStatusResp, error) {
+func aiGetThreadStatus(createdThread *createThreadResp) (*getRunStatusResp, error) {
 	log.Println("  > Requesting thread status")
 
 	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+createdThread.ThreadID+"/runs/"+createdThread.RunID, nil)
 	if err != nil {
 		log.Printf("  > > Failed preparing request: %v", err)
-		return getRunStatusResp{}, err
+		return nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+aiApiKey)
@@ -460,33 +505,33 @@ func aiGetThreadStatus(createdThread createThreadResp) (getRunStatusResp, error)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("  > > Failed sending request: %v", err)
-		return getRunStatusResp{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Unexpected status: %d  body = %s", resp.StatusCode, string(body))
-		return getRunStatusResp{}, err
+		return nil, err
 	}
 
 	var payload getRunStatusResp
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Failed to parse response body = %s", string(body))
-		return getRunStatusResp{}, err
+		return nil, err
 	}
 
-	return payload, nil
+	return &payload, nil
 }
 
-func aiGetThreadMessage(createdThread createThreadResp) (types.AiMessage, error) {
+func aiGetThreadMessage(createdThread *createThreadResp) (*types.AiMessage, error) {
 	log.Println("  > Requesting assistant message")
 
 	req, err := http.NewRequest("GET", aiBaseUrl+"threads/"+createdThread.ThreadID+"/messages", nil)
 	if err != nil {
 		log.Printf("  > > Failed preparing request: %v", err)
-		return types.AiMessage{}, err
+		return nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+aiApiKey)
@@ -496,27 +541,27 @@ func aiGetThreadMessage(createdThread createThreadResp) (types.AiMessage, error)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("  > > Failed sending request: %v", err)
-		return types.AiMessage{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Unexpected status: %d  body = %s", resp.StatusCode, string(body))
-		return types.AiMessage{}, err
+		return nil, err
 	}
 
 	var msgResp getThreadMessagesResp
 	if err := json.NewDecoder(resp.Body).Decode(&msgResp); err != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Failed to parse response body = %s", string(body))
-		return types.AiMessage{}, err
+		return nil, err
 	}
 
 	if len(msgResp.Messages) == 0 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("  > > Response does not contain any messages = %s", string(body))
-		return types.AiMessage{}, err
+		return nil, err
 	}
 
 	for i, msg := range msgResp.Messages {
@@ -524,18 +569,18 @@ func aiGetThreadMessage(createdThread createThreadResp) (types.AiMessage, error)
 			fmt.Printf("  > > First message not expected role assistant: %v", msg)
 		}
 		if msg.Role == "assistant" {
-			return msg, nil
+			return &msg, nil
 		}
 	}
 	fmt.Printf("  > > No message containing role assistant! %v", msgResp)
 
-	return types.AiMessage{}, errors.New("not found")
+	return nil, errors.New("not found")
 }
 
-func aiGetTranslationFromMessage(msg types.AiMessage) ([]string, error) {
+func aiGetTranslationFromMessage(msg *types.AiMessage) ([]string, error) {
 	log.Println("  > Getting translation from message")
 
-	if len(msg.Content) == 0 {
+	if msg == nil || len(msg.Content) == 0 {
 		fmt.Printf("  > > Message content is empty: %v", msg)
 		return []string{}, errors.New("content is empty")
 	}
@@ -555,7 +600,7 @@ func aiGetTranslationFromMessage(msg types.AiMessage) ([]string, error) {
 
 }
 
-func aiApplyTranslations(recipe types.Recipe, sourcePhrases []string, translations map[string][]string) {
+func aiApplyTranslations(recipe *types.Recipe, sourcePhrases []string, translations map[string][]string) {
 	log.Println("  > Update recipe with new translations")
 	for _, l := range Locales {
 		if recipe.UserLocale == l || len(translations[l]) == 0 {
@@ -565,12 +610,12 @@ func aiApplyTranslations(recipe types.Recipe, sourcePhrases []string, translatio
 			log.Printf("  > Missmatch between requested phrases and translated phrases! %d != %d", len(sourcePhrases), len(translations[l]))
 			return
 		}
-		recipe = aiApplyTranslation(recipe, l, sourcePhrases, translations[l])
+		aiApplyTranslation(recipe, l, sourcePhrases, translations[l])
 	}
 	PutRecipeLocalization(recipe)
 }
 
-func aiApplyTranslation(recipe types.Recipe, l string, sourcePhrases []string, translations []string) types.Recipe {
+func aiApplyTranslation(recipe *types.Recipe, l string, sourcePhrases []string, translations []string) {
 	log.Printf("  > Update recipe with new %v translations", l)
 	org := recipe.UserLocale
 
@@ -598,8 +643,6 @@ func aiApplyTranslation(recipe types.Recipe, l string, sourcePhrases []string, t
 			}
 		}
 	}
-
-	return recipe
 }
 
 func aiApplyPhrase(orig string, sourcePhrases []string, translations []string) string {

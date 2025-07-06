@@ -69,7 +69,7 @@ func dbPrepareStmt(key string, query string) (*sql.Stmt, error) {
 
 	stmt, found := Stmts[key]
 	if found {
-		log.Printf("%v: Already prepared", fn)
+		// log.Printf("%v: Already prepared", fn)
 		return stmt, nil
 	}
 
@@ -80,6 +80,6 @@ func dbPrepareStmt(key string, query string) (*sql.Stmt, error) {
 	}
 	Stmts[key] = stmt
 
-	log.Printf("%v: prepared", fn)
+	// log.Printf("%v: prepared", fn)
 	return stmt, nil
 }

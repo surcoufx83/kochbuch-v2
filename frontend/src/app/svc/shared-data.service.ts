@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { Category, Recipe, RecipePicture, Unit } from '../types';
+import { Category, Collection, Recipe, RecipePicture, Unit } from '../types';
 import { IdbRecipe, IdbService } from './idb.service';
 import { WebSocketService, WsMessage } from './web-socket.service';
+import { HttpStatusCode } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -80,6 +81,26 @@ export class SharedDataService {
     localStorage.removeItem('kbRecipes');
     localStorage.removeItem('kbCategories');
     localStorage.removeItem('kbUnits');
+  }
+
+  public createCollection(title: string, description: string): Promise<Collection> {
+    return new Promise<Collection>((resolve, reject) => {
+      this.wsService.SendMessageAndWait({
+        type: 'user_collection_create',
+        content: {
+          title: title,
+          description: description,
+        },
+      }, 10000).then((result) => {
+        if (result[0] === HttpStatusCode.Accepted) {
+          resolve(result[1]['collection'] as Collection);
+          return;
+        }
+        reject("invalid response");
+      }).catch(() => {
+        reject("unhandled error");
+      });
+    });
   }
 
   public getRecipe(id: number, reload: boolean = true): Promise<IdbRecipe> {
@@ -225,6 +246,22 @@ export class SharedDataService {
     this.reloadRecipe(recipeId);
   }
 
+  public pushRecipeToCollections(colls: number[], recipe: Recipe): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+      this.wsService.SendMessageAndWait({
+        type: 'recipe_to_collections',
+        content: {
+          recipeId: recipe.id,
+          collectionIds: colls,
+        }
+      }, 10000).then((result) => {
+        resolve(true);
+      }).catch((reason) => {
+        reject(reason);
+      });
+    });
+  }
+
   private reloadRecipe(recipeId: number): void {
     this.indexDbService.GetRecipe(recipeId)
       .then((data: { id: number, etag: string, data: Recipe }) => {
@@ -288,8 +325,6 @@ export class SharedDataService {
   }
 
   private wsMessageReceived(msg: WsMessage): void {
-    console.log('wsMessageReceived', msg)
-
     switch (msg.type) {
 
       case 'categories_etag':
@@ -320,7 +355,6 @@ export class SharedDataService {
         if (Object.hasOwn(recipedata, 'error')) {
           return;
         }
-        console.log(recipedata)
         this.indexDbService.PutRecipe(recipedata as Recipe);
         this._recipeUpdated.next({
           id: (recipedata as Recipe).id,
