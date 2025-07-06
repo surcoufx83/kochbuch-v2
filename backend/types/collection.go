@@ -67,5 +67,5 @@ func (c *Collection) RemoveItem(r *Recipe) {
 	if removeat == -1 {
 		return
 	}
-	c.Items = slices.Replace(c.Items, removeat, 1)
+	c.Items = slices.Replace(c.Items, removeat, removeat+1)
 }

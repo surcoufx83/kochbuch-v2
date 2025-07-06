@@ -31,7 +31,6 @@ export class IngredientsCalculator {
             this.unitWithIncomingConversion[uc.toId] = i;
         });
 
-        console.log(recipe)
         recipe.preparation.forEach((step) => {
             const copystep: CalculatorPreparationStep = {
                 id: step.id,
@@ -62,7 +61,6 @@ export class IngredientsCalculator {
             });
             this.steps.push(copystep);
         });
-        console.log(recipe)
     }
 
     private convertToBestUnit(ing: CalculatorIngredient) {
