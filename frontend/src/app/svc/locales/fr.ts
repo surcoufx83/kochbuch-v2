@@ -152,6 +152,16 @@ export const KB_Fr: L10nLocale = {
     recipePreparationTime: {
         title: "Temps de préparation",
         longDurationWarning: "Veuillez noter que la durée totale de préparation pour cette recette est d’au moins [0].",
+        recalcWarning: {
+            screen: [
+                "Le temps de préparation est basé sur 1 portion et n’est pas automatiquement ajusté pour un plus grand nombre de portions. Merci d’en tenir compte lors de la préparation.",
+                "Le temps de préparation est basé sur [0] portions et n’est pas automatiquement ajusté pour un plus grand nombre de portions. Merci d’en tenir compte lors de la préparation."
+            ],
+            print: [
+                "Temps de préparation pour 1 portion !",
+                "Temps de préparation pour [0] portions !"
+            ]
+        },
         items: {
             cooking: ["Temps de cuisson", "[0] cuisson"],
             preparing: ["Temps de préparation", "[0] préparation"],

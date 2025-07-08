@@ -228,7 +228,7 @@
                             <fa-icon [icon]="icons.calcMinus"></fa-icon>
                         </button>
 
-                        <input class="self-stretch" type="number" min="1" max="100" step="1"
+                        <input class="self-stretch text-center" type="number" min="1" max="100" step="1"
                             [(ngModel)]="calculatorServings" (keyup)="onSetServingsCount(calculatorServings)" />
 
                         <button class="btn-green mx-2" (click)="onSetServingsCount(calculatorServings + 1)">
@@ -240,6 +240,19 @@
                         </div>
 
                     </div>
+
+                    @if (recipe.timing.total !== null && calculatorServings > (recipe.servingsCount * 1.8)) {
+                    <div class="p-2 mt-2">
+                        <p class="text-warn text-sm rounded-md mb-0!"><!-- duration waning -->
+                            <fa-icon [icon]="icons.clock" class="me-2"></fa-icon>
+                            {{ LocaleReplace(Locale.recipePreparationTime.recalcWarning.screen[recipe.servingsCount ===
+                            1 ?
+                            0 : 1]
+                            , [recipe.servingsCount]) }}
+                        </p><!-- duration waning -->
+                    </div>
+                    }
+
                 </div><!-- ingredients calculator block -->
 
                 <div class="table rounded-md w-full print:w-auto">
@@ -281,6 +294,18 @@
                 <fa-icon [icon]="icons.preparation" class="me-2"></fa-icon>
                 {{ Locale.recipePreparation.title }}
             </h4>
+
+            @if (recipe.timing.total !== null && calculatorServings > (recipe.servingsCount * 1.8)) {
+            <div class="p-2 hidden print:block">
+                <p class="text-warn text-sm rounded-md"><!-- duration waning -->
+                    <fa-icon [icon]="icons.clock" class="me-2"></fa-icon>
+                    {{ LocaleReplace(Locale.recipePreparationTime.recalcWarning.print[recipe.servingsCount === 1
+                    ?
+                    0 : 1]
+                    , [recipe.servingsCount]) }}
+                </p><!-- duration waning -->
+            </div>
+            }
 
             @for (item of steps(); track $index) {
 

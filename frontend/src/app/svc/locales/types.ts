@@ -133,6 +133,10 @@ export type L10nLocale = {
     recipePreparationTime: {
         title: string,
         longDurationWarning: string,
+        recalcWarning: {
+            screen: string[],
+            print: string[],
+        },
         items: {
             cooking: string[],
             preparing: string[],

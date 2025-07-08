@@ -152,6 +152,16 @@ export const KB_En: L10nLocale = {
     recipePreparationTime: {
         title: "Preparation Time",
         longDurationWarning: "Please note that the total preparation time for this recipe is at least [0].",
+        recalcWarning: {
+            screen: [
+                "The preparation time is based on 1 serving and is not automatically adjusted for more servings. Please take that into account when preparing.",
+                "The preparation time is based on [0] servings and is not automatically adjusted for more servings. Please take that into account when preparing."
+            ],
+            print: [
+                "Preparation time applies to 1 serving!",
+                "Preparation time applies to [0] servings!"
+            ]
+        },
         items: {
             cooking: ["Cooking/Baking Time", "[0] cook"],
             preparing: ["Preparation Time", "[0] prep"],
