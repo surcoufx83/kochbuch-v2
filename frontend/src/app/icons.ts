@@ -1,6 +1,6 @@
 import { faCloudversify } from '@fortawesome/free-brands-svg-icons';
 import { faClock, faFaceSadTear, faSquare, faSquareCheck } from '@fortawesome/free-regular-svg-icons';
-import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faBook, faBookAtlas, faBookOpen, faCalculator, faCamera, faCaretLeft, faCaretRight, faCheck, faCircleNotch, faCirclePlus, faCloudArrowUp, faFireBurner, faFloppyDisk, faHeart, faHome, faInfoCircle, faLanguage, faMinus, faO, faPen, faPepperHot, faPlus, faPrint, faQuoteRight, faRotateLeft, faSearch, faShare, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesUp, faAngleUp, faBars, faBarsStaggered, faBook, faBookAtlas, faBookOpen, faCalculator, faCamera, faCaretLeft, faCaretRight, faCheck, faCircleNotch, faCirclePlus, faCloudArrowUp, faFireBurner, faFloppyDisk, faHeart, faHome, faInfoCircle, faLanguage, faMinus, faO, faPen, faPepperHot, faPlus, faPrint, faQuoteRight, faRotateLeft, faSearch, faShare, faSliders, faTriangleExclamation, faTurnDown, faUnlockKeyhole, faUser, faX } from '@fortawesome/free-solid-svg-icons';
 
 export const IconLib = {
     accountNone: faUser,
@@ -44,6 +44,7 @@ export const IconLib = {
     search: faSearch,
     searchClose: faX,
     searchStart: faCheck,
+    settings: faSliders,
     share: faShare,
     spinner: faCircleNotch,
     upload: faCloudArrowUp,

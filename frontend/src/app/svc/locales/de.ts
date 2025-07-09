@@ -138,6 +138,37 @@ export const KB_De: L10nLocale = {
             nameHeader: "Zutatenbeschreibung",
         },
     },
+    recipeManagement: {
+        title: "Rezept verwalten",
+        adminDescription: "Dieses Rezept wurde von [0] erstellt. Als Administrator kannst du sowohl das Rezept bearbeiten, als auch alle sonstigen Einstellungen vornehmen.",
+        gotoOwnerBtn: [
+            "Zu [0] Account",
+            "Zu [0]s Account",
+        ],
+        ownerDescription: "Du kannst von dir erstellte Rezepte jederzeit ändern oder die Sichtbarkeit anpassen. Alle Optionen findest du in diesem Abschnitt.",
+        created: "Erstellt am [0]",
+        modified: "Zuletzt bearbeitet am [0]",
+        delete: {
+            title: "Löschen",
+            description: "Du möchtest das Rezept loswerden? Mit dem Löschbutton kannst du das Rezept löschen. Diese Aktion kann nicht rückgängig gemacht werden. Alle Informationen, Bilder, Kommentare werden ebenfalls entfernt.",
+            btn: "Rezept löschen"
+        },
+        edit: {
+            title: "Bearbeiten",
+            description: "Im Bearbeiten-Modus kannst du sämtliche Inhalte des Rezepts überarbeiten.",
+            btn: "Bearbeiten"
+        },
+        publish: {
+            title: "Veröffentlichen",
+            description: "Rezepte in unserem Kochbuch sind erstmal nur für dich sichtbar. Du kannst dein eigenes Rezept aber auch für andere freigeben und dann einfach per Teilen-Button anderen senden.",
+            togglePrivate: "Privat",
+            toggleInternal: "Angemeldete Benutzer",
+            togglePublic: "Öffentlich",
+            descriptionPrivate: "Privat bedeutet Privat. Dieses Rezept gehört nur dir und kann von niemandem sonst aufgerufen oder angezeigt werden. Das ist die Standardeinstellung für neu erstellte Rezepte. Du hast die Möglichkeit das Rezept zu drucken, teilen per Whats App ist aber nicht möglich.",
+            descriptionInternal: "Angemeldete Benutzer – la familia: Diese Stufe ermöglicht anderen Benutzern die ein Nextcloud-Konto besitzen, das Rezept aufzurufen. Damit ermöglichst du anderen aus der Familie und engem Freundeskreis, das Rezept aufzurufen und nachzukochen. Teilen per Whats App ist aber immer noch nicht möglich.",
+            descriptionPublic: "Öffentlich: Die ganze Welt kann das Rezept sehen, sofern jemand den Link zum Rezept kennt. In dieser Stufe kann jeder das Rezept frei mit anderen Teilen und das Rezept in seinem Freundeskreis bekannt machen."
+        }
+    },
     recipeOwnerInfo: {
         title: "Bearbeitungshinweis",
         description: "Dieses Rezept wurde von dir selbst erstellt. Du kannst es jederzeit bearbeiten oder die Sichtbarkeit anpassen. Die entsprechenden Optionen findest du weiter unten nach den Zubereitungsschritten.",

@@ -138,6 +138,37 @@ export const KB_Fr: L10nLocale = {
             nameHeader: "Description de l’ingrédient",
         },
     },
+    recipeManagement: {
+        title: "Gérer la recette",
+        adminDescription: "Cette recette a été créée par [0]. En tant qu’administrateur, tu peux la modifier et accéder à tous les paramètres associés.",
+        gotoOwnerBtn: [
+            "Voir le compte de [0]",
+            "Voir le compte de [0]"
+        ],
+        ownerDescription: "Tu peux modifier les recettes que tu as créées ou en ajuster la visibilité à tout moment. Toutes les options se trouvent dans cette section.",
+        created: "Créée le [0]",
+        modified: "Dernière modification le [0]",
+        delete: {
+            title: "Supprimer",
+            description: "Tu veux te débarrasser de cette recette ? Clique sur le bouton de suppression. Cette action est irréversible. Toutes les informations, images et commentaires seront également supprimés.",
+            btn: "Supprimer la recette"
+        },
+        edit: {
+            title: "Modifier",
+            description: "En mode édition, tu peux revoir l’intégralité du contenu de la recette.",
+            btn: "Modifier"
+        },
+        publish: {
+            title: "Publier",
+            description: "Les recettes sont privées par défaut. Tu peux les rendre visibles pour d'autres et les partager via le bouton de partage.",
+            togglePrivate: "Privée",
+            toggleInternal: "Utilisateurs connectés",
+            togglePublic: "Publique",
+            descriptionPrivate: "Privée signifie vraiment privée. Cette recette t’appartient et personne d’autre ne peut la consulter. C’est l’option par défaut pour toute nouvelle recette. Tu peux l’imprimer, mais pas la partager via WhatsApp.",
+            descriptionInternal: "Utilisateurs connectés – la familia : Ce niveau permet aux utilisateurs possédant un compte Nextcloud d’accéder à ta recette. Parfait pour la famille et les amis proches. Le partage via WhatsApp reste désactivé.",
+            descriptionPublic: "Publique : Tout le monde peut voir cette recette s’il a le lien. Ce niveau permet un partage libre avec les autres et de la faire connaître à ton entourage."
+        }
+    },
     recipeOwnerInfo: {
         title: "Note de modification",
         description: "Cette recette a été créée par vous. Vous pouvez la modifier ou en ajuster la visibilité à tout moment. Les options correspondantes se trouvent plus bas, après les étapes de préparation.",

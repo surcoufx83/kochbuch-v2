@@ -473,7 +473,14 @@ export class RecipeComponent implements OnDestroy, OnInit {
     }
   }
 
-  public urlencode(content: string): string {
+  scrollToElement(e: HTMLElement): void {
+    e.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+
+  urlencode(content: string): string {
     return this.l10nService.UrlEncode(content);
   }
 

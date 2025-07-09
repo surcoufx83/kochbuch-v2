@@ -9,7 +9,7 @@
 </div>
 }
 @else {
-<div class="lg:container mx-auto">
+<div class="lg:container mx-auto mb-20">
 
     <div class="hidden print:inline float-right mb-5 ms-5">
         <qrcode [qrdata]="uri" elementType="url" [scale]="3"></qrcode>
@@ -120,34 +120,7 @@
 
             </div><!-- gallery -->
 
-            @if (!(user && user.admin === true && user.id !== recipe.user?.id && !recipe.sharedInternal &&
-            !recipe.sharedPublic)) {
-            <div class="flex flex-row justify-center items-center mb-3 print:hidden">
-                <!-- function buttons below gallery -->
-
-                <button class="btn-green mx-2" (click)="onPrintClick()">
-                    <fa-icon [icon]="icons.print" class="me-1"></fa-icon>
-                    {{ Locale.recipe.printBtn }}
-                </button>
-
-                @if (recipe.sharedPublic) {
-                <button class="btn-green mx-2" (click)="onShareClick()">
-                    <fa-icon [icon]="icons.share" class="me-1"></fa-icon>
-                    {{ Locale.recipe.shareBtn }}
-                </button>
-                }
-
-                @if (user !== null) {
-                <button class="mx-2 btn-green" (click)="onSaveToCollectionClick(pickCollectionSwal, saveConfirmSwal)"
-                    [ngClass]="{ 'btn-green': recipeFoundInCollections.length === 0, 'btn-outline-green': recipeFoundInCollections.length > 0 }">
-                    <fa-icon [icon]="icons.like" class="me-1"></fa-icon>
-                    {{ recipeFoundInCollections.length === 0 ? Locale.recipe.saveBtn : Locale.recipe.saveBtnAlreadySaved
-                    }}
-                </button>
-                }
-
-            </div><!-- function buttons below gallery -->
-            }
+            <ng-container [ngTemplateOutlet]="actionButtons"></ng-container>
         </div>
 
         <div class="md:order-first">
@@ -160,7 +133,7 @@
                 </div>
                 <p>
                     {{ Locale.recipeOwnerInfo.description }}
-                    <button class="text-link ms-1">
+                    <button class="text-link ms-1" (click)="scrollToElement(manageAnchor)">
                         <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
                         {{ Locale.recipeOwnerInfo.gothereLink }}
                     </button>
@@ -178,7 +151,7 @@
                 </div>
                 <p>
                     {{ LocaleReplace(Locale.recipeOwnerInfo.adminDescription, [recipe.user?.displayname]) }}
-                    <button class="text-link ms-1">
+                    <button class="text-link ms-1" (click)="scrollToElement(manageAnchor)">
                         <fa-icon [icon]="icons.goDownToArrow"></fa-icon>
                         {{ Locale.recipeOwnerInfo.gothereLink }}
                     </button>
@@ -286,73 +259,138 @@
         <!-- Header div with description and pictures -->
     </div>
 
-    <div class="">
-        <!-- Div with ingredients and preparation steps -->
+    <section class="mb-20">
+        <!-- Ingredients and preparation steps -->
+        <h4>
+            <fa-icon [icon]="icons.preparation" class="me-2"></fa-icon>
+            {{ Locale.recipePreparation.title }}
+        </h4>
 
-        <section>
-            <h4>
-                <fa-icon [icon]="icons.preparation" class="me-2"></fa-icon>
-                {{ Locale.recipePreparation.title }}
-            </h4>
 
-            @if (recipe.timing.total !== null && calculatorServings > (recipe.servingsCount * 1.8)) {
-            <div class="p-2 hidden print:block">
-                <p class="text-warn text-sm rounded-md"><!-- duration waning -->
-                    <fa-icon [icon]="icons.clock" class="me-2"></fa-icon>
-                    {{ LocaleReplace(Locale.recipePreparationTime.recalcWarning.print[recipe.servingsCount === 1
-                    ?
-                    0 : 1]
-                    , [recipe.servingsCount]) }}
-                </p><!-- duration waning -->
-            </div>
-            }
+        @if (recipe.timing.total !== null && calculatorServings > (recipe.servingsCount * 1.8)) {
+        <div class="p-2 hidden print:block">
+            <p class="text-warn text-sm rounded-md"><!-- duration waning -->
+                <fa-icon [icon]="icons.clock" class="me-2"></fa-icon>
+                {{ LocaleReplace(Locale.recipePreparationTime.recalcWarning.print[recipe.servingsCount === 1
+                ?
+                0 : 1]
+                , [recipe.servingsCount]) }}
+            </p><!-- duration waning -->
+        </div>
+        }
 
-            @for (item of steps(); track $index) {
+        @for (item of steps(); track $index) {
 
-            <section class="striped rounded-md px-3">
-                <h5>
-                    {{ LocaleReplace(Locale.recipePreparation.stepFormat, [ $index + 1,
-                    item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title]) }}
-                </h5>
+        <section class="striped rounded-md px-3">
+            <h5>
+                {{ LocaleReplace(Locale.recipePreparation.stepFormat, [ $index + 1,
+                item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title]) }}
+            </h5>
 
-                @if (item.timing.total !== null && item.timing.total > 0) {
-                <p class="text-sm" [ngClass]="{ 'mb-1!': (item.ingredients?.length ?? 0 > 0) }">
-                    <fa-icon [icon]="icons.clock" class="me-1"></fa-icon>
-                    @if (item.timing.preparing !== null && item.timing.preparing > 0) {
-                    {{ LocaleReplace(Locale.recipePreparationTime.items.preparing[1],
-                    [FormatDuration(item.timing.preparing)]) }}
-                    }
-                    @if (item.timing.waiting !== null && item.timing.waiting > 0) {
-                    {{ LocaleReplace(Locale.recipePreparationTime.items.waiting[1],
-                    [FormatDuration(item.timing.waiting)]) }}
-                    }
-                    @if (item.timing.cooking !== null && item.timing.cooking > 0) {
-                    {{ LocaleReplace(Locale.recipePreparationTime.items.cooking[1],
-                    [FormatDuration(item.timing.cooking)]) }}
-                    }
-                </p>
+            @if (item.timing.total !== null && item.timing.total > 0) {
+            <p class="text-sm" [ngClass]="{ 'mb-1!': (item.ingredients?.length ?? 0 > 0) }">
+                <fa-icon [icon]="icons.clock" class="me-1"></fa-icon>
+                @if (item.timing.preparing !== null && item.timing.preparing > 0) {
+                {{ LocaleReplace(Locale.recipePreparationTime.items.preparing[1],
+                [FormatDuration(item.timing.preparing)]) }}
                 }
-
-                @if ((item.ingredients?.length ?? 0) > 0) {
-                <p class="text-sm">
-                    <fa-icon [icon]="icons.ingredients" class="me-1"></fa-icon>
-                    @for (ingitem of item.ingredients; track $index) {
-                    {{ ingitem.displayStr }} {{ ingitem.localization[recipe.localized ? langCodeVisible() :
-                    recipe.userLocale].title }}{{ ($index < item.ingredients!.length - 1) ? ';' : '' }} } </p>
-                        }
-
-                        <p>
-                            {{ item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].instruct }}
-                        </p>
-
-            </section>
-
+                @if (item.timing.waiting !== null && item.timing.waiting > 0) {
+                {{ LocaleReplace(Locale.recipePreparationTime.items.waiting[1],
+                [FormatDuration(item.timing.waiting)]) }}
+                }
+                @if (item.timing.cooking !== null && item.timing.cooking > 0) {
+                {{ LocaleReplace(Locale.recipePreparationTime.items.cooking[1],
+                [FormatDuration(item.timing.cooking)]) }}
+                }
+            </p>
             }
+
+            @if ((item.ingredients?.length ?? 0) > 0) {
+            <p class="text-sm">
+                <fa-icon [icon]="icons.ingredients" class="me-1"></fa-icon>
+                @for (ingitem of item.ingredients; track $index) {
+                {{ ingitem.displayStr }} {{ ingitem.localization[recipe.localized ? langCodeVisible() :
+                recipe.userLocale].title }}{{ ($index < item.ingredients!.length - 1) ? ';' : '' }} } </p>
+                    }
+
+                    <p>
+                        {{ item.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].instruct }}
+                    </p>
 
         </section>
 
-        <!-- Div with ingredients and preparation steps -->
-    </div>
+        }
+
+        <div class="mb-10"></div>
+        <ng-container [ngTemplateOutlet]="actionButtons"></ng-container>
+
+        <!-- Ingredients and preparation steps -->
+    </section>
+
+    <span #manageAnchor></span>
+    @if (user && ((recipe.user && user.id === recipe.user.id) || user.admin)) {
+    <section>
+        <!-- Management -->
+        <h4>
+            <fa-icon [icon]="icons.settings" class="me-2"></fa-icon>
+            {{ Locale.recipeManagement.title }}
+        </h4>
+
+        <p class="text-sm italic">
+            {{ LocaleReplace(Locale.recipeManagement.created, [ FormatDate(recipe.created, 'PP') ]) }}@if
+            (FormatDate(recipe.created, 'PP') !== FormatDate(recipe.modified, 'PP')) { — {{
+            LocaleReplace(Locale.recipeManagement.modified, [ FormatDate(recipe.modified, 'PP') ]) }}
+            }
+        </p>
+
+        <p>
+            @if (user.id === recipe.user?.id) {
+            {{ Locale.recipeManagement.ownerDescription }}
+            } @else {
+            {{ LocaleReplace(Locale.recipeManagement.adminDescription, [recipe.user?.displayname]) }}
+            @if (recipe.user) {
+            <a [routerLink]="['/user', recipe.user.id]" [queryParams]="{ q: urlencode(recipe.user.displayname) }">
+                <button class="text-link ms-1">
+                    @if (langCode() === 'de') {
+                    {{ LocaleReplace(Locale.recipeManagement.gotoOwnerBtn[recipe.user.displayname.endsWith('s') ||
+                    recipe.user.displayname.endsWith('x') || recipe.user.displayname.endsWith('z') ? 0 : 1],
+                    [recipe.user.displayname]) }}
+                    } @else {
+                    {{ LocaleReplace(Locale.recipeManagement.gotoOwnerBtn[recipe.user.displayname.endsWith('s') ? 0 :
+                    1],
+                    [recipe.user.displayname]) }}
+                    }
+                </button>
+            </a>
+            }
+            }
+        </p>
+
+        <section class="mb-3">
+            <h5>
+                – {{ Locale.recipeManagement.edit.title }}
+            </h5>
+
+            <div class="striped rounded-md py-2 ps-4 pe-2">
+                <a [routerLink]="['/recipe', 'edit', recipe.id]"
+                    [queryParams]="{ q: urlencode(recipe.localization[recipe.localized ? langCodeVisible() : recipe.userLocale].title) }"
+                    class="float-end ms-3">
+                    <button class="btn-green ms-1">
+                        <fa-icon [icon]="icons.edit" class="me-2"></fa-icon>
+                        {{ Locale.recipeManagement.edit.btn }}
+                    </button>
+                </a>
+
+                {{ Locale.recipeManagement.edit.description }}
+                <br clear="all" />
+            </div>
+
+        </section>
+
+        <!-- Management -->
+    </section>
+    }
+
 </div>
 }
 
@@ -447,3 +485,32 @@
     </ng-container>
 
 </swal>
+
+<ng-template #actionButtons>
+    <div class="flex flex-row justify-center items-center mb-3 print:hidden">
+        <!-- function buttons below gallery -->
+
+        <button class="btn-green mx-2" (click)="onPrintClick()">
+            <fa-icon [icon]="icons.print" class="me-1"></fa-icon>
+            {{ Locale.recipe.printBtn }}
+        </button>
+
+        @if (recipe!.sharedPublic) {
+        <button class="btn-green mx-2" (click)="onShareClick()">
+            <fa-icon [icon]="icons.share" class="me-1"></fa-icon>
+            {{ Locale.recipe.shareBtn }}
+        </button>
+        }
+
+        @if (user !== null) {
+        <button class="mx-2 btn-green" (click)="onSaveToCollectionClick(pickCollectionSwal, saveConfirmSwal)"
+            [ngClass]="{ 'btn-green': recipeFoundInCollections.length === 0, 'btn-outline-green': recipeFoundInCollections.length > 0 }">
+            <fa-icon [icon]="icons.like" class="me-1"></fa-icon>
+            {{ recipeFoundInCollections.length === 0 ? Locale.recipe.saveBtn : Locale.recipe.saveBtnAlreadySaved
+            }}
+        </button>
+        }
+
+        <!-- function buttons below gallery -->
+    </div>
+</ng-template>

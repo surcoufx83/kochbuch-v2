@@ -138,6 +138,37 @@ export const KB_En: L10nLocale = {
             nameHeader: "Ingredient Description",
         },
     },
+    recipeManagement: {
+        title: "Manage Recipe",
+        adminDescription: "This recipe was created by [0]. As an administrator, you can edit the recipe and change all related settings.",
+        gotoOwnerBtn: [
+            "Go to [0]'s account",
+            "Go to [0]'s account"
+        ],
+        ownerDescription: "You can edit your own recipes or adjust their visibility at any time. All options are available in this section.",
+        created: "Created on [0]",
+        modified: "Last modified on [0]",
+        delete: {
+            title: "Delete",
+            description: "Want to get rid of the recipe? Use the delete button to remove it. This action cannot be undone. All data, images, and comments will also be deleted.",
+            btn: "Delete Recipe"
+        },
+        edit: {
+            title: "Edit",
+            description: "In edit mode, you can revise all content of the recipe.",
+            btn: "Edit"
+        },
+        publish: {
+            title: "Publish",
+            description: "Recipes are private by default. You can also make your recipe visible to others and share it via the share button.",
+            togglePrivate: "Private",
+            toggleInternal: "Logged-in Users",
+            togglePublic: "Public",
+            descriptionPrivate: "Private means private. This recipe belongs only to you and cannot be viewed or accessed by anyone else. This is the default for newly created recipes. You can print it, but sharing via WhatsApp is not possible.",
+            descriptionInternal: "Logged-in users – la familia: This level allows other users with a Nextcloud account to view your recipe. It makes it accessible to family and close friends. Sharing via WhatsApp is still not possible.",
+            descriptionPublic: "Public: Anyone in the world can view the recipe if they have the link. This level allows free sharing with others and spreading the recipe among your social circle."
+        }
+    },
     recipeOwnerInfo: {
         title: "Edit Notice",
         description: "This recipe was created by you. You can edit it or adjust its visibility at any time. The corresponding options can be found further below, after the preparation steps.",
