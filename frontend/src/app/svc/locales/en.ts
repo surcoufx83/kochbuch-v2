@@ -108,7 +108,7 @@ export const KB_En: L10nLocale = {
         shareBtn: "Share",
         share: {
             title: "Recipe for ‘[0]’ on kochbuch.mogul.network",
-            message: "Recipe for ‘[0]’ on kochbuch.mogul.network\n\nYou’ll find this and more recipes by [1] in our digital cookbook. Enjoy cooking!"
+            message: "*[0]*\n\nYou’ll find this and more recipes by [1] in our digital cookbook. Enjoy cooking!"
         },
     },
     recipeGallery: {

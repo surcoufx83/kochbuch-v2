@@ -438,6 +438,9 @@ export class RecipeComponent implements OnDestroy, OnInit {
   onShareClick(): void {
     if (!this.recipe || !this.recipe.sharedPublic)
       return;
+    // https://stackoverflow.com/questions/62350936/how-to-add-a-preview-image-to-navigator-share
+    // this suggests to remove text and title
+    // should be checked for live page
     navigator.share({
       url: `https://${window.location.host}${window.location.pathname}?s=${this.calculatorServings}&n=${this.urlencode(this.recipe.localization[this.recipe.localized ? this.langCodeVisible() : this.recipe.userLocale].title)}`,
       title: this.LocaleReplace(this.Locale.recipe.share.title, [this.recipe.localization[this.recipe.localized ? this.langCodeVisible() : this.recipe.userLocale].title]),
