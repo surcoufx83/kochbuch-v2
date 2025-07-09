@@ -381,18 +381,19 @@ export class SharedDataService {
 
       case 'units_etag':
         if (this._unitsEtag !== <string>msg.content) {
-          this.wsService.SendMessage({
+          this.wsService.SendMessageAndWait({
             type: 'units_get_all',
-            content: JSON.stringify({})
+            content: ''
+          }).then((data) => {
+            if (data[0] === HttpStatusCode.Ok) {
+              const unitsdata = data[1] as UnitsCache;
+              this._unitsEtag = unitsdata.etag;
+              this._units.next(unitsdata.units);
+              this.saveUnitsToCache();
+            }
+
           });
         }
-        break;
-
-      case 'units':
-        const udata = JSON.parse(msg.content) as UnitsCache;
-        this._unitsEtag = udata.etag;
-        this._units.next(udata.units);
-        this.saveUnitsToCache();
         break;
 
     }
@@ -423,8 +424,9 @@ type RecipeUpdatedEvent = {
 }
 
 type UnitsCache = {
-  units: { [key: number]: Unit };
+  error?: number;
   etag?: string;
+  units: { [key: number]: Unit };
 }
 
 export type UnitsConversion = {

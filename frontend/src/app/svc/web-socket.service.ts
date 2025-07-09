@@ -60,6 +60,7 @@ export class WebSocketService {
         if (this.appParams.loggedIn && this.appParams.connection.session) {
           document.cookie = `session=${this.appParams.connection.session}; exires=${addDays(new Date(), 365).toUTCString()}; path=/`;
         }
+        console.log(this.appParams.user)
         this._isLoggedIn.next(this.appParams.loggedIn);
         this._isConnected.next(true);
         this.ResendFromQueue();
@@ -183,14 +184,8 @@ export class WebSocketService {
 
         const content = JSON.parse(ev.content) as WsCommonResponse;
 
-        if (content.error === HttpStatusCode.Accepted) {
-          resolve([HttpStatusCode.Accepted, content]);
-          sub.unsubscribe();
-        }
-        else {
-          resolve([content.error ?? HttpStatusCode.Conflict, content]);
-          sub.unsubscribe();
-        }
+        resolve([content.error ?? HttpStatusCode.Conflict, content]);
+        sub.unsubscribe();
       });
 
       this.socket.send(JSON.stringify(msg));

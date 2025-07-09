@@ -110,8 +110,9 @@ type wsUploadPictureFileContent struct {
 }
 
 type wsUnitsContent struct {
-	Units map[uint8]types.Unit `json:"units"`
+	Code  int                  `json:"error"`
 	Etag  string               `json:"etag"`
+	Units map[uint8]types.Unit `json:"units"`
 }
 
 func OnWebsocketConnect(c *gin.Context) {
@@ -238,7 +239,7 @@ func wsHandleMessage(conn *wsConnection, msg wsMessage) {
 		return
 
 	case "units_get_all":
-		wsGetUnits(conn)
+		wsGetUnits(conn, msg)
 		return
 
 	case "user_collection_create":
@@ -346,20 +347,25 @@ func wsGetRecipes(conn *wsConnection) {
 	})
 }
 
-func wsGetUnits(conn *wsConnection) {
+func wsGetUnits(conn *wsConnection, msg wsMessage) {
 	units, etag := GetUnits()
 	var content wsUnitsContent = wsUnitsContent{
-		Units: units,
+		Code:  http.StatusOK,
 		Etag:  etag,
+		Units: units,
 	}
+
 	jsoncontent, err := json.Marshal(content)
 	if err != nil {
 		log.Println("Error marshalling units listing:", err)
+		wsWrite400BadRequest(conn, msg.MsgType+"_response", msg.State)
 		return
 	}
+
 	wsWriteMessage(conn, &wsMessage{
-		MsgType: "units",
+		MsgType: msg.MsgType + "_response",
 		Content: string(jsoncontent),
+		State:   msg.State,
 	})
 }
 
